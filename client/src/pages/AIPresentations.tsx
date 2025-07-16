@@ -1,10 +1,14 @@
-import { useState, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Download, 
-  Sparkles, 
-  Image as ImageIcon, 
-  BarChart, 
+"use client"
+
+import type React from "react"
+
+import { useState, useRef } from "react"
+import { motion } from "framer-motion"
+import {
+  Download,
+  Sparkles,
+  ImageIcon,
+  BarChart,
   Lightbulb,
   Plus,
   Trash2,
@@ -18,70 +22,109 @@ import {
   EyeOff,
   ChevronLeft,
   ChevronRight,
-  Play,
-  X,
-  Minimize2
-} from "lucide-react";
-import GlassmorphismButton from "@/components/ui/glassmorphism-button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
+  Minimize2,
+  Save,
+} from "lucide-react"
+import GlassmorphismButton from "@/components/ui/glassmorphism-button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { useToast } from "@/hooks/use-toast"
 
 interface Slide {
-  id: string;
-  title: string;
-  subtitle: string;
-  content: string;
-  backgroundStyle: string;
-  backgroundGradient: string;
-  images: string[];
-  bulletPoints: string[];
+  id: string
+  title: string
+  subtitle: string
+  content: string
+  backgroundStyle: string
+  backgroundGradient: string
+  images: string[]
+  bulletPoints: string[]
 }
 
-interface ChartData {
-  type: string;
-  title: string;
-  data: any[];
+interface PresentationElement {
+  type: string
+  content?: string
+  items?: string[]
+  position: {
+    left: number
+    top: number
+    width: number
+    height: number
+  }
+  style?: {
+    font_size?: number
+    color?: string
+    alignment?: string
+    font_weight?: string
+  }
+  src?: string
+  alt?: string
+}
+
+interface PresentationSlide {
+  id: string
+  slide_number: number
+  layout_type: string
+  background: {
+    type: string
+    color: string
+  }
+  elements: PresentationElement[]
+}
+
+interface PresentationJSON {
+  metadata: {
+    title: string
+    slide_count: number
+    created_at: string
+    theme: string
+  }
+  slides: PresentationSlide[]
 }
 
 const AIPresentations = () => {
-  const { toast } = useToast();
+  const { toast } = useToast()
   const [slides, setSlides] = useState<Slide[]>([
     {
       id: "1",
       title: "The Solar System",
       subtitle: "An Introduction to Our Cosmic Neighborhood",
-      content: "Explore the wonders of our solar system, from the blazing Sun to the distant planets and their fascinating characteristics.",
-      backgroundStyle: "solid",
-      backgroundGradient: "bg-white text-gray-900",
+      content:
+        "Explore the wonders of our solar system, from the blazing Sun to the distant planets and their fascinating characteristics.",
+      backgroundStyle: "gradient",
+      backgroundGradient: "from-purple-600 via-blue-600 to-indigo-700",
       images: [],
       bulletPoints: [
         "Eight planets orbit our Sun",
         "Diverse environments across the system",
-        "Ongoing exploration and discovery"
-      ]
-    }
-  ]);
+        "Ongoing exploration and discovery",
+      ],
+    },
+  ])
 
-  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
-  const [showExportDialog, setShowExportDialog] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [showImageDialog, setShowImageDialog] = useState(false);
-  const [showChartDialog, setShowChartDialog] = useState(false);
-  const [showGenerateDialog, setShowGenerateDialog] = useState(false);
-  const [showBackgroundDialog, setShowBackgroundDialog] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generateTopic, setGenerateTopic] = useState("");
-  const [slideCount, setSlideCount] = useState(5);
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
-  const [selectedChart, setSelectedChart] = useState("");
-  const [newBulletPoint, setNewBulletPoint] = useState("");
-  
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const currentSlide = slides[currentSlideIndex];
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
+  const [showExportDialog, setShowExportDialog] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
+  const [showImageDialog, setShowImageDialog] = useState(false)
+  const [showChartDialog, setShowChartDialog] = useState(false)
+  const [showGenerateDialog, setShowGenerateDialog] = useState(false)
+  const [showBackgroundDialog, setShowBackgroundDialog] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generateTopic, setGenerateTopic] = useState("")
+  const [slideCount, setSlideCount] = useState(5)
+  const [isPreviewMode, setIsPreviewMode] = useState(false)
+  const [selectedChart, setSelectedChart] = useState("")
+  const [newBulletPoint, setNewBulletPoint] = useState("")
+  const [currentPresentationId, setCurrentPresentationId] = useState<string | null>(null)
+  const [presentationJSON, setPresentationJSON] = useState<PresentationJSON | null>(null)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const currentSlide = slides[currentSlideIndex]
 
   const backgroundStyles = [
     { name: "Purple Gradient", value: "from-purple-600 via-blue-600 to-indigo-700", type: "gradient" },
@@ -95,50 +138,231 @@ const AIPresentations = () => {
     { name: "Minimal White", value: "bg-white text-gray-900", type: "solid" },
     { name: "Professional Blue", value: "bg-blue-900 text-white", type: "solid" },
     { name: "Dark Mode", value: "bg-gray-900 text-white", type: "solid" },
-    { name: "Clean Gray", value: "bg-gray-100 text-gray-900", type: "solid" }
-  ];
+    { name: "Clean Gray", value: "bg-gray-100 text-gray-900", type: "solid" },
+  ]
 
   const chartTypes = [
     { id: "bar", name: "Bar Chart", icon: BarChart, description: "Compare data across categories" },
     { id: "line", name: "Line Chart", icon: BarChart, description: "Show trends over time" },
     { id: "pie", name: "Pie Chart", icon: BarChart, description: "Display proportional data" },
-    { id: "timeline", name: "Timeline", icon: BarChart, description: "Show events chronologically" }
-  ];
+    { id: "timeline", name: "Timeline", icon: BarChart, description: "Show events chronologically" },
+  ]
 
   const aiSuggestions = [
     "Add a comparison chart showing key metrics",
     "Include relevant statistics and data points",
     "Generate bullet points for main concepts",
     "Create a timeline of important events",
-    "Add visual elements to enhance understanding"
-  ];
+    "Add visual elements to enhance understanding",
+  ]
 
-  // Update slide content
+  // Convert Flask JSON to React slides format
+  const convertJSONToSlides = (jsonData: PresentationJSON): Slide[] => {
+    return jsonData.slides.map((slide, index) => {
+      let title = `Slide ${slide.slide_number}`
+      let subtitle = ""
+      let content = ""
+      let bulletPoints: string[] = []
+      const images: string[] = []
+
+      // Extract elements
+      slide.elements.forEach((element) => {
+        switch (element.type) {
+          case "title":
+            title = element.content || title
+            break
+          case "text":
+            if (slide.slide_number === 1 && !subtitle) {
+              subtitle = element.content || ""
+            } else {
+              content += (content ? " " : "") + (element.content || "")
+            }
+            break
+          case "bullet_list":
+            bulletPoints = element.items || []
+            break
+          case "image":
+            if (element.src) {
+              images.push(element.src)
+            }
+            break
+        }
+      })
+
+      return {
+        id: slide.id,
+        title,
+        subtitle,
+        content,
+        backgroundStyle: "gradient",
+        backgroundGradient: backgroundStyles[index % backgroundStyles.length].value,
+        images,
+        bulletPoints,
+      }
+    })
+  }
+
+  // Convert React slides back to Flask JSON format
+  const convertSlidesToJSON = (slides: Slide[]): PresentationJSON => {
+    return {
+      metadata: {
+        title: generateTopic || "AI Generated Presentation",
+        slide_count: slides.length,
+        created_at: new Date().toISOString(),
+        theme: "gamma_style",
+      },
+      slides: slides.map((slide, index) => ({
+        id: slide.id,
+        slide_number: index + 1,
+        layout_type: index === 0 ? "title" : "content",
+        background: {
+          type: "color",
+          color: "#ffffff",
+        },
+        elements: [
+          {
+            type: "title",
+            content: slide.title,
+            position: { left: 1, top: 1, width: 10, height: 1.5 },
+            style: {
+              font_size: index === 0 ? 32 : 24,
+              color: "#333333",
+              alignment: "center",
+              font_weight: "bold",
+            },
+          },
+          ...(slide.subtitle
+            ? [
+                {
+                  type: "text",
+                  content: slide.subtitle,
+                  position: { left: 1, top: 2.5, width: 10, height: 1 },
+                  style: {
+                    font_size: 18,
+                    color: "#666666",
+                    alignment: "center",
+                  },
+                },
+              ]
+            : []),
+          ...(slide.content
+            ? [
+                {
+                  type: "text",
+                  content: slide.content,
+                  position: { left: 1, top: 3.5, width: 10, height: 2 },
+                  style: {
+                    font_size: 16,
+                    color: "#333333",
+                    alignment: "left",
+                  },
+                },
+              ]
+            : []),
+          ...(slide.bulletPoints.length > 0
+            ? [
+                {
+                  type: "bullet_list",
+                  items: slide.bulletPoints,
+                  position: { left: 1, top: 4, width: 10, height: 3 },
+                  style: {
+                    font_size: 16,
+                    color: "#333333",
+                    alignment: "left",
+                  },
+                },
+              ]
+            : []),
+        ],
+      })),
+    }
+  }
+
+  // Update slide content and mark as changed
   const updateSlide = (field: keyof Slide, value: string | string[]) => {
-    setSlides(prev => prev.map((slide, index) => 
-      index === currentSlideIndex ? { ...slide, [field]: value } : slide
-    ));
-  };
+    setSlides((prev) =>
+      prev.map((slide, index) => (index === currentSlideIndex ? { ...slide, [field]: value } : slide)),
+    )
+    setHasUnsavedChanges(true)
+  }
+
+  // Save changes to backend
+  const saveChanges = async () => {
+    if (!currentPresentationId || !hasUnsavedChanges) {
+      toast({
+        title: "No Changes to Save",
+        description: "There are no unsaved changes to save.",
+      })
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      // Convert current slides to JSON format
+      const updatedJSON = convertSlidesToJSON(slides)
+
+      // Update each slide in the backend
+      for (let i = 0; i < slides.length; i++) {
+        const slide = slides[i]
+        const slideData = updatedJSON.slides[i]
+
+        const response = await fetch("http://localhost:5002/update_slide", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            presentation_id: currentPresentationId,
+            slide_id: slide.id,
+            slide_data: slideData,
+          }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || "Failed to update slide")
+        }
+      }
+
+      setHasUnsavedChanges(false)
+      setPresentationJSON(updatedJSON)
+
+      toast({
+        title: "Changes Saved Successfully",
+        description: "Your presentation has been updated and is ready for download.",
+      })
+    } catch (error: any) {
+      console.error("Save error:", error)
+      toast({
+        title: "Save Failed",
+        description: error.message || "There was an error saving your changes.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   // Add new slide
   const addSlide = () => {
     const newSlide: Slide = {
-      id: Date.now().toString(),
+      id: `slide_${Date.now()}`,
       title: "New Slide",
       subtitle: "Subtitle",
       content: "Add your content here...",
       backgroundStyle: "gradient",
       backgroundGradient: "from-purple-600 via-blue-600 to-indigo-700",
       images: [],
-      bulletPoints: []
-    };
-    setSlides(prev => [...prev, newSlide]);
-    setCurrentSlideIndex(slides.length);
+      bulletPoints: [],
+    }
+    setSlides((prev) => [...prev, newSlide])
+    setCurrentSlideIndex(slides.length)
+    setHasUnsavedChanges(true)
     toast({
       title: "Slide Added",
-      description: "New slide has been created successfully."
-    });
-  };
+      description: "New slide has been created successfully.",
+    })
+  }
 
   // Delete slide
   const deleteSlide = (index: number) => {
@@ -146,265 +370,321 @@ const AIPresentations = () => {
       toast({
         title: "Cannot Delete",
         description: "You need at least one slide in your presentation.",
-        variant: "destructive"
-      });
-      return;
+        variant: "destructive",
+      })
+      return
     }
-    setSlides(prev => prev.filter((_, i) => i !== index));
+    setSlides((prev) => prev.filter((_, i) => i !== index))
     if (currentSlideIndex >= slides.length - 1) {
-      setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1));
+      setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1))
     }
+    setHasUnsavedChanges(true)
     toast({
       title: "Slide Deleted",
-      description: "Slide has been removed from your presentation."
-    });
-  };
+      description: "Slide has been removed from your presentation.",
+    })
+  }
 
   // Duplicate slide
   const duplicateSlide = (index: number) => {
-    const slideToClone = slides[index];
-    const newSlide = { 
-      ...slideToClone, 
-      id: Date.now().toString(),
-      title: slideToClone.title + " (Copy)"
-    };
-    setSlides(prev => [...prev.slice(0, index + 1), newSlide, ...prev.slice(index + 1)]);
+    const slideToClone = slides[index]
+    const newSlide = {
+      ...slideToClone,
+      id: `slide_${Date.now()}`,
+      title: slideToClone.title + " (Copy)",
+    }
+    setSlides((prev) => [...prev.slice(0, index + 1), newSlide, ...prev.slice(index + 1)])
+    setHasUnsavedChanges(true)
     toast({
       title: "Slide Duplicated",
-      description: "Slide has been copied successfully."
-    });
-  };
+      description: "Slide has been copied successfully.",
+    })
+  }
 
-  // Generate presentation with AI
+  // Generate presentation with AI using Flask backend
   const generatePresentation = async () => {
     if (!generateTopic.trim()) {
       toast({
         title: "Topic Required",
         description: "Please enter a topic for your presentation.",
-        variant: "destructive"
-      });
-      return;
+        variant: "destructive",
+      })
+      return
     }
 
-    setIsGenerating(true);
-    
-    // Simulate AI generation
-    setTimeout(() => {
-      const generatedSlides: Slide[] = Array.from({ length: slideCount }, (_, i) => ({
-        id: Date.now().toString() + i,
-        title: i === 0 ? generateTopic : `${generateTopic} - Section ${i}`,
-        subtitle: i === 0 ? "AI Generated Presentation" : `Key Points and Analysis`,
-        content: `This is AI-generated content about ${generateTopic}. The content explores various aspects and provides comprehensive insights.`,
-        backgroundStyle: "gradient",
-        backgroundGradient: backgroundStyles[i % backgroundStyles.length].value,
-        images: [],
-        bulletPoints: [
-          `Important point about ${generateTopic}`,
-          "Supporting evidence and examples",
-          "Practical applications and implications"
-        ]
-      }));
+    setIsGenerating(true)
 
-      setSlides(generatedSlides);
-      setCurrentSlideIndex(0);
-      setIsGenerating(false);
-      setShowGenerateDialog(false);
-      setGenerateTopic("");
-      
-      toast({
-        title: "Presentation Generated",
-        description: `Successfully created ${slideCount} slides about ${generateTopic}.`
-      });
-    }, 2000);
-  };
-
-  // Export presentation
-  const exportPresentation = async (format: string) => {
-    setShowExportDialog(false);
-    setIsDownloading(true);
-    
     try {
-      if (format === "pdf") {
-        // Create PDF content
-        const pdfContent = generatePDFContent();
-        downloadFile(pdfContent, "presentation.pdf", "application/pdf");
-        
-        toast({
-          title: "PDF Download Complete",
-          description: "Your presentation has been downloaded as PDF."
-        });
-      } else if (format === "pptx") {
-        // Create PowerPoint content
-        const pptContent = generatePPTContent();
-        downloadFile(pptContent, "presentation.pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation");
-        
-        toast({
-          title: "PowerPoint Download Complete", 
-          description: "Your presentation has been downloaded as PPTX."
-        });
+      console.log("Creating presentation with Flask backend...")
+
+      // Step 1: Create presentation
+      const createResponse = await fetch("http://localhost:5002/create_presentation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          topic: generateTopic,
+          slides: slideCount,
+        }),
+      })
+
+      if (!createResponse.ok) {
+        const errorData = await createResponse.json()
+        throw new Error(errorData.error || "Failed to create presentation")
       }
-    } catch (error) {
+
+      const createResult = await createResponse.json()
+      console.log("Presentation created:", createResult)
+
+      if (!createResult.success) {
+        throw new Error(createResult.error || "Failed to create presentation")
+      }
+
+      const presentationId = createResult.presentation_id
+      setCurrentPresentationId(presentationId)
+
+      // Step 2: Get JSON data for web rendering
+      const jsonResponse = await fetch(`http://localhost:5002/get_presentation_json/${presentationId}`)
+
+      if (jsonResponse.ok) {
+        const jsonResult = await jsonResponse.json()
+        console.log("JSON data received:", jsonResult)
+
+        if (jsonResult.success && jsonResult.json_data) {
+          setPresentationJSON(jsonResult.json_data)
+          const convertedSlides = convertJSONToSlides(jsonResult.json_data)
+          setSlides(convertedSlides)
+          setCurrentSlideIndex(0)
+          setHasUnsavedChanges(false)
+        }
+      }
+
       toast({
-        title: "Download Failed",
-        description: "There was an error downloading your presentation.",
-        variant: "destructive"
-      });
+        title: "Presentation Generated Successfully!",
+        description: `Created ${createResult.slide_count} slides about "${generateTopic}". You can now edit and download your presentation.`,
+      })
+    } catch (error: any) {
+      console.error("Generation error:", error)
+      toast({
+        title: "Generation Failed",
+        description:
+          error.message ||
+          "There was an error generating your presentation. Please check if the Flask server is running on port 5002.",
+        variant: "destructive",
+      })
     } finally {
-      setIsDownloading(false);
+      setIsGenerating(false)
+      setShowGenerateDialog(false)
+      setGenerateTopic("")
     }
-  };
+  }
 
-  // Generate PDF content
-  const generatePDFContent = () => {
-    const pdfData = slides.map((slide, index) => ({
-      page: index + 1,
-      title: slide.title,
-      subtitle: slide.subtitle,
-      content: slide.content,
-      bulletPoints: slide.bulletPoints,
-      background: slide.backgroundGradient
-    }));
-    
-    return JSON.stringify({
-      title: "AI Generated Presentation",
-      slides: pdfData,
-      createdAt: new Date().toISOString(),
-      format: "pdf"
-    });
-  };
+  // Export presentation using Flask backend
+  const exportPresentation = async (format: string) => {
+    setShowExportDialog(false)
+    setIsDownloading(true)
 
-  // Generate PowerPoint content
-  const generatePPTContent = () => {
-    const pptData = slides.map((slide, index) => ({
-      slideNumber: index + 1,
-      layout: "title-content",
-      title: slide.title,
-      subtitle: slide.subtitle,
-      content: slide.content,
-      bulletPoints: slide.bulletPoints,
-      theme: slide.backgroundGradient,
-      animations: "fadeIn"
-    }));
-    
-    return JSON.stringify({
-      presentation: {
-        title: "AI Generated Presentation",
-        author: "Coexist AI",
-        slides: pptData,
-        template: "modern",
-        createdAt: new Date().toISOString()
+    try {
+      if (!currentPresentationId) {
+        toast({
+          title: "No Presentation Available",
+          description: "Please generate a presentation first using the 'Generate AI' button.",
+          variant: "destructive",
+        })
+        return
       }
-    });
-  };
 
-  // Download file helper
-  const downloadFile = (content: string, filename: string, mimeType: string) => {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
+      // Save changes before exporting if there are any
+      if (hasUnsavedChanges) {
+        await saveChanges()
+      }
 
+      console.log(`Exporting presentation as ${format}...`)
+
+      const response = await fetch("http://localhost:5002/export_ppt", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          presentationId: currentPresentationId,
+          format: format,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `Failed to export as ${format}`)
+      }
+// Handle file download
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      
+      const getFileName = () => {
+        if (presentationJSON?.metadata?.title) {
+          return presentationJSON.metadata.title
+        }
+
+        if (slides.length > 0 && slides[0].title) {
+          return slides[0].title
+        }
+
+        if (generateTopic) {
+          return generateTopic
+        }
+
+        return "AI_Presentation"
+      }
+
+      // Sanitize filename by removing invalid characters
+      const sanitizeFilename = (filename: string) => {
+        return filename
+          .replace(/[<>:"/\\|?*]/g, "") 
+          .replace(/\s+/g, "_")
+          .substring(0, 100) 
+      }
+
+      const fileName = sanitizeFilename(getFileName())
+      link.download = `${fileName}.${format}`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      toast({
+        title: `${format.toUpperCase()} Download Complete`,
+        description: `Your presentation has been downloaded as ${format.toUpperCase()}.`,
+      })
+    } catch (error: any) {
+      console.error(" Export error:", error)
+      toast({
+        title: "Export Failed",
+        description: error.message || "There was an error exporting your presentation.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+  
   // Add image to slide
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const file = event.target.files?.[0]
     if (file) {
-      const reader = new FileReader();
+      const reader = new FileReader()
       reader.onload = (e) => {
-        const imageUrl = e.target?.result as string;
-        setSlides(prev => prev.map((slide, index) => 
-          index === currentSlideIndex ? { ...slide, images: [...slide.images, imageUrl] } : slide
-        ));
+        const imageUrl = e.target?.result as string
+        setSlides((prev) =>
+          prev.map((slide, index) =>
+            index === currentSlideIndex ? { ...slide, images: [...slide.images, imageUrl] } : slide,
+          ),
+        )
+        setHasUnsavedChanges(true)
         toast({
           title: "Image Added",
-          description: "Image has been added to your slide."
-        });
-      };
-      reader.readAsDataURL(file);
+          description: "Image has been added to your slide.",
+        })
+      }
+      reader.readAsDataURL(file)
     }
-    setShowImageDialog(false);
-  };
+    setShowImageDialog(false)
+  }
 
   // Add chart to slide
   const addChart = (chartType: string) => {
-    // Simulate adding a chart
+    setHasUnsavedChanges(true)
     toast({
       title: "Chart Added",
-      description: `${chartType} has been added to your slide.`
-    });
-    setShowChartDialog(false);
-  };
+      description: `${chartType} has been added to your slide.`,
+    })
+    setShowChartDialog(false)
+  }
 
   // Add bullet point
   const addBulletPoint = () => {
     if (newBulletPoint.trim()) {
-      setSlides(prev => prev.map((slide, index) => 
-        index === currentSlideIndex ? { ...slide, bulletPoints: [...slide.bulletPoints, newBulletPoint.trim()] } : slide
-      ));
-      setNewBulletPoint("");
+      setSlides((prev) =>
+        prev.map((slide, index) =>
+          index === currentSlideIndex
+            ? { ...slide, bulletPoints: [...slide.bulletPoints, newBulletPoint.trim()] }
+            : slide,
+        ),
+      )
+      setNewBulletPoint("")
+      setHasUnsavedChanges(true)
       toast({
         title: "Bullet Point Added",
-        description: "New point has been added to your slide."
-      });
+        description: "New point has been added to your slide.",
+      })
     }
-  };
+  }
 
   // Remove bullet point
   const removeBulletPoint = (index: number) => {
-    setSlides(prev => prev.map((slide, slideIndex) => 
-      slideIndex === currentSlideIndex ? { ...slide, bulletPoints: slide.bulletPoints.filter((_, i) => i !== index) } : slide
-    ));
-  };
+    setSlides((prev) =>
+      prev.map((slide, slideIndex) =>
+        slideIndex === currentSlideIndex
+          ? { ...slide, bulletPoints: slide.bulletPoints.filter((_, i) => i !== index) }
+          : slide,
+      ),
+    )
+    setHasUnsavedChanges(true)
+  }
 
   // Change background
   const changeBackground = (backgroundStyle: any) => {
-    updateSlide('backgroundGradient', backgroundStyle.value);
-    updateSlide('backgroundStyle', backgroundStyle.type);
-    setShowBackgroundDialog(false);
+    updateSlide("backgroundGradient", backgroundStyle.value)
+    updateSlide("backgroundStyle", backgroundStyle.type)
+    setShowBackgroundDialog(false)
     toast({
       title: "Background Updated",
-      description: `Applied ${backgroundStyle.name} to your slide.`
-    });
-  };
+      description: `Applied ${backgroundStyle.name} to your slide.`,
+    })
+  }
 
   // Enhance with AI
   const enhanceWithAI = () => {
-    const enhancedContent = currentSlide.content + " AI has enhanced this content with additional insights, improved structure, and more engaging language to captivate your audience.";
-    setSlides(prev => prev.map((slide, index) => 
-      index === currentSlideIndex ? { 
-        ...slide, 
-        content: enhancedContent,
-        bulletPoints: [
-          ...slide.bulletPoints,
-          "AI-generated insight for better understanding",
-          "Enhanced visual appeal and engagement"
-        ]
-      } : slide
-    ));
-    
+    const enhancedContent =
+      currentSlide.content +
+      " AI has enhanced this content with additional insights, improved structure, and more engaging language to captivate your audience."
+    setSlides((prev) =>
+      prev.map((slide, index) =>
+        index === currentSlideIndex
+          ? {
+              ...slide,
+              content: enhancedContent,
+              bulletPoints: [
+                ...slide.bulletPoints,
+                "AI-generated insight for better understanding",
+                "Enhanced visual appeal and engagement",
+              ],
+            }
+          : slide,
+      ),
+    )
+
+    setHasUnsavedChanges(true)
     toast({
       title: "Content Enhanced",
-      description: "AI has improved your slide content and added new insights."
-    });
-  };
+      description: "AI has improved your slide content and added new insights.",
+    })
+  }
 
   // Navigation
   const nextSlide = () => {
     if (currentSlideIndex < slides.length - 1) {
-      setCurrentSlideIndex(currentSlideIndex + 1);
+      setCurrentSlideIndex(currentSlideIndex + 1)
     }
-  };
+  }
 
   const prevSlide = () => {
     if (currentSlideIndex > 0) {
-      setCurrentSlideIndex(currentSlideIndex - 1);
+      setCurrentSlideIndex(currentSlideIndex - 1)
     }
-  };
+  }
 
   // Generate AI text for minimize button
   const generateMinimizeText = () => {
@@ -413,40 +693,46 @@ const AIPresentations = () => {
       "AI: Back to Design",
       "AI: Resume Editing",
       "AI: Exit Fullscreen",
-      "AI: Continue Creating"
-    ];
-    return aiTexts[Math.floor(Math.random() * aiTexts.length)];
-  };
+      "AI: Continue Creating",
+    ]
+    return aiTexts[Math.floor(Math.random() * aiTexts.length)]
+  }
 
   return (
     <main className="relative z-10 pt-20">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <motion.h1 
-            className="text-4xl font-bold mb-4 text-slate-900 dark:text-white"
+          <motion.h1
+            className="text-4xl font-bold mb-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
             AI Presentations Studio
           </motion.h1>
-          <motion.p 
-            className="text-slate-600 dark:text-slate-400 mb-6"
+          <motion.p
+            className="text-slate-400 mb-6"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.6 }}
           >
             Create stunning presentations with AI assistance and professional templates
           </motion.p>
-          
+
           {/* Quick Actions */}
           <div className="flex flex-wrap justify-center gap-4 mb-8">
-            <GlassmorphismButton
-              onClick={() => setShowExportDialog(true)}
-              variant="outline"
-              className="px-6 py-3"
-            >
+            {hasUnsavedChanges && (
+              <GlassmorphismButton
+                onClick={saveChanges}
+                disabled={isSaving}
+                className="px-6 py-3 bg-green-600 hover:bg-green-700"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {isSaving ? "Saving..." : "Save Changes"}
+              </GlassmorphismButton>
+            )}
+            <GlassmorphismButton onClick={() => setShowExportDialog(true)} variant="outline" className="px-6 py-3">
               <Download className="w-4 h-4 mr-2" />
               Export
             </GlassmorphismButton>
@@ -480,34 +766,33 @@ const AIPresentations = () => {
               </GlassmorphismButton>
               <GlassmorphismButton
                 onClick={() => setIsPreviewMode(false)}
-                variant="outline" 
+                variant="outline"
                 className="text-white border-white/30 hover:bg-white/20 px-4 py-2"
               >
                 <Minimize2 className="w-5 h-5 mr-2" />
                 <span className="font-medium">{generateMinimizeText()}</span>
               </GlassmorphismButton>
             </div>
-            
-            <div className="w-full h-full max-w-7xl max-h-4xl flex items-center justify-center p-8">
-              <div 
+
+            <div className="w-full h-full max-w-6xl max-h-[80vh] flex items-center justify-center p-8">
+              <div
                 className={`w-full h-full ${
-                  currentSlide.backgroundStyle === 'gradient' 
-                    ? `bg-gradient-to-br ${currentSlide.backgroundGradient}` 
+                  currentSlide.backgroundStyle === "gradient"
+                    ? `bg-gradient-to-br ${currentSlide.backgroundGradient}`
                     : currentSlide.backgroundGradient
-                } rounded-2xl p-12 text-white flex flex-col justify-center overflow-hidden shadow-2xl`}
+                } rounded-2xl p-8 text-white flex flex-col justify-center overflow-hidden shadow-2xl`}
+                style={{ aspectRatio: "16/9" }}
               >
-                <div className="text-center space-y-8">
-                  <h1 className="text-6xl font-bold leading-tight">{currentSlide.title}</h1>
-                  <h2 className="text-3xl opacity-90">{currentSlide.subtitle}</h2>
-                  
+                <div className="text-center space-y-6">
+                  <h1 className="text-5xl font-bold leading-tight">{currentSlide.title}</h1>
+                  <h2 className="text-2xl opacity-90">{currentSlide.subtitle}</h2>
+
                   {currentSlide.content && (
-                    <p className="text-2xl opacity-80 max-w-5xl mx-auto leading-relaxed">
-                      {currentSlide.content}
-                    </p>
+                    <p className="text-xl opacity-80 max-w-4xl mx-auto leading-relaxed">{currentSlide.content}</p>
                   )}
-                  
+
                   {currentSlide.bulletPoints.length > 0 && (
-                    <div className="space-y-4 text-left max-w-4xl mx-auto">
+                    <div className="space-y-3 text-left max-w-3xl mx-auto">
                       {currentSlide.bulletPoints.map((point, index) => (
                         <motion.div
                           key={index}
@@ -516,21 +801,21 @@ const AIPresentations = () => {
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: index * 0.2 }}
                         >
-                          <div className="w-3 h-3 bg-white rounded-full mt-4 flex-shrink-0"></div>
-                          <span className="text-2xl">{point}</span>
+                          <div className="w-3 h-3 bg-white rounded-full mt-3 flex-shrink-0"></div>
+                          <span className="text-xl">{point}</span>
                         </motion.div>
                       ))}
                     </div>
                   )}
-                  
+
                   {currentSlide.images.length > 0 && (
-                    <div className="flex justify-center space-x-6 mt-8">
+                    <div className="flex justify-center space-x-4 mt-6">
                       {currentSlide.images.map((image, index) => (
                         <img
                           key={index}
-                          src={image}
+                          src={image || "/placeholder.svg"}
                           alt={`Slide image ${index + 1}`}
-                          className="max-w-lg max-h-80 object-cover rounded-xl shadow-2xl"
+                          className="max-w-md max-h-60 object-cover rounded-xl shadow-2xl"
                         />
                       ))}
                     </div>
@@ -538,7 +823,7 @@ const AIPresentations = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Navigation in fullscreen */}
             <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center space-x-4">
               <Button
@@ -566,11 +851,11 @@ const AIPresentations = () => {
           </motion.div>
         )}
 
-        <div className={`grid lg:grid-cols-3 gap-8 ${isPreviewMode ? 'hidden' : ''}`}>
+        <div className={`grid lg:grid-cols-3 gap-8 ${isPreviewMode ? "hidden" : ""}`}>
           {/* Slide Preview */}
           <div className="lg:col-span-2">
-            <motion.div 
-              className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700"
+            <motion.div
+              className="glassmorphism rounded-xl p-6"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
@@ -578,15 +863,10 @@ const AIPresentations = () => {
               {/* Controls */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={prevSlide}
-                    disabled={currentSlideIndex === 0}
-                  >
+                  <Button variant="ghost" size="sm" onClick={prevSlide} disabled={currentSlideIndex === 0}>
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
-                  <span className="text-sm text-slate-600 dark:text-slate-300">
+                  <span className="text-sm text-slate-300">
                     {currentSlideIndex + 1} / {slides.length}
                   </span>
                   <Button
@@ -598,41 +878,47 @@ const AIPresentations = () => {
                     <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>
-                
+
                 <div className="flex items-center space-x-2">
-                  <GlassmorphismButton
-                    onClick={() => setShowExportDialog(true)}
-                    variant="outline"
-                    size="sm"
-                  >
+                  {hasUnsavedChanges && (
+                    <GlassmorphismButton
+                      onClick={saveChanges}
+                      disabled={isSaving}
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <Save className="w-4 h-4 mr-1" />
+                      {isSaving ? "Saving..." : "Save"}
+                    </GlassmorphismButton>
+                  )}
+                  <GlassmorphismButton onClick={() => setShowExportDialog(true)} variant="outline" size="sm">
                     <Download className="w-4 h-4 mr-1" />
                     Download
                   </GlassmorphismButton>
                 </div>
               </div>
 
-              {/* Slide Canvas */}
-              <motion.div 
-                className={`aspect-video rounded-lg p-8 mb-4 border border-slate-200 dark:border-slate-700 ${
-                  currentSlide.backgroundStyle === 'gradient' 
-                    ? `bg-gradient-to-br ${currentSlide.backgroundGradient}` 
+              {/* Slide Canvas - Fixed aspect ratio */}
+              <motion.div
+                className={`glassmorphism rounded-lg p-6 mb-4 ${
+                  currentSlide.backgroundStyle === "gradient"
+                    ? `bg-gradient-to-br ${currentSlide.backgroundGradient}`
                     : currentSlide.backgroundGradient
-                } flex flex-col justify-center overflow-hidden`}
+                } text-white flex flex-col justify-center overflow-hidden`}
+                style={{ aspectRatio: "16/9", minHeight: "400px" }}
                 whileHover={{ scale: 1.02 }}
                 transition={{ duration: 0.3 }}
               >
-                <div className="text-center space-y-6">
-                  <h1 className="text-4xl font-bold leading-tight">{currentSlide.title}</h1>
-                  <h2 className="text-xl opacity-90">{currentSlide.subtitle}</h2>
-                  
+                <div className="text-center space-y-4">
+                  <h1 className="text-3xl font-bold leading-tight">{currentSlide.title}</h1>
+                  <h2 className="text-lg opacity-90">{currentSlide.subtitle}</h2>
+
                   {currentSlide.content && (
-                    <p className="text-lg opacity-80 max-w-3xl mx-auto leading-relaxed">
-                      {currentSlide.content}
-                    </p>
+                    <p className="text-base opacity-80 max-w-2xl mx-auto leading-relaxed">{currentSlide.content}</p>
                   )}
-                  
+
                   {currentSlide.bulletPoints.length > 0 && (
-                    <div className="space-y-3 text-left max-w-2xl mx-auto">
+                    <div className="space-y-2 text-left max-w-xl mx-auto">
                       {currentSlide.bulletPoints.map((point, index) => (
                         <motion.div
                           key={index}
@@ -641,21 +927,21 @@ const AIPresentations = () => {
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: index * 0.1 }}
                         >
-                          <div className="w-2 h-2 bg-white rounded-full mt-3 flex-shrink-0"></div>
-                          <span className="text-lg">{point}</span>
+                          <div className="w-2 h-2 bg-white rounded-full mt-2 flex-shrink-0"></div>
+                          <span className="text-sm">{point}</span>
                         </motion.div>
                       ))}
                     </div>
                   )}
-                  
+
                   {currentSlide.images.length > 0 && (
-                    <div className="flex justify-center space-x-4 mt-6">
+                    <div className="flex justify-center space-x-3 mt-4">
                       {currentSlide.images.map((image, index) => (
                         <img
                           key={index}
-                          src={image}
+                          src={image || "/placeholder.svg"}
                           alt={`Slide image ${index + 1}`}
-                          className="max-w-xs max-h-40 object-cover rounded-lg shadow-lg"
+                          className="max-w-xs max-h-32 object-cover rounded-lg shadow-lg"
                         />
                       ))}
                     </div>
@@ -669,19 +955,21 @@ const AIPresentations = () => {
                   <motion.div
                     key={slide.id}
                     className={`relative flex-shrink-0 w-24 h-16 glassmorphism rounded cursor-pointer transition-all group ${
-                      currentSlideIndex === index ? 'border-2 border-blue-500' : 'opacity-70 hover:opacity-100'
+                      currentSlideIndex === index ? "border-2 border-blue-500" : "opacity-70 hover:opacity-100"
                     }`}
                     onClick={() => setCurrentSlideIndex(index)}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <div className={`w-full h-full rounded ${
-                      slide.backgroundStyle === 'gradient' 
-                        ? `bg-gradient-to-br ${slide.backgroundGradient}` 
-                        : slide.backgroundGradient
-                    } flex items-center justify-center relative`}>
+                    <div
+                      className={`w-full h-full rounded ${
+                        slide.backgroundStyle === "gradient"
+                          ? `bg-gradient-to-br ${slide.backgroundGradient}`
+                          : slide.backgroundGradient
+                      } flex items-center justify-center relative`}
+                    >
                       <span className="text-xs text-white font-bold">{index + 1}</span>
-                      
+
                       {/* Slide actions */}
                       <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity space-x-1">
                         <Button
@@ -689,8 +977,8 @@ const AIPresentations = () => {
                           size="sm"
                           className="h-6 w-6 p-0"
                           onClick={(e) => {
-                            e.stopPropagation();
-                            duplicateSlide(index);
+                            e.stopPropagation()
+                            duplicateSlide(index)
                           }}
                         >
                           <Copy className="w-3 h-3" />
@@ -701,8 +989,8 @@ const AIPresentations = () => {
                             size="sm"
                             className="h-6 w-6 p-0 text-red-400 hover:text-red-300"
                             onClick={(e) => {
-                              e.stopPropagation();
-                              deleteSlide(index);
+                              e.stopPropagation()
+                              deleteSlide(index)
                             }}
                           >
                             <Trash2 className="w-3 h-3" />
@@ -712,7 +1000,7 @@ const AIPresentations = () => {
                     </div>
                   </motion.div>
                 ))}
-                
+
                 {/* Add slide button */}
                 <motion.div
                   className="flex-shrink-0 w-24 h-16 glassmorphism rounded cursor-pointer flex items-center justify-center hover:bg-white/10 transition-colors"
@@ -720,7 +1008,7 @@ const AIPresentations = () => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <Plus className="w-6 h-6 text-slate-600 dark:text-white" />
+                  <Plus className="w-6 h-6 text-white" />
                 </motion.div>
               </div>
             </motion.div>
@@ -728,17 +1016,17 @@ const AIPresentations = () => {
 
           {/* Content Editor */}
           <div className="lg:col-span-1">
-            <motion.div 
-              className="bg-white dark:bg-slate-800 rounded-xl p-6 space-y-6 border border-slate-200 dark:border-slate-700"
+            <motion.div
+              className="glassmorphism rounded-xl p-6 space-y-6"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
             >
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Edit Slide</h2>
+                <h2 className="text-xl font-bold">Edit Slide</h2>
                 <div className="flex space-x-2">
-                  <GlassmorphismButton 
-                    size="sm" 
+                  <GlassmorphismButton
+                    size="sm"
                     onClick={() => setShowGenerateDialog(true)}
                     className="bg-gradient-to-r from-blue-500 to-green-500"
                   >
@@ -752,43 +1040,53 @@ const AIPresentations = () => {
                 </div>
               </div>
 
+              {/* Unsaved changes indicator */}
+              {hasUnsavedChanges && (
+                <div className="bg-yellow-600/20 border border-yellow-600/30 rounded-lg p-3 text-yellow-200 text-sm">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                    <span>You have unsaved changes</span>
+                  </div>
+                </div>
+              )}
+
               {/* Content Form */}
               <div className="space-y-4">
                 <div>
-                  <Label className="text-slate-900 dark:text-white">Title</Label>
+                  <Label className="text-white">Title</Label>
                   <Input
                     value={currentSlide.title}
-                    onChange={(e) => updateSlide('title', e.target.value)}
-                    className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/20 text-slate-900 dark:text-white"
+                    onChange={(e) => updateSlide("title", e.target.value)}
+                    className="bg-white/5 border-white/20 text-white"
                   />
                 </div>
 
                 <div>
-                  <Label className="text-slate-900 dark:text-white">Subtitle</Label>
+                  <Label className="text-white">Subtitle</Label>
                   <Input
                     value={currentSlide.subtitle}
-                    onChange={(e) => updateSlide('subtitle', e.target.value)}
-                    className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/20 text-slate-900 dark:text-white"
+                    onChange={(e) => updateSlide("subtitle", e.target.value)}
+                    className="bg-white/5 border-white/20 text-white"
                   />
                 </div>
 
                 <div>
-                  <Label className="text-slate-900 dark:text-white">Content</Label>
+                  <Label className="text-white">Content</Label>
                   <Textarea
                     value={currentSlide.content}
-                    onChange={(e) => updateSlide('content', e.target.value)}
-                    className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/20 text-slate-900 dark:text-white min-h-[100px]"
+                    onChange={(e) => updateSlide("content", e.target.value)}
+                    className="bg-white/5 border-white/20 text-white min-h-[100px]"
                     placeholder="Add your slide content..."
                   />
                 </div>
 
                 {/* Bullet Points */}
                 <div>
-                  <Label className="text-slate-900 dark:text-white">Bullet Points</Label>
+                  <Label className="text-white">Bullet Points</Label>
                   <div className="space-y-2">
                     {currentSlide.bulletPoints.map((point, index) => (
                       <div key={index} className="flex items-center space-x-2">
-                        <span className="text-slate-900 dark:text-white text-sm flex-1">{point}</span>
+                        <span className="text-white text-sm flex-1">{point}</span>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -804,8 +1102,8 @@ const AIPresentations = () => {
                         value={newBulletPoint}
                         onChange={(e) => setNewBulletPoint(e.target.value)}
                         placeholder="Add new point..."
-                        className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/20 text-slate-900 dark:text-white"
-                        onKeyPress={(e) => e.key === 'Enter' && addBulletPoint()}
+                        className="bg-white/5 border-white/20 text-white"
+                        onKeyPress={(e) => e.key === "Enter" && addBulletPoint()}
                       />
                       <Button onClick={addBulletPoint} size="sm">
                         <Plus className="w-4 h-4" />
@@ -853,8 +1151,8 @@ const AIPresentations = () => {
               </div>
 
               {/* AI Suggestions */}
-              <div className="pt-6 border-t border-slate-300 dark:border-white/10">
-                <h3 className="font-semibold mb-3 flex items-center text-slate-900 dark:text-white">
+              <div className="pt-6 border-t border-white/10">
+                <h3 className="font-semibold mb-3 flex items-center text-white">
                   <Lightbulb className="w-4 h-4 mr-2 text-green-500" />
                   AI Suggestions
                 </h3>
@@ -862,15 +1160,15 @@ const AIPresentations = () => {
                   {aiSuggestions.map((suggestion, index) => (
                     <motion.button
                       key={index}
-                      className="w-full text-left p-3 bg-slate-50 dark:bg-slate-700 rounded-lg text-sm hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors text-slate-900 dark:text-white border border-slate-200 dark:border-slate-600"
+                      className="w-full text-left p-3 glassmorphism rounded-lg text-sm hover:bg-white/10 transition-colors text-white"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => {
-                        updateSlide('content', currentSlide.content + " " + suggestion);
+                        updateSlide("content", currentSlide.content + " " + suggestion)
                         toast({
                           title: "Suggestion Applied",
-                          description: "AI suggestion has been added to your slide."
-                        });
+                          description: "AI suggestion has been added to your slide.",
+                        })
                       }}
                     >
                       {suggestion}
@@ -884,16 +1182,21 @@ const AIPresentations = () => {
 
         {/* Export Dialog */}
         <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-          <DialogContent className="bg-white dark:bg-slate-900 border-slate-300 dark:border-white/20">
+          <DialogContent className="bg-slate-900 border-white/20">
             <DialogHeader>
-              <DialogTitle className="text-slate-900 dark:text-white">Export Presentation</DialogTitle>
+              <DialogTitle className="text-white">Export Presentation</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <p className="text-slate-600 dark:text-slate-300">Choose your export format:</p>
+              <p className="text-slate-300">Choose your export format:</p>
+              {hasUnsavedChanges && (
+                <div className="bg-yellow-600/20 border border-yellow-600/30 rounded-lg p-3 text-yellow-200 text-sm">
+                  Your changes will be saved automatically before export.
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <Button
                   onClick={() => exportPresentation("pdf")}
-                  disabled={isDownloading}
+                  disabled={isDownloading || !currentPresentationId}
                   className="h-20 flex flex-col items-center justify-center space-y-2 bg-red-600 hover:bg-red-700 disabled:opacity-50"
                 >
                   <FileText className="w-6 h-6" />
@@ -901,17 +1204,20 @@ const AIPresentations = () => {
                 </Button>
                 <Button
                   onClick={() => exportPresentation("pptx")}
-                  disabled={isDownloading}
+                  disabled={isDownloading || !currentPresentationId}
                   className="h-20 flex flex-col items-center justify-center space-y-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50"
                 >
                   <Presentation className="w-6 h-6" />
                   <span>{isDownloading ? "Generating..." : "PowerPoint"}</span>
                 </Button>
               </div>
+              {!currentPresentationId && (
+                <p className="text-yellow-400 text-sm text-center">Generate a presentation first to enable downloads</p>
+              )}
               {isDownloading && (
                 <div className="text-center">
                   <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                  <p className="text-slate-600 dark:text-slate-400 text-sm">Preparing your presentation for download...</p>
+                  <p className="text-slate-400 text-sm">Preparing your presentation for download...</p>
                 </div>
               )}
             </div>
@@ -920,29 +1226,29 @@ const AIPresentations = () => {
 
         {/* Generate Dialog */}
         <Dialog open={showGenerateDialog} onOpenChange={setShowGenerateDialog}>
-          <DialogContent className="bg-white dark:bg-slate-900 border-slate-300 dark:border-white/20">
+          <DialogContent className="bg-slate-900 border-white/20">
             <DialogHeader>
-              <DialogTitle className="text-slate-900 dark:text-white">Generate AI Presentation</DialogTitle>
+              <DialogTitle className="text-white">Generate AI Presentation</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label className="text-slate-900 dark:text-white">Topic</Label>
+                <Label className="text-white">Topic</Label>
                 <Input
                   value={generateTopic}
                   onChange={(e) => setGenerateTopic(e.target.value)}
                   placeholder="e.g., Climate Change, Machine Learning, History of Art..."
-                  className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/20 text-slate-900 dark:text-white"
+                  className="bg-white/5 border-white/20 text-white"
                 />
               </div>
               <div>
-                <Label className="text-slate-900 dark:text-white">Number of Slides</Label>
+                <Label className="text-white">Number of Slides</Label>
                 <Input
                   type="number"
                   value={slideCount}
-                  onChange={(e) => setSlideCount(parseInt(e.target.value) || 5)}
+                  onChange={(e) => setSlideCount(Number.parseInt(e.target.value) || 5)}
                   min="3"
                   max="20"
-                  className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/20 text-slate-900 dark:text-white"
+                  className="bg-white/5 border-white/20 text-white"
                 />
               </div>
               <Button
@@ -962,6 +1268,11 @@ const AIPresentations = () => {
                   </>
                 )}
               </Button>
+              {isGenerating && (
+                <div className="text-center">
+                  <p className="text-slate-400 text-sm">Creating your AI-powered presentation...</p>
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>
@@ -982,13 +1293,7 @@ const AIPresentations = () => {
                   <span>Click to upload image</span>
                 </div>
               </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
             </div>
           </DialogContent>
         </Dialog>
@@ -1026,9 +1331,7 @@ const AIPresentations = () => {
                   key={index}
                   onClick={() => changeBackground(style)}
                   className={`h-20 relative overflow-hidden ${
-                    style.type === 'gradient' 
-                      ? `bg-gradient-to-br ${style.value}` 
-                      : style.value
+                    style.type === "gradient" ? `bg-gradient-to-br ${style.value}` : style.value
                   } hover:scale-105 transition-transform`}
                 >
                   <div className="absolute inset-0 bg-black/20 hover:bg-black/10 transition-colors" />
@@ -1040,7 +1343,7 @@ const AIPresentations = () => {
         </Dialog>
       </div>
     </main>
-  );
-};
+  )
+}
 
-export default AIPresentations;
+export default AIPresentations
