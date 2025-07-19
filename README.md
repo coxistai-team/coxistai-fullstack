@@ -1,3 +1,1 @@
-# Frontend
-Pending Task!
-Footer Dislocated in Chatbot Interface .. To be corrected 
+All packages are mentioned in requirements.txt 
