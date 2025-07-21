@@ -25,6 +25,7 @@ import CodeSpark from "@/pages/CodeSpark";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import LoadingDemo from "@/pages/LoadingDemo";
 import ProfileSettings from "@/pages/ProfileSettings";
 import BillingSubscription from "@/pages/BillingSubscription";
@@ -55,6 +56,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/profile" component={ProfileSettings} />
       <Route path="/billing" component={BillingSubscription} />
       <Route path="/notifications" component={NotificationSettings} />

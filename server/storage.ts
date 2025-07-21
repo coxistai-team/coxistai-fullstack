@@ -85,6 +85,20 @@ export class DatabaseStorage implements IStorage {
     const result = await db.delete(documents).where(eq(documents.id, id));
     return (result.rowCount || 0) > 0;
   }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
+  }
+
+  async updateUserPassword(id: number, newPassword: string): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ password: newPassword, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
 }
 
 export const storage = new DatabaseStorage();

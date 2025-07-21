@@ -1,47 +1,63 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Link, useLocation } from "wouter";
-import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import GlassmorphismButton from "@/components/ui/glassmorphism-button";
+import { CheckCircle } from "lucide-react";
 
-const ForgotPassword = () => {
+function getTokenFromUrl() {
+  if (typeof window === "undefined") return "";
+  const params = new URLSearchParams(window.location.search);
+  return params.get("token") || "";
+}
+
+const ResetPassword = () => {
   const [, setLocation] = useLocation();
-  const [email, setEmail] = useState("");
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const token = getTokenFromUrl();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (!password || !confirmPassword) {
+      setError("Please enter and confirm your new password.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    if (!token) {
+      setError("Invalid or missing token.");
+      return;
+    }
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/forgot-password", {
+      const res = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ token, password }),
       });
       if (res.ok) {
-        setIsSubmitted(true);
+        setSuccess(true);
+        setTimeout(() => setLocation("/login"), 2000);
       } else {
         const data = await res.json();
-        setError(data.error || "Failed to send reset link");
+        setError(data.error || "Failed to reset password");
       }
     } catch {
-      setError("Failed to send reset link");
+      setError("Failed to reset password");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBackToLogin = () => {
-    setLocation("/login");
-  };
-
-  if (isSubmitted) {
+  if (success) {
     return (
       <main className="relative z-10 min-h-screen flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-md">
@@ -59,48 +75,22 @@ const ForgotPassword = () => {
             >
               <CheckCircle className="w-8 h-8 text-white" />
             </motion.div>
-
             <motion.h1 
               className="text-2xl font-bold mb-4 text-white"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
             >
-              Check Your Email
+              Password Reset Successful
             </motion.h1>
-
             <motion.p 
               className="text-slate-400 mb-6"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
             >
-              We've sent a password reset link to <strong className="text-white">{email}</strong>
+              You can now log in with your new password.
             </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="space-y-4"
-            >
-              <GlassmorphismButton
-                onClick={handleBackToLogin}
-                className="w-full py-3 bg-gradient-to-r from-blue-500 to-green-500"
-              >
-                Back to Login
-              </GlassmorphismButton>
-
-              <p className="text-sm text-slate-400">
-                Didn't receive the email? Check your spam folder or{" "}
-                <button 
-                  onClick={() => setIsSubmitted(false)}
-                  className="text-blue-400 hover:text-blue-300 underline"
-                >
-                  try again
-                </button>
-              </p>
-            </motion.div>
           </motion.div>
         </div>
       </main>
@@ -110,29 +100,12 @@ const ForgotPassword = () => {
   return (
     <main className="relative z-10 min-h-screen flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
-        {/* Back Button */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-6"
-        >
-          <Link href="/login">
-            <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Login
-            </Button>
-          </Link>
-        </motion.div>
-
-        {/* Forgot Password Form */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           className="glassmorphism rounded-2xl p-8"
         >
-          {/* Header */}
           <div className="text-center mb-8">
             <motion.h1 
               className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent"
@@ -140,7 +113,7 @@ const ForgotPassword = () => {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
             >
-              Forgot Password?
+              Reset Your Password
             </motion.h1>
             <motion.p 
               className="text-slate-400"
@@ -148,11 +121,9 @@ const ForgotPassword = () => {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              Enter your email and we'll send you a reset link
+              Enter your new password below.
             </motion.p>
           </div>
-
-          {/* Form */}
           <motion.form 
             onSubmit={handleSubmit}
             className="space-y-6"
@@ -160,59 +131,47 @@ const ForgotPassword = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
-            {/* Email Field */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-white">Email Address</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email address"
-                  className="pl-10 bg-white/5 border-white/20 text-white placeholder-slate-400 focus:border-blue-400"
-                  required
-                />
-              </div>
+              <Label htmlFor="password" className="text-white">New Password</Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="Enter new password"
+                className="bg-white/5 border-white/20 text-white placeholder-slate-400 focus:border-blue-400"
+                required
+              />
             </div>
-
-            {/* Error Message */}
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="text-white">Confirm New Password</Label>
+              <Input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+                className="bg-white/5 border-white/20 text-white placeholder-slate-400 focus:border-blue-400"
+                required
+              />
+            </div>
             {error && (
               <div className="text-red-500 text-sm text-center">{error}</div>
             )}
-
-            {/* Submit Button */}
             <GlassmorphismButton
               type="submit"
               className="w-full py-3 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600"
               disabled={loading}
             >
-              {loading ? "Sending..." : "Send Reset Link"}
+              {loading ? "Resetting..." : "Reset Password"}
             </GlassmorphismButton>
           </motion.form>
-
-          {/* Additional Info */}
-          <motion.div 
-            className="text-center mt-6"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-          >
-            <p className="text-sm text-slate-400">
-              Remember your password?{" "}
-              <Link href="/login">
-                <span className="text-blue-400 hover:text-blue-300 cursor-pointer transition-colors">
-                  Sign in here
-                </span>
-              </Link>
-            </p>
-          </motion.div>
         </motion.div>
       </div>
     </main>
   );
 };
 
-export default ForgotPassword;
+export default ResetPassword; 

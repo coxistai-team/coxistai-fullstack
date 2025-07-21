@@ -16,4 +16,8 @@ if (process.env.DATABASE_URL) {
   console.log("No DATABASE_URL found. Running without database connection.");
 }
 
+if (!db) {
+  throw new Error("Database connection failed: DATABASE_URL is missing or invalid, or Drizzle could not connect. Check your .env and NeonDB credentials.");
+}
+
 export { pool, db };

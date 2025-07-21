@@ -8,6 +8,200 @@ import fs from "fs/promises";
 import path from "path";
 import { promisify } from "util";
 
+// --- AUTH & EMAIL UTILS ---
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import { Request, Response, NextFunction } from "express";
+import { z } from "zod";
+// @ts-ignore // If you see a type error, run: npm install resend
+import { Resend } from 'resend';
+
+// Extend Express Request type to include 'user'
+declare global {
+  namespace Express {
+    interface Request {
+      user?: any;
+    }
+  }
+}
+
+const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
+const JWT_EXPIRES_IN = "7d";
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL;
+
+function signJwt(payload: object, options?: jwt.SignOptions) {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN, ...options });
+}
+function verifyJwt(token: string) {
+  return jwt.verify(token, JWT_SECRET);
+}
+async function hashPassword(password: string) {
+  return bcrypt.hash(password, 10);
+}
+async function comparePassword(password: string, hash: string) {
+  return bcrypt.compare(password, hash);
+}
+
+const resend = new Resend(RESEND_API_KEY);
+
+const signupSchema = z.object({
+  username: z.string().min(3).max(32).regex(/^[a-zA-Z0-9_]+$/),
+  email: z.string().email(),
+  password: z.string().min(8).max(128),
+});
+const loginSchema = z.object({
+  username: z.string().min(3).max(32),
+  password: z.string().min(8).max(128),
+});
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+const resetPasswordSchema = z.object({
+  token: z.string().min(10),
+  password: z.string().min(8).max(128),
+});
+
+// --- AUTH MIDDLEWARE ---
+function getTokenFromRequest(req: Request) {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    return authHeader.split(" ")[1];
+  }
+  if (req.headers.cookie) {
+    const cookies = Object.fromEntries(req.headers.cookie.split(';').map(c => c.trim().split('=')));
+    if (cookies.token) return cookies.token;
+  }
+  return null;
+}
+function requireAuth(req: Request, res: Response, next: NextFunction) {
+  const token = getTokenFromRequest(req);
+  if (!token) return res.status(401).json({ error: "Missing or invalid authorization" });
+  try {
+    req.user = verifyJwt(token);
+    next();
+  } catch {
+    return res.status(401).json({ error: "Invalid or expired token" });
+  }
+}
+
+// --- AUTH ENDPOINTS ---
+export async function registerAuthRoutes(app: Express) {
+  // Signup
+  app.post("/api/auth/signup", async (req: Request, res: Response) => {
+    try {
+      const parse = signupSchema.safeParse(req.body);
+      if (!parse.success) {
+        return res.status(400).json({ error: "Please provide a valid username, email, and password." });
+      }
+      const { username, email, password } = parse.data;
+      const existing = await storage.getUserByUsername(username);
+      if (existing) return res.status(409).json({ error: "Username already exists." });
+      const hashed = await hashPassword(password);
+      const user = await storage.createUser({ username, password: hashed });
+      await storage.updateUserProfile(user.id, { email });
+      const token = signJwt({ id: user.id, username });
+      res.setHeader("Set-Cookie", `token=${token}; HttpOnly; Path=/; Max-Age=604800; SameSite=Strict${process.env.NODE_ENV === "production" ? "; Secure" : ""}`);
+      res.status(201).json({ success: true });
+    } catch {
+      res.status(500).json({ error: "Signup failed. Please try again later." });
+    }
+  });
+  // Login
+  app.post("/api/auth/login", async (req: Request, res: Response) => {
+    try {
+      const parse = loginSchema.safeParse(req.body);
+      if (!parse.success) {
+        return res.status(400).json({ error: "Please provide a valid username and password." });
+      }
+      const { username, password } = parse.data;
+      const user = await storage.getUserByUsername(username);
+      if (!user) return res.status(401).json({ error: "Incorrect credentials." });
+      const valid = await comparePassword(password, user.password);
+      if (!valid) return res.status(401).json({ error: "Incorrect credentials." });
+      const token = signJwt({ id: user.id, username });
+      res.setHeader("Set-Cookie", `token=${token}; HttpOnly; Path=/; Max-Age=604800; SameSite=Strict${process.env.NODE_ENV === "production" ? "; Secure" : ""}`);
+      res.json({ success: true });
+    } catch {
+      res.status(500).json({ error: "Login failed. Please try again later." });
+    }
+  });
+  // Logout
+  app.post("/api/auth/logout", requireAuth, (req: Request, res: Response) => {
+    try {
+      res.setHeader("Set-Cookie", `token=; HttpOnly; Path=/; Max-Age=0; SameSite=Strict${process.env.NODE_ENV === "production" ? "; Secure" : ""}`);
+      res.json({ success: true });
+    } catch {
+      res.status(500).json({ error: "Logout failed. Please try again later." });
+    }
+  });
+  // Forgot Password
+  app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
+    try {
+      const parse = forgotPasswordSchema.safeParse(req.body);
+      if (!parse.success) {
+        return res.status(400).json({ error: "Please provide a valid email address." });
+      }
+      const { email } = parse.data;
+      const user = await storage.getUserByEmail(email);
+      if (user) {
+        // Generate a JWT reset token (expires in 1 hour)
+        const token = signJwt({ id: user.id, email }, { expiresIn: '1h' });
+        const resetUrl = `${FRONTEND_URL}/reset-password?token=${token}`;
+        const html = `<p>Hello,</p><p>You requested a password reset for your account. Click the link below to reset your password:</p><p><a href='${resetUrl}'>Reset Password</a></p><p>If you did not request this, you can safely ignore this email.</p>`;
+        try {
+          await resend.emails.send({
+            from: `Support <${RESEND_FROM_EMAIL}>`,
+            to: [email],
+            subject: 'Reset your password',
+            html,
+          });
+        } catch (err) {
+          // Log error but do not leak to user
+          console.error('[Resend Error]', err);
+        }
+      }
+      // Always return generic message
+      res.json({ message: "If an account with that email exists, a reset link has been sent." });
+    } catch {
+      res.status(500).json({ error: "Failed to process reset request. Please try again later." });
+    }
+  });
+  // Reset Password
+  app.post("/api/auth/reset-password", async (req: Request, res: Response) => {
+    try {
+      const parse = resetPasswordSchema.safeParse(req.body);
+      if (!parse.success) {
+        return res.status(400).json({ error: "Please provide a valid token and password (min 8 characters)." });
+      }
+      const { token, password } = parse.data;
+      let payload;
+      try { payload = verifyJwt(token); } catch { return res.status(400).json({ error: "Invalid or expired token." }); }
+      const userId = (payload as any).id;
+      if (!userId) return res.status(400).json({ error: "Invalid token." });
+      const hashed = await hashPassword(password);
+      await storage.updateUserPassword(userId, hashed);
+      res.json({ success: true });
+    } catch {
+      res.status(500).json({ error: "Failed to reset password. Please try again later." });
+    }
+  });
+  // Me
+  app.get("/api/auth/me", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ error: "User not found." });
+      const { password, ...userProfile } = user;
+      res.json(userProfile);
+    } catch {
+      res.status(500).json({ error: "Failed to fetch user info. Please try again later." });
+    }
+  });
+}
+
 const execAsync = promisify(exec);
 
 async function executeCode(code: string, language: string, input: string, tempDir: string, executionId: string) {
@@ -392,10 +586,11 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  await registerAuthRoutes(app);
   // Document routes
   
   // Get all documents for a user
-  app.get("/api/documents", async (req, res) => {
+  app.get("/api/documents", async (req: Request, res: Response) => {
     try {
       const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
       const documents = await storage.getDocuments(userId);
@@ -406,7 +601,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get a specific document
-  app.get("/api/documents/:id", async (req, res) => {
+  app.get("/api/documents/:id", async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       const document = await storage.getDocument(id);
@@ -422,7 +617,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get document by share code
-  app.get("/api/shared/:shareCode", async (req, res) => {
+  app.get("/api/shared/:shareCode", async (req: Request, res: Response) => {
     try {
       const { shareCode } = req.params;
       const document = await storage.getDocumentByShareCode(shareCode);
@@ -438,7 +633,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upload and create a new document
-  app.post("/api/documents", upload.single("file"), async (req, res) => {
+  app.post("/api/documents", upload.single("file"), async (req: Request, res: Response) => {
     try {
       const { title, tags, isPublic, userId } = req.body;
       const file = req.file;
@@ -472,13 +667,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json(document);
     } catch (error) {
-      console.error("Upload error:", error);
       res.status(500).json({ error: "Failed to upload document" });
     }
   });
 
   // Update a document
-  app.put("/api/documents/:id", async (req, res) => {
+  app.put("/api/documents/:id", async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       const updates = req.body;
@@ -491,7 +685,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete a document
-  app.delete("/api/documents/:id", async (req, res) => {
+  app.delete("/api/documents/:id", async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.deleteDocument(id);
@@ -507,7 +701,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get user profile
-  app.get("/api/users/:id", async (req, res) => {
+  app.get("/api/users/:id", async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       let user = await storage.getUser(id);
@@ -555,7 +749,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update user profile
-  app.put("/api/users/:id/profile", async (req, res) => {
+  app.put("/api/users/:id/profile", async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       const profileData = req.body;
@@ -567,13 +761,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password, ...userProfile } = updatedUser;
       res.json(userProfile);
     } catch (error) {
-      console.error("Profile update error:", error);
       res.status(500).json({ error: "Failed to update profile" });
     }
   });
 
   // Code execution endpoint
-  app.post("/api/execute", async (req, res) => {
+  app.post("/api/execute", async (req: Request, res: Response) => {
     try {
       const { code, language, input = "" } = req.body;
       
@@ -589,7 +782,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(result);
     } catch (error) {
-      console.error("Code execution error:", error);
       res.status(500).json({ 
         error: "Failed to execute code", 
         output: "", 
