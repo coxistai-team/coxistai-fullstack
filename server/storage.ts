@@ -1,4 +1,4 @@
-import { users, documents, presentations, calendar_events, type User, type InsertUser, type UpdateUserProfile, type Document, type InsertDocument, type Presentation, type InsertPresentation, type CalendarEvent, type InsertCalendarEvent } from "@shared/schema";
+import { users, documents, presentations, calendar_events, community_posts, community_replies, community_likes, community_groups, community_group_members, type User, type InsertUser, type UpdateUserProfile, type Document, type InsertDocument, type Presentation, type InsertPresentation, type CalendarEvent, type InsertCalendarEvent, type CommunityPost, type InsertCommunityPost, type CommunityReply, type InsertCommunityReply, type CommunityLike, type InsertCommunityLike, type CommunityGroup, type InsertCommunityGroup, type CommunityGroupMember, type InsertCommunityGroupMember } from "@shared/schema";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -27,6 +27,40 @@ export interface IStorage {
   createCalendarEvent(data: InsertCalendarEvent & { user_id: number }): Promise<CalendarEvent>;
   updateCalendarEvent(id: number, updates: Partial<CalendarEvent>): Promise<CalendarEvent>;
   deleteCalendarEvent(id: number): Promise<boolean>;
+
+  // Community post operations
+  getCommunityPosts(userId: number): Promise<CommunityPost[]>;
+  getCommunityPost(id: number): Promise<CommunityPost | undefined>;
+  createCommunityPost(data: InsertCommunityPost & { user_id: number }): Promise<CommunityPost>;
+  updateCommunityPost(id: number, updates: Partial<CommunityPost>): Promise<CommunityPost>;
+  deleteCommunityPost(id: number): Promise<boolean>;
+
+  // Community replies
+  getCommunityReplies(postId: number): Promise<CommunityReply[]>;
+  getCommunityReply(id: number): Promise<CommunityReply | undefined>;
+  createCommunityReply(data: InsertCommunityReply & { user_id: number; post_id: number }): Promise<CommunityReply>;
+  updateCommunityReply(id: number, updates: Partial<CommunityReply>): Promise<CommunityReply>;
+  deleteCommunityReply(id: number): Promise<boolean>;
+
+  // Community likes
+  likePost(userId: number, postId: number): Promise<CommunityLike>;
+  unlikePost(userId: number, postId: number): Promise<boolean>;
+  likeReply(userId: number, replyId: number): Promise<CommunityLike>;
+  unlikeReply(userId: number, replyId: number): Promise<boolean>;
+  getLikesForPost(postId: number): Promise<CommunityLike[]>;
+  getLikesForReply(replyId: number): Promise<CommunityLike[]>;
+
+  // Community groups
+  getCommunityGroups(): Promise<CommunityGroup[]>;
+  getCommunityGroup(id: number): Promise<CommunityGroup | undefined>;
+  createCommunityGroup(data: InsertCommunityGroup): Promise<CommunityGroup>;
+  updateCommunityGroup(id: number, updates: Partial<CommunityGroup>): Promise<CommunityGroup>;
+  deleteCommunityGroup(id: number): Promise<boolean>;
+
+  // Community group members
+  joinCommunityGroup(userId: number, groupId: number): Promise<CommunityGroupMember>;
+  leaveCommunityGroup(userId: number, groupId: number): Promise<boolean>;
+  getGroupMembers(groupId: number): Promise<CommunityGroupMember[]>;
 }
 
 import { eq } from "drizzle-orm";
@@ -138,6 +172,105 @@ export class DatabaseStorage implements IStorage {
   async deleteCalendarEvent(id: number): Promise<boolean> {
     const result = await db.delete(calendar_events).where(eq(calendar_events.id, id));
     return (result.rowCount || 0) > 0;
+  }
+
+  async getCommunityPosts(userId: number): Promise<CommunityPost[]> {
+    return await db.select().from(community_posts).where(eq(community_posts.user_id, userId));
+  }
+  async getCommunityPost(id: number): Promise<CommunityPost | undefined> {
+    const [post] = await db.select().from(community_posts).where(eq(community_posts.id, id));
+    return post || undefined;
+  }
+  async createCommunityPost(data: InsertCommunityPost & { user_id: number }): Promise<CommunityPost> {
+    const [created] = await db.insert(community_posts).values(data).returning();
+    return created;
+  }
+  async updateCommunityPost(id: number, updates: Partial<CommunityPost>): Promise<CommunityPost> {
+    const [updated] = await db.update(community_posts).set({ ...updates, updated_at: new Date() }).where(eq(community_posts.id, id)).returning();
+    return updated;
+  }
+  async deleteCommunityPost(id: number): Promise<boolean> {
+    const result = await db.delete(community_posts).where(eq(community_posts.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Community replies
+  async getCommunityReplies(postId: number): Promise<CommunityReply[]> {
+    return await db.select().from(community_replies).where(eq(community_replies.post_id, postId));
+  }
+  async getCommunityReply(id: number): Promise<CommunityReply | undefined> {
+    const [reply] = await db.select().from(community_replies).where(eq(community_replies.id, id));
+    return reply || undefined;
+  }
+  async createCommunityReply(data: InsertCommunityReply & { user_id: number; post_id: number }): Promise<CommunityReply> {
+    const [created] = await db.insert(community_replies).values(data).returning();
+    return created;
+  }
+  async updateCommunityReply(id: number, updates: Partial<CommunityReply>): Promise<CommunityReply> {
+    const [updated] = await db.update(community_replies).set({ ...updates, updated_at: new Date() }).where(eq(community_replies.id, id)).returning();
+    return updated;
+  }
+  async deleteCommunityReply(id: number): Promise<boolean> {
+    const result = await db.delete(community_replies).where(eq(community_replies.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Community likes
+  async likePost(userId: number, postId: number): Promise<CommunityLike> {
+    const [like] = await db.insert(community_likes).values({ user_id: userId, post_id: postId }).onConflictDoNothing().returning();
+    return like;
+  }
+  async unlikePost(userId: number, postId: number): Promise<boolean> {
+    const result = await db.delete(community_likes).where(eq(community_likes.user_id, userId)).where(eq(community_likes.post_id, postId));
+    return (result.rowCount || 0) > 0;
+  }
+  async likeReply(userId: number, replyId: number): Promise<CommunityLike> {
+    const [like] = await db.insert(community_likes).values({ user_id: userId, reply_id: replyId }).onConflictDoNothing().returning();
+    return like;
+  }
+  async unlikeReply(userId: number, replyId: number): Promise<boolean> {
+    const result = await db.delete(community_likes).where(eq(community_likes.user_id, userId)).where(eq(community_likes.reply_id, replyId));
+    return (result.rowCount || 0) > 0;
+  }
+  async getLikesForPost(postId: number): Promise<CommunityLike[]> {
+    return await db.select().from(community_likes).where(eq(community_likes.post_id, postId));
+  }
+  async getLikesForReply(replyId: number): Promise<CommunityLike[]> {
+    return await db.select().from(community_likes).where(eq(community_likes.reply_id, replyId));
+  }
+
+  // Community groups
+  async getCommunityGroups(): Promise<CommunityGroup[]> {
+    return await db.select().from(community_groups);
+  }
+  async getCommunityGroup(id: number): Promise<CommunityGroup | undefined> {
+    const [group] = await db.select().from(community_groups).where(eq(community_groups.id, id));
+    return group || undefined;
+  }
+  async createCommunityGroup(data: InsertCommunityGroup): Promise<CommunityGroup> {
+    const [created] = await db.insert(community_groups).values(data).returning();
+    return created;
+  }
+  async updateCommunityGroup(id: number, updates: Partial<CommunityGroup>): Promise<CommunityGroup> {
+    const [updated] = await db.update(community_groups).set({ ...updates, updated_at: new Date() }).where(eq(community_groups.id, id)).returning();
+    return updated;
+  }
+  async deleteCommunityGroup(id: number): Promise<boolean> {
+    const result = await db.delete(community_groups).where(eq(community_groups.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Community group members
+  async joinCommunityGroup(userId: number, groupId: number): Promise<CommunityGroupMember> {
+    const [member] = await db.insert(community_group_members).values({ user_id: userId, group_id: groupId }).onConflictDoNothing().returning();
+    return member;
+  }
+  async leaveCommunityGroup(userId: number, groupId: number): Promise<boolean> {
+    const result = await db.delete(community_group_members).where(eq(community_group_members.user_id, userId)).where(eq(community_group_members.group_id, groupId));
+    return (result.rowCount || 0) > 0;
+  }
+  async getGroupMembers(groupId: number): Promise<CommunityGroupMember[]> {
+    return await db.select().from(community_group_members).where(eq(community_group_members.group_id, groupId));
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {

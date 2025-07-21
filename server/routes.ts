@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertPresentationSchema, insertNoteSchema, insertDocumentSchema, updateUserProfileSchema, insertPresentationSchema as insertCalendarEventSchema } from "@shared/schema";
+import { insertPresentationSchema, insertNoteSchema, insertDocumentSchema, updateUserProfileSchema, insertPresentationSchema as insertCalendarEventSchema, community_posts } from "@shared/schema";
 import multer from "multer";
 import { exec, spawn } from "child_process";
 import fs from "fs/promises";
@@ -928,6 +928,212 @@ export async function registerRoutes(app: Express): Promise<Server> {
         output: "", 
         stderr: error instanceof Error ? error.message : "Unknown error" 
       });
+    }
+  });
+
+  // --- Community Posts CRUD ---
+  app.get("/api/community/posts", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const posts = await storage.getCommunityPosts(userId);
+      res.json(posts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch community posts" });
+    }
+  });
+
+  app.get("/api/community/posts/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const id = parseInt(req.params.id);
+      const post = await storage.getCommunityPost(id);
+      if (!post || post.user_id !== userId) {
+        return res.status(404).json({ error: "Post not found" });
+      }
+      res.json(post);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch post" });
+    }
+  });
+
+  app.post("/api/community/posts", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const { title, content, category, tags } = req.body;
+      if (!title || !content || !category) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      const created = await storage.createCommunityPost({ ...req.body, user_id: userId });
+      res.status(201).json(created);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create post" });
+    }
+  });
+
+  app.put("/api/community/posts/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const id = parseInt(req.params.id);
+      const post = await storage.getCommunityPost(id);
+      if (!post || post.user_id !== userId) {
+        return res.status(404).json({ error: "Post not found" });
+      }
+      const updated = await storage.updateCommunityPost(id, req.body);
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update post" });
+    }
+  });
+
+  app.delete("/api/community/posts/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const id = parseInt(req.params.id);
+      const post = await storage.getCommunityPost(id);
+      if (!post || post.user_id !== userId) {
+        return res.status(404).json({ error: "Post not found" });
+      }
+      await storage.deleteCommunityPost(id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete post" });
+    }
+  });
+
+  // --- Community Replies ---
+  app.get("/api/community/posts/:postId/replies", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      const replies = await storage.getCommunityReplies(postId);
+      res.json(replies);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch replies" });
+    }
+  });
+
+  app.post("/api/community/posts/:postId/replies", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const postId = parseInt(req.params.postId);
+      const { content, parent_reply_id } = req.body;
+      if (!content) return res.status(400).json({ error: "Content required" });
+      const reply = await storage.createCommunityReply({ content, parent_reply_id, user_id: userId, post_id: postId });
+      res.status(201).json(reply);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create reply" });
+    }
+  });
+
+  app.put("/api/community/replies/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const id = parseInt(req.params.id);
+      const reply = await storage.getCommunityReply(id);
+      if (!reply || reply.user_id !== userId) return res.status(404).json({ error: "Reply not found" });
+      const updated = await storage.updateCommunityReply(id, { ...req.body, edited_at: new Date() });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update reply" });
+    }
+  });
+
+  app.delete("/api/community/replies/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const id = parseInt(req.params.id);
+      const reply = await storage.getCommunityReply(id);
+      if (!reply || reply.user_id !== userId) return res.status(404).json({ error: "Reply not found" });
+      // Soft delete
+      await storage.updateCommunityReply(id, { is_deleted: true, deleted_at: new Date() });
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete reply" });
+    }
+  });
+
+  // --- Community Likes ---
+  app.post("/api/community/posts/:postId/like", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const postId = parseInt(req.params.postId);
+      const { action } = req.body; // 'like' or 'unlike'
+      if (action === 'like') {
+        await storage.likePost(userId, postId);
+      } else {
+        await storage.unlikePost(userId, postId);
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to toggle like" });
+    }
+  });
+
+  app.post("/api/community/replies/:replyId/like", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const replyId = parseInt(req.params.replyId);
+      const { action } = req.body; // 'like' or 'unlike'
+      if (action === 'like') {
+        await storage.likeReply(userId, replyId);
+      } else {
+        await storage.unlikeReply(userId, replyId);
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to toggle like" });
+    }
+  });
+
+  // --- Community Groups ---
+  app.get("/api/community/groups", requireAuth, async (_req: Request, res: Response) => {
+    try {
+      const groups = await storage.getCommunityGroups();
+      res.json(groups);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch groups" });
+    }
+  });
+
+  app.post("/api/community/groups", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { name, description } = req.body;
+      if (!name) return res.status(400).json({ error: "Name required" });
+      const group = await storage.createCommunityGroup({ name, description });
+      res.status(201).json(group);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create group" });
+    }
+  });
+
+  app.post("/api/community/groups/:groupId/join", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const groupId = parseInt(req.params.groupId);
+      await storage.joinCommunityGroup(userId, groupId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to join group" });
+    }
+  });
+
+  app.post("/api/community/groups/:groupId/leave", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const groupId = parseInt(req.params.groupId);
+      await storage.leaveCommunityGroup(userId, groupId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to leave group" });
+    }
+  });
+
+  app.get("/api/community/groups/:groupId/members", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const groupId = parseInt(req.params.groupId);
+      const members = await storage.getGroupMembers(groupId);
+      res.json(members);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch group members" });
     }
   });
 

@@ -78,6 +78,60 @@ export const calendar_events = pgTable('calendar_events', {
   updated_at: timestamp('updated_at').notNull().defaultNow(),
 });
 
+export const community_posts = pgTable('community_posts', {
+  id: serial('id').primaryKey(),
+  user_id: integer('user_id').notNull().references(() => users.id),
+  title: varchar('title', { length: 255 }).notNull(),
+  content: text('content').notNull(),
+  category: varchar('category', { length: 64 }).notNull(),
+  tags: varchar('tags', { length: 32 }).array(),
+  created_at: timestamp('created_at').notNull().defaultNow(),
+  updated_at: timestamp('updated_at').notNull().defaultNow(),
+  edited_at: timestamp('edited_at'),
+  deleted_at: timestamp('deleted_at'),
+  is_deleted: boolean('is_deleted').notNull().default(false),
+  likes: integer('likes').notNull().default(0),
+  replies: integer('replies').notNull().default(0),
+  views: integer('views').notNull().default(0),
+  is_pinned: boolean('is_pinned').notNull().default(false),
+});
+
+export const community_replies = pgTable('community_replies', {
+  id: serial('id').primaryKey(),
+  post_id: integer('post_id').notNull().references(() => community_posts.id),
+  user_id: integer('user_id').notNull().references(() => users.id),
+  content: text('content').notNull(),
+  parent_reply_id: integer('parent_reply_id').references(() => community_replies.id), // <-- fix: use function
+  created_at: timestamp('created_at').notNull().defaultNow(),
+  updated_at: timestamp('updated_at').notNull().defaultNow(),
+  edited_at: timestamp('edited_at'),
+  deleted_at: timestamp('deleted_at'),
+  is_deleted: boolean('is_deleted').notNull().default(false),
+});
+
+export const community_likes = pgTable('community_likes', {
+  id: serial('id').primaryKey(),
+  user_id: integer('user_id').notNull().references(() => users.id),
+  post_id: integer('post_id').references(() => community_posts.id),
+  reply_id: integer('reply_id').references(() => community_replies.id),
+  created_at: timestamp('created_at').notNull().defaultNow(),
+});
+
+export const community_groups = pgTable('community_groups', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 128 }).notNull(),
+  description: text('description'),
+  created_at: timestamp('created_at').notNull().defaultNow(),
+  updated_at: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const community_group_members = pgTable('community_group_members', {
+  id: serial('id').primaryKey(),
+  group_id: integer('group_id').notNull().references(() => community_groups.id),
+  user_id: integer('user_id').notNull().references(() => users.id),
+  joined_at: timestamp('joined_at').notNull().defaultNow(),
+});
+
 export const usersRelations = relations(users, ({ many }) => ({
   documents: many(documents),
   notes: many(notes),
@@ -155,3 +209,14 @@ export type InsertPresentation = typeof presentations.$inferInsert;
 
 export type CalendarEvent = typeof calendar_events.$inferSelect;
 export type InsertCalendarEvent = typeof calendar_events.$inferInsert;
+
+export type CommunityPost = typeof community_posts.$inferSelect;
+export type InsertCommunityPost = typeof community_posts.$inferInsert;
+export type CommunityReply = typeof community_replies.$inferSelect;
+export type InsertCommunityReply = typeof community_replies.$inferInsert;
+export type CommunityLike = typeof community_likes.$inferSelect;
+export type InsertCommunityLike = typeof community_likes.$inferInsert;
+export type CommunityGroup = typeof community_groups.$inferSelect;
+export type InsertCommunityGroup = typeof community_groups.$inferInsert;
+export type CommunityGroupMember = typeof community_group_members.$inferSelect;
+export type InsertCommunityGroupMember = typeof community_group_members.$inferInsert;

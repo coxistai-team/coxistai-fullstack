@@ -83,118 +83,12 @@ export default function Community() {
     maxMembers: 10
   });
 
-  // Sample data - in a real app, this would come from an API
-  const [posts, setPosts] = useState<Post[]>([
-    {
-      id: "1",
-      title: "Need help with calculus derivatives",
-      content: "I'm struggling with understanding the chain rule. Can someone explain it in simple terms?",
-      author: { name: "Sarah Chen", reputation: 125 },
-      category: "Mathematics",
-      tags: ["calculus", "derivatives", "help"],
-      timestamp: "2 hours ago",
-      likes: 8,
-      replies: 12,
-      views: 156,
-      isLiked: false
-    },
-    {
-      id: "2", 
-      title: "Study group for AP Physics - Starting Monday!",
-      content: "Looking for serious students to join our AP Physics study group. We meet twice a week.",
-      author: { name: "Mike Rodriguez", reputation: 89 },
-      category: "Study Groups",
-      tags: ["physics", "AP", "study-group"],
-      timestamp: "4 hours ago",
-      likes: 15,
-      replies: 8,
-      views: 234,
-      isPinned: true,
-      isLiked: true
-    },
-    {
-      id: "3",
-      title: "Best strategies for SAT reading comprehension?",
-      content: "I'm consistently scoring low on reading comp. What techniques have worked for you?",
-      author: { name: "Emma Thompson", reputation: 67 },
-      category: "Test Prep", 
-      tags: ["SAT", "reading", "strategy"],
-      timestamp: "6 hours ago",
-      likes: 23,
-      replies: 18,
-      views: 445,
-      isLiked: false
-    }
-  ]);
-
-  const [studyGroups, setStudyGroups] = useState<StudyGroup[]>([
-    {
-      id: "1",
-      name: "Advanced Calculus Study Circle",
-      description: "Weekly sessions covering multivariable calculus and differential equations",
-      subject: "Mathematics",
-      members: 8,
-      maxMembers: 12,
-      level: "Advanced",
-      schedule: "Tuesdays & Thursdays 7-9 PM EST",
-      nextSession: "Today at 7:00 PM",
-      isJoined: false
-    },
-    {
-      id: "2",
-      name: "SAT Math Bootcamp",
-      description: "Intensive SAT math prep with practice tests and review sessions",
-      subject: "Test Prep",
-      members: 15,
-      maxMembers: 20,
-      level: "Intermediate",
-      schedule: "Saturdays 2-4 PM EST",
-      nextSession: "Saturday at 2:00 PM",
-      isJoined: true
-    },
-    {
-      id: "3",
-      name: "AP Chemistry Lab Partners",
-      description: "Virtual lab sessions and homework help for AP Chemistry students",
-      subject: "Chemistry",
-      members: 6,
-      maxMembers: 10,
-      level: "Advanced",
-      schedule: "Wednesdays 6-8 PM EST",
-      nextSession: "Wednesday at 6:00 PM",
-      isJoined: false
-    }
-  ]);
-
-  const [topUsers, setTopUsers] = useState<User[]>([
-    {
-      id: "1",
-      name: "Alex Johnson",
-      reputation: 2456,
-      badges: ["Helper", "Expert", "Top Contributor"],
-      joinDate: "Jan 2023",
-      postsCount: 234,
-      helpfulAnswers: 189
-    },
-    {
-      id: "2", 
-      name: "Maria Garcia",
-      reputation: 1847,
-      badges: ["Mentor", "Study Leader"],
-      joinDate: "Mar 2023", 
-      postsCount: 156,
-      helpfulAnswers: 142
-    },
-    {
-      id: "3",
-      name: "David Kim",
-      reputation: 1523,
-      badges: ["Helper", "Active Member"],
-      joinDate: "Feb 2023",
-      postsCount: 98,
-      helpfulAnswers: 87
-    }
-  ]);
+  // State for managing posts, groups, and top users fetched from backend
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [studyGroups, setStudyGroups] = useState<StudyGroup[]>([]);
+  const [topUsers, setTopUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const categories = ["all", "Mathematics", "Science", "Test Prep", "Study Groups", "General"];
 
@@ -205,7 +99,33 @@ export default function Community() {
     return matchesSearch && matchesCategory;
   });
 
-  const handleLikePost = (postId: string) => {
+  // Fetch posts, groups, and top users from backend on mount
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [postsRes, groupsRes, usersRes] = await Promise.all([
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/api/posts?search=${searchTerm}&category=${selectedCategory}`).then(res => res.json()),
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/api/study-groups?search=${searchTerm}&subject=${newGroup.subject}&level=${newGroup.level}`).then(res => res.json()),
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users?sort=reputation&limit=5`).then(res => res.json())
+      ]);
+      setPosts(postsRes);
+      setStudyGroups(groupsRes);
+      setTopUsers(usersRes);
+    } catch (err) {
+      setError("Failed to fetch data");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch data on component mount and when search/category changes
+  useState(() => {
+    fetchData();
+  }, [searchTerm, selectedCategory]);
+
+  // Handle like post (optimistic update)
+  const handleLikePost = async (postId: string) => {
     setPosts(posts.map(post => {
       if (post.id === postId) {
         return {
@@ -216,9 +136,41 @@ export default function Community() {
       }
       return post;
     }));
+
+    try {
+      await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/posts/${postId}/like`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        }
+      });
+      toast({
+        title: "Post liked",
+        description: "Your like has been saved."
+      });
+    } catch (err) {
+      setPosts(posts.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            likes: post.isLiked ? post.likes + 1 : post.likes - 1,
+            isLiked: !post.isLiked
+          };
+        }
+        return post;
+      }));
+      toast({
+        title: "Error liking post",
+        description: "Failed to save like.",
+        variant: "destructive"
+      });
+      console.error(err);
+    }
   };
 
-  const handleJoinGroup = (groupId: string) => {
+  // Handle join group (optimistic update)
+  const handleJoinGroup = async (groupId: string) => {
     const targetGroup = studyGroups.find(g => g.id === groupId);
     const wasJoined = targetGroup?.isJoined || false;
     
@@ -233,13 +185,40 @@ export default function Community() {
       return group;
     }));
     
-    toast({
-      title: wasJoined ? "Left study group" : "Joined study group",
-      description: wasJoined ? "You have left the study group" : "You've successfully joined the study group",
-    });
+    try {
+      await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/study-groups/${groupId}/join`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        }
+      });
+      toast({
+        title: wasJoined ? "Left study group" : "Joined study group",
+        description: wasJoined ? "You have left the study group" : "You've successfully joined the study group",
+      });
+    } catch (err) {
+      setStudyGroups(studyGroups.map(group => {
+        if (group.id === groupId) {
+          return {
+            ...group,
+            members: group.isJoined ? group.members + 1 : group.members - 1,
+            isJoined: !group.isJoined
+          };
+        }
+        return group;
+      }));
+      toast({
+        title: wasJoined ? "Error leaving group" : "Error joining group",
+        description: "Failed to update group membership.",
+        variant: "destructive"
+      });
+      console.error(err);
+    }
   };
 
-  const handleCreatePost = () => {
+  // Handle create post (optimistic update)
+  const handleCreatePost = async () => {
     if (!newPost.title || !newPost.content || !newPost.category) {
       toast({
         title: "Error",
@@ -250,7 +229,7 @@ export default function Community() {
     }
 
     const post: Post = {
-      id: Date.now().toString(),
+      id: Date.now().toString(), // This will be replaced by backend
       title: newPost.title,
       content: newPost.content,
       author: { 
@@ -259,24 +238,53 @@ export default function Community() {
       },
       category: newPost.category,
       tags: newPost.tags.split(",").map(tag => tag.trim()).filter(Boolean),
-      timestamp: "Just now",
-      likes: 0,
-      replies: 0,
-      views: 1,
+      timestamp: "Just now", // This will be replaced by backend
+      likes: 0, // This will be replaced by backend
+      replies: 0, // This will be replaced by backend
+      views: 1, // This will be replaced by backend
       isLiked: false
     };
 
-    setPosts([post, ...posts]);
+    setPosts([post, ...posts]); // Optimistic update
     setNewPost({ title: "", content: "", category: "", tags: "" });
     setShowNewPostDialog(false);
     
-    toast({
-      title: "Post created",
-      description: "Your post has been published successfully"
-    });
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/posts`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
+        body: JSON.stringify({
+          title: newPost.title,
+          content: newPost.content,
+          category: newPost.category,
+          tags: newPost.tags.split(",").map(tag => tag.trim()).filter(Boolean)
+        })
+      });
+      if (!response.ok) {
+        throw new Error("Failed to create post");
+      }
+      const createdPost = await response.json();
+      setPosts(prev => [createdPost, ...prev]); // Update with actual data from backend
+      toast({
+        title: "Post created",
+        description: "Your post has been published successfully"
+      });
+    } catch (err) {
+      setPosts(posts.map(p => p.id === post.id ? post : p)); // Revert optimistic update on error
+      toast({
+        title: "Error creating post",
+        description: "Failed to save post to backend.",
+        variant: "destructive"
+      });
+      console.error(err);
+    }
   };
 
-  const handleCreateGroup = () => {
+  // Handle create group (optimistic update)
+  const handleCreateGroup = async () => {
     if (!newGroup.name || !newGroup.description || !newGroup.subject || !newGroup.level) {
       toast({
         title: "Error", 
@@ -287,25 +295,55 @@ export default function Community() {
     }
 
     const group: StudyGroup = {
-      id: Date.now().toString(),
+      id: Date.now().toString(), // This will be replaced by backend
       name: newGroup.name,
       description: newGroup.description,
       subject: newGroup.subject,
-      members: 1,
+      members: 1, // This will be replaced by backend
       maxMembers: newGroup.maxMembers,
       level: newGroup.level as 'Beginner' | 'Intermediate' | 'Advanced',
       schedule: newGroup.schedule,
       isJoined: true
     };
 
-    setStudyGroups([group, ...studyGroups]);
+    setStudyGroups([group, ...studyGroups]); // Optimistic update
     setNewGroup({ name: "", description: "", subject: "", level: "", schedule: "", maxMembers: 10 });
     setShowNewGroupDialog(false);
     
-    toast({
-      title: "Study group created",
-      description: "Your study group has been created successfully"
-    });
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/study-groups`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${user?.token}`
+        },
+        body: JSON.stringify({
+          name: newGroup.name,
+          description: newGroup.description,
+          subject: newGroup.subject,
+          level: newGroup.level,
+          schedule: newGroup.schedule,
+          maxMembers: newGroup.maxMembers
+        })
+      });
+      if (!response.ok) {
+        throw new Error("Failed to create group");
+      }
+      const createdGroup = await response.json();
+      setStudyGroups(prev => [createdGroup, ...prev]); // Update with actual data from backend
+      toast({
+        title: "Study group created",
+        description: "Your study group has been created successfully"
+      });
+    } catch (err) {
+      setStudyGroups(studyGroups.map(g => g.id === group.id ? group : g)); // Revert optimistic update on error
+      toast({
+        title: "Error creating group",
+        description: "Failed to save group to backend.",
+        variant: "destructive"
+      });
+      console.error(err);
+    }
   };
 
   return (
@@ -517,7 +555,11 @@ export default function Community() {
 
                 {/* Posts List */}
                 <div className="space-y-4">
-                  {filteredPosts.map((post) => (
+                  {loading ? (
+                    <p>Loading posts...</p>
+                  ) : error ? (
+                    <p className="text-red-500">{error}</p>
+                  ) : filteredPosts.map((post) => (
                     <Card key={post.id} className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-white/20 dark:border-gray-700/30">
                       <CardContent className="p-6">
                         <div className="flex items-start gap-4">
@@ -691,7 +733,11 @@ export default function Community() {
                 </div>
 
                 <div className="grid gap-6">
-                  {studyGroups.map((group) => (
+                  {loading ? (
+                    <p>Loading study groups...</p>
+                  ) : error ? (
+                    <p className="text-red-500">{error}</p>
+                  ) : studyGroups.map((group) => (
                     <Card key={group.id} className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-white/20 dark:border-gray-700/30">
                       <CardContent className="p-6">
                         <div className="flex justify-between items-start mb-4">
@@ -770,7 +816,11 @@ export default function Community() {
                 </h2>
                 
                 <div className="space-y-4">
-                  {topUsers.map((user, index) => (
+                  {loading ? (
+                    <p>Loading leaderboard...</p>
+                  ) : error ? (
+                    <p className="text-red-500">{error}</p>
+                  ) : topUsers.map((user, index) => (
                     <Card key={user.id} className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-white/20 dark:border-gray-700/30">
                       <CardContent className="p-6">
                         <div className="flex items-center gap-4">
