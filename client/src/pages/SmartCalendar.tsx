@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isSameDay, getYear, getMonth, startOfWeek, endOfWeek } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 interface CalendarEvent {
   id: string;
@@ -48,6 +49,7 @@ interface Task {
 }
 
 const SmartCalendar = () => {
+  const { toast } = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showEventDialog, setShowEventDialog] = useState(false);
@@ -62,11 +64,8 @@ const SmartCalendar = () => {
   const [taskStats, setTaskStats] = useState(() => analytics.getTaskCompletionStats());
   const [completionRate, setCompletionRate] = useState(() => analytics.getWeeklyCompletionRate());
   
-  // Event and task storage (localStorage for now)
-  const [events, setEvents] = useState<CalendarEvent[]>(() => {
-    const saved = localStorage.getItem('smart-calendar-events');
-    return saved ? JSON.parse(saved).map((e: any) => ({ ...e, date: new Date(e.date) })) : [];
-  });
+  // Event and task storage
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   
   const [tasks, setTasks] = useState<Task[]>(() => {
     const saved = localStorage.getItem('smart-calendar-tasks');
@@ -83,11 +82,18 @@ const SmartCalendar = () => {
     reminder: 15
   });
 
-  // Save to localStorage
+  // Fetch events from backend on mount
   useEffect(() => {
-    localStorage.setItem('smart-calendar-events', JSON.stringify(events));
-  }, [events]);
+    fetch("/api/calendar", { credentials: "include" })
+      .then(res => res.json())
+      .then(data => {
+        // Convert date strings to Date objects
+        setEvents(data.map((e: any) => ({ ...e, date: new Date(e.date) })));
+      })
+      .catch(() => setEvents([]));
+  }, []);
 
+  // Save to localStorage
   useEffect(() => {
     localStorage.setItem('smart-calendar-tasks', JSON.stringify(tasks));
   }, [tasks]);
@@ -136,35 +142,66 @@ const SmartCalendar = () => {
     return tasks.filter(task => isSameDay(task.date, date));
   };
 
-  // Add or update event
-  const saveEvent = () => {
+  // Add or update event (persistent)
+  const saveEvent = async () => {
     if (!newEvent.title || !selectedDate) return;
-
-    const eventData: CalendarEvent = {
-      id: editingEvent?.id || Date.now().toString(),
-      title: newEvent.title!,
+    const eventData: any = {
+      title: newEvent.title,
       description: newEvent.description,
-      date: selectedDate,
-      time: newEvent.time!,
-      duration: newEvent.duration!,
+      date: selectedDate.toISOString().split("T")[0],
+      time: newEvent.time,
+      duration: newEvent.duration,
       location: newEvent.location,
-      type: newEvent.type!,
+      type: newEvent.type,
       color: eventColors[newEvent.type!],
       reminder: newEvent.reminder
     };
-
-    if (editingEvent) {
-      setEvents(prev => prev.map(e => e.id === editingEvent.id ? eventData : e));
-    } else {
-      setEvents(prev => [...prev, eventData]);
+    try {
+      let res, saved;
+      if (editingEvent) {
+        res = await fetch(`/api/calendar/${editingEvent.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(eventData)
+        });
+      } else {
+        res = await fetch("/api/calendar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(eventData)
+        });
+      }
+      if (!res.ok) throw new Error("Failed to save event");
+      saved = await res.json();
+      // Refetch events
+      fetch("/api/calendar", { credentials: "include" })
+        .then(res => res.json())
+        .then(data => setEvents(data.map((e: any) => ({ ...e, date: new Date(e.date) }))));
+      toast({ title: editingEvent ? "Event Updated" : "Event Created", description: `Event ${editingEvent ? "updated" : "created"} successfully.` });
+      resetEventDialog();
+    } catch (e: any) {
+      toast({ title: "Save Failed", description: e.message, variant: "destructive" });
     }
-
-    resetEventDialog();
   };
 
-  // Delete event
-  const deleteEvent = (eventId: string) => {
-    setEvents(prev => prev.filter(e => e.id !== eventId));
+  // Delete event (persistent)
+  const deleteEvent = async (eventId: string) => {
+    try {
+      const res = await fetch(`/api/calendar/${eventId}`, {
+        method: "DELETE",
+        credentials: "include"
+      });
+      if (!res.ok) throw new Error("Failed to delete event");
+      // Refetch events
+      fetch("/api/calendar", { credentials: "include" })
+        .then(res => res.json())
+        .then(data => setEvents(data.map((e: any) => ({ ...e, date: new Date(e.date) }))));
+      toast({ title: "Event Deleted", description: "Event has been removed." });
+    } catch (e: any) {
+      toast({ title: "Delete Failed", description: e.message, variant: "destructive" });
+    }
   };
 
   // Reset event dialog

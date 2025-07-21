@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertDocumentSchema, updateUserProfileSchema } from "@shared/schema";
+import { insertPresentationSchema, insertNoteSchema, insertDocumentSchema, updateUserProfileSchema, insertPresentationSchema as insertCalendarEventSchema } from "@shared/schema";
 import multer from "multer";
 import { exec, spawn } from "child_process";
 import fs from "fs/promises";
@@ -697,6 +697,147 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete document" });
+    }
+  });
+
+  // --- Presentations CRUD ---
+  app.get("/api/presentations", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const presentations = await storage.getPresentations(userId);
+      res.json(presentations);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch presentations" });
+    }
+  });
+
+  app.get("/api/presentations/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const id = parseInt(req.params.id);
+      const presentation = await storage.getPresentation(id);
+      if (!presentation || presentation.user_id !== userId) {
+        return res.status(404).json({ error: "Presentation not found" });
+      }
+      res.json(presentation);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch presentation" });
+    }
+  });
+
+  app.post("/api/presentations", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const parse = insertPresentationSchema.safeParse(req.body);
+      if (!parse.success) {
+        return res.status(400).json({ error: "Invalid presentation data" });
+      }
+      const created = await storage.createPresentation({ ...parse.data, user_id: userId });
+      res.status(201).json(created);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create presentation" });
+    }
+  });
+
+  app.put("/api/presentations/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const id = parseInt(req.params.id);
+      const presentation = await storage.getPresentation(id);
+      if (!presentation || presentation.user_id !== userId) {
+        return res.status(404).json({ error: "Presentation not found" });
+      }
+      // Only allow updating title and slides
+      const { title, slides } = req.body;
+      const updated = await storage.updatePresentation(id, { title, slides });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update presentation" });
+    }
+  });
+
+  app.delete("/api/presentations/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const id = parseInt(req.params.id);
+      const presentation = await storage.getPresentation(id);
+      if (!presentation || presentation.user_id !== userId) {
+        return res.status(404).json({ error: "Presentation not found" });
+      }
+      await storage.deletePresentation(id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete presentation" });
+    }
+  });
+
+  // --- Calendar Events CRUD ---
+  app.get("/api/calendar", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const events = await storage.getCalendarEvents(userId);
+      res.json(events);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch calendar events" });
+    }
+  });
+
+  app.get("/api/calendar/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const id = parseInt(req.params.id);
+      const event = await storage.getCalendarEvent(id);
+      if (!event || event.user_id !== userId) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      res.json(event);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch event" });
+    }
+  });
+
+  app.post("/api/calendar", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      // Use Zod validation if you have a schema, else basic check
+      const { title, date, time, duration, type, color } = req.body;
+      if (!title || !date || !time || !duration || !type || !color) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      const created = await storage.createCalendarEvent({ ...req.body, user_id: userId });
+      res.status(201).json(created);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create event" });
+    }
+  });
+
+  app.put("/api/calendar/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const id = parseInt(req.params.id);
+      const event = await storage.getCalendarEvent(id);
+      if (!event || event.user_id !== userId) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      const updated = await storage.updateCalendarEvent(id, req.body);
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update event" });
+    }
+  });
+
+  app.delete("/api/calendar/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const id = parseInt(req.params.id);
+      const event = await storage.getCalendarEvent(id);
+      if (!event || event.user_id !== userId) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      await storage.deleteCalendarEvent(id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete event" });
     }
   });
 

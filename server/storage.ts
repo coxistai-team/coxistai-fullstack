@@ -1,4 +1,4 @@
-import { users, documents, type User, type InsertUser, type UpdateUserProfile, type Document, type InsertDocument } from "@shared/schema";
+import { users, documents, presentations, calendar_events, type User, type InsertUser, type UpdateUserProfile, type Document, type InsertDocument, type Presentation, type InsertPresentation, type CalendarEvent, type InsertCalendarEvent } from "@shared/schema";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -13,6 +13,20 @@ export interface IStorage {
   createDocument(document: InsertDocument & { userId: number }): Promise<Document>;
   updateDocument(id: number, updates: Partial<Document>): Promise<Document>;
   deleteDocument(id: number): Promise<boolean>;
+
+  // Presentation operations
+  getPresentations(userId: number): Promise<Presentation[]>;
+  getPresentation(id: number): Promise<Presentation | undefined>;
+  createPresentation(data: InsertPresentation & { user_id: number }): Promise<Presentation>;
+  updatePresentation(id: number, updates: Partial<Presentation>): Promise<Presentation>;
+  deletePresentation(id: number): Promise<boolean>;
+
+  // Calendar event operations
+  getCalendarEvents(userId: number): Promise<CalendarEvent[]>;
+  getCalendarEvent(id: number): Promise<CalendarEvent | undefined>;
+  createCalendarEvent(data: InsertCalendarEvent & { user_id: number }): Promise<CalendarEvent>;
+  updateCalendarEvent(id: number, updates: Partial<CalendarEvent>): Promise<CalendarEvent>;
+  deleteCalendarEvent(id: number): Promise<boolean>;
 }
 
 import { eq } from "drizzle-orm";
@@ -83,6 +97,46 @@ export class DatabaseStorage implements IStorage {
 
   async deleteDocument(id: number): Promise<boolean> {
     const result = await db.delete(documents).where(eq(documents.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async getPresentations(userId: number): Promise<Presentation[]> {
+    return await db.select().from(presentations).where(eq(presentations.user_id, userId));
+  }
+  async getPresentation(id: number): Promise<Presentation | undefined> {
+    const [presentation] = await db.select().from(presentations).where(eq(presentations.id, id));
+    return presentation || undefined;
+  }
+  async createPresentation(data: InsertPresentation & { user_id: number }): Promise<Presentation> {
+    const [created] = await db.insert(presentations).values(data).returning();
+    return created;
+  }
+  async updatePresentation(id: number, updates: Partial<Presentation>): Promise<Presentation> {
+    const [updated] = await db.update(presentations).set({ ...updates, updated_at: new Date() }).where(eq(presentations.id, id)).returning();
+    return updated;
+  }
+  async deletePresentation(id: number): Promise<boolean> {
+    const result = await db.delete(presentations).where(eq(presentations.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async getCalendarEvents(userId: number): Promise<CalendarEvent[]> {
+    return await db.select().from(calendar_events).where(eq(calendar_events.user_id, userId));
+  }
+  async getCalendarEvent(id: number): Promise<CalendarEvent | undefined> {
+    const [event] = await db.select().from(calendar_events).where(eq(calendar_events.id, id));
+    return event || undefined;
+  }
+  async createCalendarEvent(data: InsertCalendarEvent & { user_id: number }): Promise<CalendarEvent> {
+    const [created] = await db.insert(calendar_events).values(data).returning();
+    return created;
+  }
+  async updateCalendarEvent(id: number, updates: Partial<CalendarEvent>): Promise<CalendarEvent> {
+    const [updated] = await db.update(calendar_events).set({ ...updates, updated_at: new Date() }).where(eq(calendar_events.id, id)).returning();
+    return updated;
+  }
+  async deleteCalendarEvent(id: number): Promise<boolean> {
+    const result = await db.delete(calendar_events).where(eq(calendar_events.id, id));
     return (result.rowCount || 0) > 0;
   }
 

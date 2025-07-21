@@ -53,6 +53,31 @@ export const notes = pgTable('notes', {
   updated_at: timestamp('updated_at').notNull().defaultNow(),
 });
 
+export const presentations = pgTable('presentations', {
+  id: serial('id').primaryKey(),
+  user_id: integer('user_id').notNull().references(() => users.id),
+  title: varchar('title', { length: 255 }).notNull(),
+  slides: text('slides').notNull(), // store JSON string
+  created_at: timestamp('created_at').notNull().defaultNow(),
+  updated_at: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const calendar_events = pgTable('calendar_events', {
+  id: serial('id').primaryKey(),
+  user_id: integer('user_id').notNull().references(() => users.id),
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description'),
+  date: text('date').notNull(), // ISO date string
+  time: varchar('time', { length: 16 }).notNull(),
+  duration: integer('duration').notNull(),
+  location: varchar('location', { length: 255 }),
+  type: varchar('type', { length: 32 }).notNull(),
+  color: varchar('color', { length: 32 }).notNull(),
+  reminder: integer('reminder'),
+  created_at: timestamp('created_at').notNull().defaultNow(),
+  updated_at: timestamp('updated_at').notNull().defaultNow(),
+});
+
 export const usersRelations = relations(users, ({ many }) => ({
   documents: many(documents),
   notes: many(notes),
@@ -113,6 +138,11 @@ export const insertNoteSchema = createInsertSchema(notes).pick({
   tags: true,
 });
 
+export const insertPresentationSchema = createInsertSchema(presentations).pick({
+  title: true,
+  slides: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type UpdateUserProfile = z.infer<typeof updateUserProfileSchema>;
 export type User = typeof users.$inferSelect;
@@ -120,3 +150,8 @@ export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 export type Document = typeof documents.$inferSelect;
 export type Note = typeof notes.$inferSelect;
 export type InsertNote = z.infer<typeof insertNoteSchema>;
+export type Presentation = typeof presentations.$inferSelect;
+export type InsertPresentation = typeof presentations.$inferInsert;
+
+export type CalendarEvent = typeof calendar_events.$inferSelect;
+export type InsertCalendarEvent = typeof calendar_events.$inferInsert;

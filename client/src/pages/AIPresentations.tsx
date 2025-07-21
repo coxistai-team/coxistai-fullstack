@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { motion } from "framer-motion"
 import {
   Download,
@@ -85,6 +85,14 @@ interface PresentationJSON {
   slides: PresentationSlide[]
 }
 
+interface PresentationRecord {
+  id: number;
+  title: string;
+  slides: string; // JSON string
+  created_at: string;
+  updated_at: string;
+}
+
 const AIPresentations = () => {
   const { toast } = useToast()
   const [slides, setSlides] = useState<Slide[]>([
@@ -122,6 +130,21 @@ const AIPresentations = () => {
   const [presentationJSON, setPresentationJSON] = useState<PresentationJSON | null>(null)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [presentations, setPresentations] = useState<PresentationRecord[]>([])
+
+  // Fetch all presentations for the user on mount
+  useEffect(() => {
+    fetch("/api/presentations", { credentials: "include" })
+      .then(res => res.json())
+      .then(data => {
+        setPresentations(data)
+        if (data.length > 0) {
+          setCurrentPresentationId(data[0].id.toString())
+          setSlides(JSON.parse(data[0].slides))
+        }
+      })
+      .catch(() => setPresentations([]))
+  }, [])
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const currentSlide = slides[currentSlideIndex]
@@ -286,60 +309,100 @@ const AIPresentations = () => {
     setHasUnsavedChanges(true)
   }
 
-  // Save changes to backend
-  const saveChanges = async () => {
-    if (!currentPresentationId || !hasUnsavedChanges) {
-      toast({
-        title: "No Changes to Save",
-        description: "There are no unsaved changes to save.",
-      })
-      return
-    }
-
+  // Save (create or update) presentation
+  const savePresentation = async (isNew = false) => {
     setIsSaving(true)
     try {
-      // Convert current slides to JSON format
-      const updatedJSON = convertSlidesToJSON(slides)
-
-      // Update each slide in the backend
-      for (let i = 0; i < slides.length; i++) {
-        const slide = slides[i]
-        const slideData = updatedJSON.slides[i]
-
-        const response = await fetch("http://localhost:5002/update_slide", {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            presentation_id: currentPresentationId,
-            slide_id: slide.id,
-            slide_data: slideData,
-          }),
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || "Failed to update slide")
-        }
+      const payload = {
+        title: slides[0]?.title || "Untitled Presentation",
+        slides: JSON.stringify(slides),
       }
-
+      let res
+      if (isNew || !currentPresentationId) {
+        res = await fetch("/api/presentations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        })
+      } else {
+        res = await fetch(`/api/presentations/${currentPresentationId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        })
+      }
+      if (!res.ok) throw new Error("Failed to save presentation")
+      const saved = await res.json()
+      setCurrentPresentationId(saved.id.toString())
       setHasUnsavedChanges(false)
-      setPresentationJSON(updatedJSON)
-
-      toast({
-        title: "Changes Saved Successfully",
-        description: "Your presentation has been updated and is ready for download.",
-      })
-    } catch (error: any) {
-      console.error("Save error:", error)
-      toast({
-        title: "Save Failed",
-        description: error.message || "There was an error saving your changes.",
-        variant: "destructive",
-      })
+      toast({ title: "Presentation Saved", description: "Your presentation is saved in your account." })
+      // Refresh list
+      fetch("/api/presentations", { credentials: "include" })
+        .then(res => res.json())
+        .then(setPresentations)
+    } catch (e: any) {
+      toast({ title: "Save Failed", description: e.message, variant: "destructive" })
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  // Create new presentation
+  const createNewPresentation = () => {
+    setSlides([
+      {
+        id: `slide_${Date.now()}`,
+        title: "New Presentation",
+        subtitle: "",
+        content: "",
+        backgroundStyle: "gradient",
+        backgroundGradient: "from-purple-600 via-blue-600 to-indigo-700",
+        images: [],
+        bulletPoints: [],
+      },
+    ])
+    setCurrentPresentationId(null)
+    setCurrentSlideIndex(0)
+    setHasUnsavedChanges(true)
+  }
+
+  // Delete presentation
+  const deletePresentation = async (id: string | number) => {
+    if (!window.confirm("Are you sure you want to delete this presentation?")) return
+    try {
+      const res = await fetch(`/api/presentations/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      })
+      if (!res.ok) throw new Error("Failed to delete presentation")
+      toast({ title: "Presentation Deleted", description: "Presentation has been removed." })
+      // Refresh list
+      fetch("/api/presentations", { credentials: "include" })
+        .then(res => res.json())
+        .then(data => {
+          setPresentations(data)
+          if (data.length > 0) {
+            setCurrentPresentationId(data[0].id.toString())
+            setSlides(JSON.parse(data[0].slides))
+          } else {
+            createNewPresentation()
+          }
+        })
+    } catch (e: any) {
+      toast({ title: "Delete Failed", description: e.message, variant: "destructive" })
+    }
+  }
+
+  // Switch presentation
+  const loadPresentation = (id: string | number) => {
+    const pres = presentations.find(p => p.id.toString() === id.toString())
+    if (pres) {
+      setCurrentPresentationId(pres.id.toString())
+      setSlides(JSON.parse(pres.slides))
+      setCurrentSlideIndex(0)
+      setHasUnsavedChanges(false)
     }
   }
 
@@ -497,7 +560,7 @@ const AIPresentations = () => {
 
       // Save changes before exporting if there are any
       if (hasUnsavedChanges) {
-        await saveChanges()
+        await savePresentation(false) // Pass false for update
       }
 
       console.log(`Exporting presentation as ${format}...`)
@@ -724,7 +787,7 @@ const AIPresentations = () => {
           <div className="flex flex-wrap justify-center gap-4 mb-8">
             {hasUnsavedChanges && (
               <GlassmorphismButton
-                onClick={saveChanges}
+                onClick={savePresentation}
                 disabled={isSaving}
                 className="px-6 py-3 bg-green-600 hover:bg-green-700"
               >
@@ -882,7 +945,7 @@ const AIPresentations = () => {
                 <div className="flex items-center space-x-2">
                   {hasUnsavedChanges && (
                     <GlassmorphismButton
-                      onClick={saveChanges}
+                      onClick={savePresentation}
                       disabled={isSaving}
                       size="sm"
                       className="bg-green-600 hover:bg-green-700"
@@ -951,21 +1014,21 @@ const AIPresentations = () => {
 
               {/* Slide Thumbnails */}
               <div className="flex space-x-2 overflow-x-auto pb-2">
-                {slides.map((slide, index) => (
+                {presentations.map((pres, index) => (
                   <motion.div
-                    key={slide.id}
+                    key={pres.id}
                     className={`relative flex-shrink-0 w-24 h-16 glassmorphism rounded cursor-pointer transition-all group ${
-                      currentSlideIndex === index ? "border-2 border-blue-500" : "opacity-70 hover:opacity-100"
+                      currentPresentationId === pres.id.toString() ? "border-2 border-blue-500" : "opacity-70 hover:opacity-100"
                     }`}
-                    onClick={() => setCurrentSlideIndex(index)}
+                    onClick={() => loadPresentation(pres.id)}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
                     <div
                       className={`w-full h-full rounded ${
-                        slide.backgroundStyle === "gradient"
-                          ? `bg-gradient-to-br ${slide.backgroundGradient}`
-                          : slide.backgroundGradient
+                        pres.slides.includes("gradient")
+                          ? `bg-gradient-to-br ${pres.slides.split("gradient")[1].split("to")[0].replace("via-", "").replace("to-", "")}`
+                          : pres.slides.split("bg-")[1].split("text-")[0]
                       } flex items-center justify-center relative`}
                     >
                       <span className="text-xs text-white font-bold">{index + 1}</span>
@@ -978,19 +1041,19 @@ const AIPresentations = () => {
                           className="h-6 w-6 p-0"
                           onClick={(e) => {
                             e.stopPropagation()
-                            duplicateSlide(index)
+                            // Duplicate presentation logic would go here if implemented
                           }}
                         >
                           <Copy className="w-3 h-3" />
                         </Button>
-                        {slides.length > 1 && (
+                        {presentations.length > 1 && (
                           <Button
                             variant="ghost"
                             size="sm"
                             className="h-6 w-6 p-0 text-red-400 hover:text-red-300"
                             onClick={(e) => {
                               e.stopPropagation()
-                              deleteSlide(index)
+                              deletePresentation(pres.id)
                             }}
                           >
                             <Trash2 className="w-3 h-3" />
@@ -1004,7 +1067,7 @@ const AIPresentations = () => {
                 {/* Add slide button */}
                 <motion.div
                   className="flex-shrink-0 w-24 h-16 glassmorphism rounded cursor-pointer flex items-center justify-center hover:bg-white/10 transition-colors"
-                  onClick={addSlide}
+                  onClick={createNewPresentation}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
