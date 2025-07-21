@@ -46,7 +46,7 @@ os.makedirs(JSON_FOLDER, exist_ok=True)
 os.makedirs(UPLOADS_FOLDER, exist_ok=True)
 
 # Your API key for the AI content generation
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = "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"
 
 # In-memory storage for presentations (in production, use a database)
 presentations_db = {}
