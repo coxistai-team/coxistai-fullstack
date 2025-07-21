@@ -26,6 +26,7 @@ const Login = () => {
   const { login, error, loading } = useAuth();
   const [formError, setFormError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<{ username?: string; password?: string }>({});
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -39,6 +40,7 @@ const Login = () => {
     e.preventDefault();
     setFormError(null);
     setValidationErrors({});
+    setIsLoggingIn(true);
     const result = loginSchema.safeParse(formData);
     if (!result.success) {
       const fieldErrors: any = {};
@@ -46,9 +48,11 @@ const Login = () => {
         if (err.path[0]) fieldErrors[err.path[0]] = err.message;
       });
       setValidationErrors(fieldErrors);
+      setIsLoggingIn(false);
       return;
     }
     const success = await login(formData.username, formData.password);
+    setIsLoggingIn(false);
     if (success) {
       setLocation("/");
     } else {
@@ -231,9 +235,9 @@ const Login = () => {
             <GlassmorphismButton
               type="submit"
               className="w-full py-3 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600"
-              disabled={loading}
+              disabled={isLoggingIn}
             >
-              {loading ? "Signing In..." : "Sign In"}
+              {isLoggingIn ? "Signing In..." : "Sign In"}
             </GlassmorphismButton>
           </motion.form>
 

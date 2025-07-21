@@ -100,6 +100,7 @@ const SmartCalendar = () => {
 
   // Add state for event attachments
   const [eventAttachments, setEventAttachments] = useState<string[]>([]);
+  const [isSavingEvent, setIsSavingEvent] = useState(false);
 
   const isAuthLoading = useAuthLoading();
   const [isEventsLoading, setIsEventsLoading] = useState(true);
@@ -169,6 +170,7 @@ const SmartCalendar = () => {
 
   // Add or update event (persistent)
   const saveEvent = async () => {
+    setIsSavingEvent(true);
     if (!newEvent.title || !selectedDate) return;
     const eventData: any = {
       title: newEvent.title,
@@ -215,6 +217,8 @@ const SmartCalendar = () => {
       resetEventDialog();
     } catch (e: any) {
       toast({ title: "Save Failed", description: e.message, variant: "destructive" });
+    } finally {
+      setIsSavingEvent(false);
     }
   };
 
@@ -1066,10 +1070,10 @@ const SmartCalendar = () => {
                     </GlassmorphismButton>
                     <GlassmorphismButton 
                       onClick={saveEvent}
-                      disabled={!newEvent.title || isAuthLoading}
+                      disabled={!newEvent.title || isSavingEvent || isAuthLoading}
                       className="bg-gradient-to-r from-blue-500 to-green-500"
                     >
-                      {editingEvent ? 'Update Event' : 'Create Event'}
+                      {isSavingEvent ? 'Saving...' : (editingEvent ? 'Update Event' : 'Create Event')}
                     </GlassmorphismButton>
                   </div>
                 </div>

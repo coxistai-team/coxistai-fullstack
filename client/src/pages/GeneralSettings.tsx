@@ -43,11 +43,14 @@ export default function GeneralSettings() {
     showTips: true,
   });
 
+  const [isSaving, setIsSaving] = useState(false);
+
   const handleToggle = (key: keyof GeneralSettings, value: boolean | string | number) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
   const handleSave = async () => {
+    setIsSaving(true);
     try {
       await updateProfile({
         language: settings.language,
@@ -64,6 +67,8 @@ export default function GeneralSettings() {
         description: "Failed to save settings.",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -326,8 +331,8 @@ export default function GeneralSettings() {
             transition={{ delay: 0.6 }}
             className="flex justify-end"
           >
-            <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">
-              Save Changes
+            <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700" disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save Changes'}
             </Button>
           </motion.div>
         </div>

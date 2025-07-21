@@ -35,6 +35,7 @@ const Signup = () => {
   });
   const [formError, setFormError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<{ fullName?: string; username?: string; email?: string; password?: string; confirmPassword?: string }>({});
+  const [isSigningUp, setIsSigningUp] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -48,6 +49,7 @@ const Signup = () => {
     e.preventDefault();
     setFormError(null);
     setValidationErrors({});
+    setIsSigningUp(true);
     const result = signupSchema.safeParse(formData);
     if (!result.success) {
       const fieldErrors: any = {};
@@ -55,17 +57,21 @@ const Signup = () => {
         if (err.path[0]) fieldErrors[err.path[0]] = err.message;
       });
       setValidationErrors(fieldErrors);
+      setIsSigningUp(false);
       return;
     }
     if (formData.password !== formData.confirmPassword) {
       setValidationErrors({ confirmPassword: "Passwords do not match" });
+      setIsSigningUp(false);
       return;
     }
     if (!agreeToTerms) {
       setFormError("Please agree to the terms and conditions!");
+      setIsSigningUp(false);
       return;
     }
     const success = await signup(formData.username, formData.email, formData.password);
+    setIsSigningUp(false);
     if (success) {
     setLocation("/");
     } else {
@@ -329,9 +335,9 @@ const Signup = () => {
             <GlassmorphismButton
               type="submit"
               className="w-full py-3 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600"
-              disabled={loading}
+              disabled={isSigningUp}
             >
-              {loading ? "Creating Account..." : "Create Account"}
+              {isSigningUp ? "Signing up..." : "Create Account"}
             </GlassmorphismButton>
           </motion.form>
 

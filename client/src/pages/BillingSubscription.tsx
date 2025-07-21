@@ -59,6 +59,8 @@ export default function BillingSubscription() {
     expiry: "12/26"
   });
 
+  const [isBillingLoading, setIsBillingLoading] = useState(false);
+
   const plans: SubscriptionPlan[] = [
     {
       id: "free",
@@ -133,21 +135,33 @@ export default function BillingSubscription() {
   ];
 
   const handlePlanChange = async (planId: string) => {
+    setIsBillingLoading(true);
     const plan = plans.find(p => p.id === planId);
     if (!plan) return;
 
-    showLoader("Updating your subscription...");
-    
-    setTimeout(() => {
-      hideLoader();
+    try {
+      showLoader("Updating your subscription...");
+      
+      setTimeout(() => {
+        hideLoader();
+        toast({
+          title: "Subscription Updated",
+          description: `Successfully upgraded to ${plan.name} plan.`,
+        });
+      }, 3000);
+    } catch (error) {
       toast({
-        title: "Subscription Updated",
-        description: `Successfully upgraded to ${plan.name} plan.`,
+        title: "Error Updating Plan",
+        description: "Failed to update subscription plan. Please try again.",
+        variant: "destructive"
       });
-    }, 3000);
+    } finally {
+      setIsBillingLoading(false);
+    }
   };
 
   const handleUpdatePayment = () => {
+    setIsBillingLoading(true);
     showLoader("Updating payment method...");
     
     setTimeout(() => {
@@ -157,9 +171,11 @@ export default function BillingSubscription() {
         description: "Your payment method has been successfully updated.",
       });
     }, 2000);
+    setIsBillingLoading(false);
   };
 
   const handleCancelSubscription = () => {
+    setIsBillingLoading(true);
     showLoader("Processing cancellation...");
     
     setTimeout(() => {
@@ -170,6 +186,7 @@ export default function BillingSubscription() {
         variant: "destructive"
       });
     }, 2000);
+    setIsBillingLoading(false);
   };
 
   const formatDate = (dateString: string) => {
@@ -249,16 +266,18 @@ export default function BillingSubscription() {
                     onClick={handleUpdatePayment}
                     variant="outline" 
                     className="w-full border-slate-600 text-white hover:bg-slate-700"
+                    disabled={isBillingLoading}
                   >
-                    <CreditCard className="w-4 h-4 mr-2" />
-                    Update Payment
+                    {isBillingLoading ? 'Processing...' : 'Update Payment'}
+                    <CreditCard className="w-4 h-4 ml-2" />
                   </Button>
                   <Button 
                     onClick={handleCancelSubscription}
                     variant="outline" 
                     className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10"
+                    disabled={isBillingLoading}
                   >
-                    Cancel Subscription
+                    {isBillingLoading ? 'Processing...' : 'Cancel Subscription'}
                   </Button>
                 </div>
               </CardContent>
@@ -335,9 +354,9 @@ export default function BillingSubscription() {
                           ? 'bg-slate-600 text-slate-400 cursor-not-allowed' 
                           : 'bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600'
                       }`}
-                      disabled={plan.current}
+                      disabled={isBillingLoading}
                     >
-                      {plan.current ? 'Current Plan' : `Upgrade to ${plan.name}`}
+                      {isBillingLoading ? 'Processing...' : plan.current ? 'Current Plan' : `Upgrade to ${plan.name}`}
                     </Button>
                   </CardContent>
                 </Card>

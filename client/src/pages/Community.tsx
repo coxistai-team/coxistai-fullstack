@@ -109,6 +109,9 @@ export default function Community() {
 
   // Add state for post attachments
   const [postAttachments, setPostAttachments] = useState<string[]>([]);
+  const [isCreatingPost, setIsCreatingPost] = useState(false);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+  const [joiningGroupId, setJoiningGroupId] = useState<string | null>(null);
 
   const categories = ["all", "Mathematics", "Science", "Test Prep", "Study Groups", "General"];
 
@@ -195,6 +198,7 @@ export default function Community() {
 
   // Handle join group (optimistic update)
   const handleJoinGroup = async (groupId: string) => {
+    setJoiningGroupId(groupId);
     const targetGroup = studyGroups.find(g => g.id === groupId);
     const wasJoined = targetGroup?.isJoined || false;
     
@@ -238,6 +242,8 @@ export default function Community() {
         variant: "destructive"
       });
       console.error(err);
+    } finally {
+      setJoiningGroupId(null);
     }
   };
 
@@ -251,7 +257,7 @@ export default function Community() {
       });
       return;
     }
-
+    setIsCreatingPost(true);
     // When creating a new post, always use safePost
     const post: Post = safePost({
       ...newPost,
@@ -302,6 +308,8 @@ export default function Community() {
         variant: "destructive"
       });
       console.error(err);
+    } finally {
+      setIsCreatingPost(false);
     }
   };
 
@@ -315,6 +323,7 @@ export default function Community() {
       });
       return;
     }
+    setIsCreatingGroup(true);
 
     const group: StudyGroup = {
       id: Date.now().toString(), // This will be replaced by backend
@@ -365,6 +374,8 @@ export default function Community() {
         variant: "destructive"
       });
       console.error(err);
+    } finally {
+      setIsCreatingGroup(false);
     }
   };
 
@@ -669,8 +680,8 @@ export default function Community() {
                         <Button variant="outline" onClick={() => setShowNewPostDialog(false)}>
                           Cancel
                         </Button>
-                        <Button onClick={handleCreatePost}>
-                          Create Post
+                        <Button onClick={handleCreatePost} disabled={isCreatingPost}>
+                          {isCreatingPost ? 'Posting...' : 'Create Post'}
                         </Button>
                       </DialogFooter>
                     </DialogContent>

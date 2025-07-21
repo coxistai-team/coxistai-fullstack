@@ -188,6 +188,7 @@ export default function UserProfileDropdown({ className = "" }: UserProfileDropd
               <Separator className="bg-white/10" />
 
               {/* User Details */}
+              {/*
               <div className="p-4">
                 <div className="text-sm font-medium text-white mb-2">Account Details</div>
                 <div className="space-y-2">
@@ -207,9 +208,11 @@ export default function UserProfileDropdown({ className = "" }: UserProfileDropd
               </div>
 
               <Separator className="bg-white/10" />
+              */}
 
               {/* Menu Items */}
               <div className="p-2">
+                {/*
                 <motion.button
                   onClick={() => navigateTo('/profile')}
                   className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-white/10 transition-colors text-left"
@@ -264,7 +267,7 @@ export default function UserProfileDropdown({ className = "" }: UserProfileDropd
                 </motion.button>
 
                 <Separator className="bg-slate-300 dark:bg-white/10 my-2" />
-
+                */}
                 <motion.button
                   onClick={handleLogout}
                   className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-red-500/20 transition-colors text-left group"

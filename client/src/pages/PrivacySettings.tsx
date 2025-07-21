@@ -41,19 +41,30 @@ export default function PrivacySettings() {
     showInLeaderboards: true,
   });
 
+  const [isSaving, setIsSaving] = useState(false);
+
   const handleToggle = (key: keyof PrivacySettings, value: boolean | string) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
   const handleSave = async () => {
+    setIsSaving(true);
     try {
       await updateProfile({
-        publicProfile: settings.publicProfile
+        publicProfile: settings.publicProfile,
+        showOnlineStatus: settings.showOnlineStatus,
+        allowDirectMessages: settings.allowDirectMessages,
+        shareStudyProgress: settings.shareStudyProgress,
+        dataCollection: settings.dataCollection,
+        analyticsTracking: settings.analyticsTracking,
+        thirdPartyIntegrations: settings.thirdPartyIntegrations,
+        profileVisibility: settings.profileVisibility,
+        searchable: settings.searchable,
+        showInLeaderboards: settings.showInLeaderboards,
       });
-      
       toast({
-        title: "Privacy settings updated",
-        description: "Your privacy preferences have been saved.",
+        title: "Settings saved",
+        description: "Your privacy preferences have been updated.",
       });
     } catch (error) {
       toast({
@@ -61,6 +72,8 @@ export default function PrivacySettings() {
         description: "Failed to save privacy settings.",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -302,8 +315,8 @@ export default function PrivacySettings() {
             transition={{ delay: 0.7 }}
             className="flex justify-end"
           >
-            <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">
-              Save Privacy Settings
+            <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700" disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save Privacy Settings'}
             </Button>
           </motion.div>
         </div>
