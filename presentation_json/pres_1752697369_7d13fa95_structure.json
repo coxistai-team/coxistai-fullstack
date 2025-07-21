@@ -1,0 +1,503 @@
+{
+  "metadata": {
+    "title": "",
+    "slide_count": 7,
+    "created_at": "2025-07-17T01:52:49.499089",
+    "theme": "gamma_style"
+  },
+  "slides": [
+    {
+      "id": "slide_0",
+      "slide_number": 1,
+      "layout_type": "title",
+      "background": {
+        "type": "color",
+        "color": "#ffffff"
+      },
+      "elements": [
+        {
+          "type": "title",
+          "content": "PHOTOSYNTHESIS",
+          "position": {
+            "left": 4.8,
+            "top": 2.5,
+            "width": 8.0,
+            "height": 2.0
+          },
+          "style": {
+            "font_size": 32,
+            "font_weight": "bold",
+            "color": "#000000",
+            "alignment": "center"
+          }
+        },
+        {
+          "type": "text",
+          "content": "Professional Presentation \u2022 July 2025",
+          "position": {
+            "left": 4.8,
+            "top": 4.8,
+            "width": 8.0,
+            "height": 1.0
+          },
+          "style": {
+            "font_size": 16,
+            "font_weight": "normal",
+            "color": "#000000",
+            "alignment": "left"
+          }
+        }
+      ]
+    },
+    {
+      "id": "slide_1",
+      "slide_number": 2,
+      "layout_type": "content",
+      "background": {
+        "type": "color",
+        "color": "#ffffff"
+      },
+      "elements": [
+        {
+          "type": "title",
+          "content": "What is Photosynthesis?",
+          "position": {
+            "left": 0.8,
+            "top": 0.6,
+            "width": 11.73,
+            "height": 0.7
+          },
+          "style": {
+            "font_size": 32,
+            "font_weight": "bold",
+            "color": "#000000",
+            "alignment": "center"
+          }
+        },
+        {
+          "type": "bullet_list",
+          "items": [
+            "Photosynthesis is the process by which plants convert light energy from the sun into chemical energy in the form of glucose",
+            "It occurs in the chloroplasts of plant cells, which contain chlorophyll - the green pigment that absorbs sunlight",
+            "During photosynthesis, plants use carbon dioxide, water, and sunlight to produce glucose and release oxygen as a byproduct"
+          ],
+          "position": {
+            "left": 0.9,
+            "top": 1.8,
+            "width": 6.8,
+            "height": 4.5
+          },
+          "style": {
+            "font_size": 16,
+            "color": "#000000",
+            "alignment": "left"
+          }
+        },
+        {
+          "type": "text",
+          "content": "Image Content",
+          "position": {
+            "left": 8.699998906386702,
+            "top": 4.5,
+            "width": 3.5,
+            "height": 0.5
+          },
+          "style": {
+            "font_size": 16,
+            "font_weight": "normal",
+            "color": "#000000",
+            "alignment": "left"
+          }
+        },
+        {
+          "type": "text",
+          "content": "1",
+          "position": {
+            "left": 12.5,
+            "top": 6.9,
+            "width": 0.7,
+            "height": 0.4
+          },
+          "style": {
+            "font_size": 16,
+            "font_weight": "normal",
+            "color": "#000000",
+            "alignment": "left"
+          }
+        }
+      ]
+    },
+    {
+      "id": "slide_2",
+      "slide_number": 3,
+      "layout_type": "content",
+      "background": {
+        "type": "color",
+        "color": "#ffffff"
+      },
+      "elements": [
+        {
+          "type": "title",
+          "content": "The Stages of Photosynthesis",
+          "position": {
+            "left": 0.8,
+            "top": 0.6,
+            "width": 11.73,
+            "height": 0.7
+          },
+          "style": {
+            "font_size": 32,
+            "font_weight": "bold",
+            "color": "#000000",
+            "alignment": "center"
+          }
+        },
+        {
+          "type": "bullet_list",
+          "items": [
+            "The light-dependent stage, where chlorophyll absorbs sunlight and uses it to split water molecules, releasing electrons",
+            "The light-independent stage (also called the Calvin cycle), where the released electrons are used to convert carbon dioxide into glucose",
+            "The glucose produced is then used by the plant for energy or stored for future use"
+          ],
+          "position": {
+            "left": 0.9,
+            "top": 1.8,
+            "width": 6.8,
+            "height": 4.5
+          },
+          "style": {
+            "font_size": 16,
+            "color": "#000000",
+            "alignment": "left"
+          }
+        },
+        {
+          "type": "text",
+          "content": "Image Content",
+          "position": {
+            "left": 8.699998906386702,
+            "top": 4.5,
+            "width": 3.5,
+            "height": 0.5
+          },
+          "style": {
+            "font_size": 16,
+            "font_weight": "normal",
+            "color": "#000000",
+            "alignment": "left"
+          }
+        },
+        {
+          "type": "text",
+          "content": "2",
+          "position": {
+            "left": 12.5,
+            "top": 6.9,
+            "width": 0.7,
+            "height": 0.4
+          },
+          "style": {
+            "font_size": 16,
+            "font_weight": "normal",
+            "color": "#000000",
+            "alignment": "left"
+          }
+        }
+      ]
+    },
+    {
+      "id": "slide_3",
+      "slide_number": 4,
+      "layout_type": "content",
+      "background": {
+        "type": "color",
+        "color": "#ffffff"
+      },
+      "elements": [
+        {
+          "type": "title",
+          "content": "Factors Affecting Photosynthesis",
+          "position": {
+            "left": 0.8,
+            "top": 0.6,
+            "width": 11.73,
+            "height": 0.7
+          },
+          "style": {
+            "font_size": 32,
+            "font_weight": "bold",
+            "color": "#000000",
+            "alignment": "center"
+          }
+        },
+        {
+          "type": "bullet_list",
+          "items": [
+            "Light intensity - more sunlight leads to higher rates of photosynthesis, up to a certain point",
+            "Carbon dioxide concentration - higher CO2 levels generally increase the rate of photosynthesis",
+            "Temperature - photosynthesis is most efficient within an optimal temperature range, typically between 20-35\u00b0C",
+            "Water availability - plants need adequate water to transport nutrients and maintain cell structure for photosynthesis"
+          ],
+          "position": {
+            "left": 0.9,
+            "top": 1.8,
+            "width": 6.8,
+            "height": 4.5
+          },
+          "style": {
+            "font_size": 16,
+            "color": "#000000",
+            "alignment": "left"
+          }
+        },
+        {
+          "type": "text",
+          "content": "Image Content",
+          "position": {
+            "left": 8.699998906386702,
+            "top": 4.5,
+            "width": 3.5,
+            "height": 0.5
+          },
+          "style": {
+            "font_size": 16,
+            "font_weight": "normal",
+            "color": "#000000",
+            "alignment": "left"
+          }
+        },
+        {
+          "type": "text",
+          "content": "3",
+          "position": {
+            "left": 12.5,
+            "top": 6.9,
+            "width": 0.7,
+            "height": 0.4
+          },
+          "style": {
+            "font_size": 16,
+            "font_weight": "normal",
+            "color": "#000000",
+            "alignment": "left"
+          }
+        }
+      ]
+    },
+    {
+      "id": "slide_4",
+      "slide_number": 5,
+      "layout_type": "content",
+      "background": {
+        "type": "color",
+        "color": "#ffffff"
+      },
+      "elements": [
+        {
+          "type": "title",
+          "content": "Importance of Photosynthesis",
+          "position": {
+            "left": 0.8,
+            "top": 0.6,
+            "width": 11.73,
+            "height": 0.7
+          },
+          "style": {
+            "font_size": 32,
+            "font_weight": "bold",
+            "color": "#000000",
+            "alignment": "center"
+          }
+        },
+        {
+          "type": "bullet_list",
+          "items": [
+            "Photosynthesis is the foundation of most food chains and food webs, as it produces the glucose that sustains life",
+            "It is the primary process by which plants and other autotrophs convert light energy into chemical energy",
+            "Photosynthesis also plays a crucial role in the global carbon cycle and oxygen production, making it essential for life on Earth"
+          ],
+          "position": {
+            "left": 0.9,
+            "top": 1.8,
+            "width": 6.8,
+            "height": 4.5
+          },
+          "style": {
+            "font_size": 16,
+            "color": "#000000",
+            "alignment": "left"
+          }
+        },
+        {
+          "type": "text",
+          "content": "Image Content",
+          "position": {
+            "left": 8.699998906386702,
+            "top": 4.5,
+            "width": 3.5,
+            "height": 0.5
+          },
+          "style": {
+            "font_size": 16,
+            "font_weight": "normal",
+            "color": "#000000",
+            "alignment": "left"
+          }
+        },
+        {
+          "type": "text",
+          "content": "4",
+          "position": {
+            "left": 12.5,
+            "top": 6.9,
+            "width": 0.7,
+            "height": 0.4
+          },
+          "style": {
+            "font_size": 16,
+            "font_weight": "normal",
+            "color": "#000000",
+            "alignment": "left"
+          }
+        }
+      ]
+    },
+    {
+      "id": "slide_5",
+      "slide_number": 6,
+      "layout_type": "content",
+      "background": {
+        "type": "color",
+        "color": "#ffffff"
+      },
+      "elements": [
+        {
+          "type": "title",
+          "content": "Adaptations for Photosynthesis",
+          "position": {
+            "left": 0.8,
+            "top": 0.6,
+            "width": 11.73,
+            "height": 0.7
+          },
+          "style": {
+            "font_size": 32,
+            "font_weight": "bold",
+            "color": "#000000",
+            "alignment": "center"
+          }
+        },
+        {
+          "type": "bullet_list",
+          "items": [
+            "Plants have evolved various adaptations to maximize photosynthesis, such as large, flat leaves to capture more sunlight",
+            "Some plants have specialized structures like stomata to efficiently regulate the exchange of gases (CO2 and O2)",
+            "Certain plants, like cacti, have adapted to conserve water by using a modified photosynthetic process called CAM photosynthesis"
+          ],
+          "position": {
+            "left": 0.9,
+            "top": 1.8,
+            "width": 6.8,
+            "height": 4.5
+          },
+          "style": {
+            "font_size": 16,
+            "color": "#000000",
+            "alignment": "left"
+          }
+        },
+        {
+          "type": "text",
+          "content": "Image Content",
+          "position": {
+            "left": 8.699998906386702,
+            "top": 4.5,
+            "width": 3.5,
+            "height": 0.5
+          },
+          "style": {
+            "font_size": 16,
+            "font_weight": "normal",
+            "color": "#000000",
+            "alignment": "left"
+          }
+        },
+        {
+          "type": "text",
+          "content": "5",
+          "position": {
+            "left": 12.5,
+            "top": 6.9,
+            "width": 0.7,
+            "height": 0.4
+          },
+          "style": {
+            "font_size": 16,
+            "font_weight": "normal",
+            "color": "#000000",
+            "alignment": "left"
+          }
+        }
+      ]
+    },
+    {
+      "id": "slide_6",
+      "slide_number": 7,
+      "layout_type": "content",
+      "background": {
+        "type": "color",
+        "color": "#ffffff"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "content": "THANK YOU",
+          "position": {
+            "left": 4.8,
+            "top": 2.5,
+            "width": 8.0,
+            "height": 1.5
+          },
+          "style": {
+            "font_size": 16,
+            "font_weight": "normal",
+            "color": "#000000",
+            "alignment": "left"
+          }
+        },
+        {
+          "type": "text",
+          "content": "Questions & Discussion",
+          "position": {
+            "left": 4.8,
+            "top": 4.2,
+            "width": 8.0,
+            "height": 1.0
+          },
+          "style": {
+            "font_size": 16,
+            "font_weight": "normal",
+            "color": "#000000",
+            "alignment": "left"
+          }
+        },
+        {
+          "type": "text",
+          "content": "Presentation on: photosynthesis",
+          "position": {
+            "left": 4.8,
+            "top": 5.5,
+            "width": 8.0,
+            "height": 0.8
+          },
+          "style": {
+            "font_size": 16,
+            "font_weight": "normal",
+            "color": "#000000",
+            "alignment": "left"
+          }
+        }
+      ]
+    }
+  ]
+}

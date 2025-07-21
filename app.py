@@ -26,7 +26,7 @@ tts_engine = TextToSpeech(output_dir='temp_uploads')
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = "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"
 assistant = SmartDeepSeek(OPENROUTER_API_KEY)
 
 ALLOWED_EXTENSIONS = {

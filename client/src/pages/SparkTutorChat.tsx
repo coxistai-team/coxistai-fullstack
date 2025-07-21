@@ -58,31 +58,25 @@ interface ChatSession {
 const SparkTutorChat = () => {
   const { showLoader, hideLoader } = useLoading();
   
-  // Chat sessions state
   const [chatSessions, setChatSessions] = useState<ChatSession[]>(() => {
     const saved = localStorage.getItem('sparktutor-sessions');
     return saved ? JSON.parse(saved) : [];
   });
   
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(() => {
-    const saved = localStorage.getItem('sparktutor-current-session');
-    return saved || null;
-  });
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Current chat state
   const currentSession = chatSessions.find(s => s.id === currentSessionId);
-  const [messages, setMessages] = useState<Message[]>(() => {
-    if (currentSession) return currentSession.messages;
-    return [{
+  const [messages, setMessages] = useState<Message[]>([ {
       id: "1",
       content: "Hello! I'm SparkTutor, your AI learning assistant. I can help you with homework, explain concepts, solve problems, and much more. You can also upload files for me to analyze! How can I assist you today?",
       isAI: true,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }];
-  });
+  
+  }]);
 
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -99,22 +93,14 @@ const SparkTutorChat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Save to localStorage whenever sessions change
   useEffect(() => {
     localStorage.setItem('sparktutor-sessions', JSON.stringify(chatSessions));
   }, [chatSessions]);
 
   useEffect(() => {
-    if (currentSessionId) {
-      localStorage.setItem('sparktutor-current-session', currentSessionId);
-    }
-  }, [currentSessionId]);
-
-  useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  // Update current session messages when messages change
   useEffect(() => {
     if (currentSessionId && messages.length > 0) {
       setChatSessions(sessions => 
@@ -127,7 +113,6 @@ const SparkTutorChat = () => {
     }
   }, [messages, currentSessionId]);
 
-  // Chat session management functions
   const createNewChat = () => {
     const newSession: ChatSession = {
       id: Date.now().toString(),
@@ -179,14 +164,12 @@ const SparkTutorChat = () => {
     );
   };
 
-  // Auto-generate title from first user message
   const generateTitle = (firstUserMessage: string) => {
     return firstUserMessage.length > 50 
       ? firstUserMessage.substring(0, 47) + "..."
       : firstUserMessage;
   };
 
-  // Filter sessions based on search
   const filteredSessions = chatSessions.filter(session =>
     session.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     session.messages.some(msg => 
@@ -194,7 +177,6 @@ const SparkTutorChat = () => {
     )
   );
 
-  // Voice recording functions
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -266,7 +248,6 @@ const SparkTutorChat = () => {
         recordingTimerRef.current = null;
       }
       
-      // Clean up without saving
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
@@ -285,7 +266,6 @@ const SparkTutorChat = () => {
   const handleSendMessage = async () => {
     if ((!inputValue.trim() && !attachedFile) || isLoading) return;
 
-    // Create user message
     let userMessageContent = inputValue;
     if (attachedFile && inputValue.trim()) {
       userMessageContent = `${inputValue}\n\n📎 **Attached file:** ${attachedFile.file.name}`;
@@ -301,13 +281,11 @@ const SparkTutorChat = () => {
       attachedFiles: attachedFile ? [attachedFile] : undefined,
     };
 
-    // Update session title if this is the first user message in a "New Chat"
     if (!currentSessionId || (currentSession && currentSession.title === "New Chat" && currentSession.messages.length === 1)) {
       const title = generateTitle(userMessage.content);
       if (currentSessionId) {
         updateSessionTitle(currentSessionId, title);
       } else {
-        // Create new session if none exists
         const newSession: ChatSession = {
           id: Date.now().toString(),
           title,
@@ -334,7 +312,6 @@ const SparkTutorChat = () => {
       }
     }
 
-    // For existing sessions, just add the message
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
     setAttachedFile(null);
@@ -342,7 +319,6 @@ const SparkTutorChat = () => {
     await sendToAPI(userMessageContent, attachedFile);
   };
 
-  // Helper function to send message to API
   const sendToAPI = async (messageContent: string, file: AttachedFile | null) => {
     try {
       let response;
@@ -388,7 +364,7 @@ const SparkTutorChat = () => {
 
   const handleFilesChange = (files: AttachedFile[]) => {
     if (files.length > 0) {
-      setAttachedFile(files[0]); // Take only the first file for single file mode
+      setAttachedFile(files[0]); 
     }
   };
 
@@ -416,7 +392,6 @@ const SparkTutorChat = () => {
     }
   };
 
-  // Clean up on unmount
   useEffect(() => {
     return () => {
       if (streamRef.current) {
@@ -428,7 +403,6 @@ const SparkTutorChat = () => {
     };
   }, []);
 
-  // AI typing indicator: true when loading AI response
   const isAITyping = isLoading;
 
   return (

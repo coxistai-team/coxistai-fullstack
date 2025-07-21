@@ -20,7 +20,7 @@ except ImportError:
 
 class SimpleImageGenerator:
     def __init__(self):
-        self.api_key = "lTNXMP6jfnmac6ACKpZQQGmCYYjFAuE5CeRAe5iJ1f6ppRNkOdvJOEkG"
+        self.api_key = "VcHus6XWASVDBMma2S2vZXkiCTtwe1XB4BYE0lJrkYim6piqbc3AOuUC"
         self.headers = {'Authorization': self.api_key}
     
     def generate_images(self, description, count=3):

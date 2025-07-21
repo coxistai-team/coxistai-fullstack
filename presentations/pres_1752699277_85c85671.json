@@ -1,0 +1,515 @@
+{
+  "id": "pres_1752699277_85c85671",
+  "topic": "ooty",
+  "created_at": "2025-07-17T02:24:37.431444",
+  "updated_at": "2025-07-17T02:24:37.431444",
+  "slide_count": 5,
+  "ppt_path": "ooty_presentation_sunset_warmth.pptx",
+  "json_data": {
+    "metadata": {
+      "title": "",
+      "slide_count": 7,
+      "created_at": "2025-07-17T02:24:37.326317",
+      "theme": "gamma_style"
+    },
+    "slides": [
+      {
+        "id": "slide_0",
+        "slide_number": 1,
+        "layout_type": "title",
+        "background": {
+          "type": "color",
+          "color": "#ffffff"
+        },
+        "elements": [
+          {
+            "type": "title",
+            "content": "OOTY",
+            "position": {
+              "left": 4.8,
+              "top": 2.5,
+              "width": 8.0,
+              "height": 2.0
+            },
+            "style": {
+              "font_size": 32,
+              "font_weight": "bold",
+              "color": "#000000",
+              "alignment": "center"
+            }
+          },
+          {
+            "type": "text",
+            "content": "Professional Presentation \u2022 July 2025",
+            "position": {
+              "left": 4.8,
+              "top": 4.8,
+              "width": 8.0,
+              "height": 1.0
+            },
+            "style": {
+              "font_size": 16,
+              "font_weight": "normal",
+              "color": "#000000",
+              "alignment": "left"
+            }
+          }
+        ]
+      },
+      {
+        "id": "slide_1",
+        "slide_number": 2,
+        "layout_type": "content",
+        "background": {
+          "type": "color",
+          "color": "#ffffff"
+        },
+        "elements": [
+          {
+            "type": "title",
+            "content": "Introduction to ooty",
+            "position": {
+              "left": 0.8,
+              "top": 0.6,
+              "width": 11.73,
+              "height": 0.7
+            },
+            "style": {
+              "font_size": 32,
+              "font_weight": "bold",
+              "color": "#000000",
+              "alignment": "center"
+            }
+          },
+          {
+            "type": "bullet_list",
+            "items": [
+              "Understanding ooty is essential for modern applications",
+              "Key principles provide foundation for effective implementation",
+              "This presentation explores theoretical and practical aspects",
+              "Examples demonstrate value across various industries"
+            ],
+            "position": {
+              "left": 0.9,
+              "top": 1.8,
+              "width": 6.8,
+              "height": 4.5
+            },
+            "style": {
+              "font_size": 16,
+              "color": "#000000",
+              "alignment": "left"
+            }
+          },
+          {
+            "type": "text",
+            "content": "Image Content",
+            "position": {
+              "left": 8.699998906386702,
+              "top": 4.5,
+              "width": 3.5,
+              "height": 0.5
+            },
+            "style": {
+              "font_size": 16,
+              "font_weight": "normal",
+              "color": "#000000",
+              "alignment": "left"
+            }
+          },
+          {
+            "type": "text",
+            "content": "1",
+            "position": {
+              "left": 12.5,
+              "top": 6.9,
+              "width": 0.7,
+              "height": 0.4
+            },
+            "style": {
+              "font_size": 16,
+              "font_weight": "normal",
+              "color": "#000000",
+              "alignment": "left"
+            }
+          }
+        ]
+      },
+      {
+        "id": "slide_2",
+        "slide_number": 3,
+        "layout_type": "content",
+        "background": {
+          "type": "color",
+          "color": "#ffffff"
+        },
+        "elements": [
+          {
+            "type": "title",
+            "content": "Key Features of ooty",
+            "position": {
+              "left": 0.8,
+              "top": 0.6,
+              "width": 11.73,
+              "height": 0.7
+            },
+            "style": {
+              "font_size": 32,
+              "font_weight": "bold",
+              "color": "#000000",
+              "alignment": "center"
+            }
+          },
+          {
+            "type": "bullet_list",
+            "items": [
+              "Core components include systematic approaches and methodologies",
+              "Advanced capabilities encompass automation and optimization",
+              "Quality assurance ensures reliability and standards compliance",
+              "Customization options provide flexibility for specific needs"
+            ],
+            "position": {
+              "left": 0.9,
+              "top": 1.8,
+              "width": 6.8,
+              "height": 4.5
+            },
+            "style": {
+              "font_size": 16,
+              "color": "#000000",
+              "alignment": "left"
+            }
+          },
+          {
+            "type": "text",
+            "content": "Image Content",
+            "position": {
+              "left": 8.699998906386702,
+              "top": 4.5,
+              "width": 3.5,
+              "height": 0.5
+            },
+            "style": {
+              "font_size": 16,
+              "font_weight": "normal",
+              "color": "#000000",
+              "alignment": "left"
+            }
+          },
+          {
+            "type": "text",
+            "content": "2",
+            "position": {
+              "left": 12.5,
+              "top": 6.9,
+              "width": 0.7,
+              "height": 0.4
+            },
+            "style": {
+              "font_size": 16,
+              "font_weight": "normal",
+              "color": "#000000",
+              "alignment": "left"
+            }
+          }
+        ]
+      },
+      {
+        "id": "slide_3",
+        "slide_number": 4,
+        "layout_type": "content",
+        "background": {
+          "type": "color",
+          "color": "#ffffff"
+        },
+        "elements": [
+          {
+            "type": "title",
+            "content": "Implementation of ooty",
+            "position": {
+              "left": 0.8,
+              "top": 0.6,
+              "width": 11.73,
+              "height": 0.7
+            },
+            "style": {
+              "font_size": 32,
+              "font_weight": "bold",
+              "color": "#000000",
+              "alignment": "center"
+            }
+          },
+          {
+            "type": "bullet_list",
+            "items": [
+              "Strategic deployment minimizes risks and ensures smooth transition",
+              "Resource planning and timeline management are critical",
+              "Training programs help develop necessary skills",
+              "Continuous monitoring enables iterative improvements"
+            ],
+            "position": {
+              "left": 0.9,
+              "top": 1.8,
+              "width": 6.8,
+              "height": 4.5
+            },
+            "style": {
+              "font_size": 16,
+              "color": "#000000",
+              "alignment": "left"
+            }
+          },
+          {
+            "type": "text",
+            "content": "Image Content",
+            "position": {
+              "left": 8.699998906386702,
+              "top": 4.5,
+              "width": 3.5,
+              "height": 0.5
+            },
+            "style": {
+              "font_size": 16,
+              "font_weight": "normal",
+              "color": "#000000",
+              "alignment": "left"
+            }
+          },
+          {
+            "type": "text",
+            "content": "3",
+            "position": {
+              "left": 12.5,
+              "top": 6.9,
+              "width": 0.7,
+              "height": 0.4
+            },
+            "style": {
+              "font_size": 16,
+              "font_weight": "normal",
+              "color": "#000000",
+              "alignment": "left"
+            }
+          }
+        ]
+      },
+      {
+        "id": "slide_4",
+        "slide_number": 5,
+        "layout_type": "content",
+        "background": {
+          "type": "color",
+          "color": "#ffffff"
+        },
+        "elements": [
+          {
+            "type": "title",
+            "content": "Benefits of ooty",
+            "position": {
+              "left": 0.8,
+              "top": 0.6,
+              "width": 11.73,
+              "height": 0.7
+            },
+            "style": {
+              "font_size": 32,
+              "font_weight": "bold",
+              "color": "#000000",
+              "alignment": "center"
+            }
+          },
+          {
+            "type": "bullet_list",
+            "items": [
+              "Increased efficiency through streamlined processes",
+              "Enhanced decision-making with data-driven insights",
+              "Cost reduction through optimized resource utilization",
+              "Improved scalability to adapt to changing requirements"
+            ],
+            "position": {
+              "left": 0.9,
+              "top": 1.8,
+              "width": 6.8,
+              "height": 4.5
+            },
+            "style": {
+              "font_size": 16,
+              "color": "#000000",
+              "alignment": "left"
+            }
+          },
+          {
+            "type": "text",
+            "content": "Image Content",
+            "position": {
+              "left": 8.699998906386702,
+              "top": 4.5,
+              "width": 3.5,
+              "height": 0.5
+            },
+            "style": {
+              "font_size": 16,
+              "font_weight": "normal",
+              "color": "#000000",
+              "alignment": "left"
+            }
+          },
+          {
+            "type": "text",
+            "content": "4",
+            "position": {
+              "left": 12.5,
+              "top": 6.9,
+              "width": 0.7,
+              "height": 0.4
+            },
+            "style": {
+              "font_size": 16,
+              "font_weight": "normal",
+              "color": "#000000",
+              "alignment": "left"
+            }
+          }
+        ]
+      },
+      {
+        "id": "slide_5",
+        "slide_number": 6,
+        "layout_type": "content",
+        "background": {
+          "type": "color",
+          "color": "#ffffff"
+        },
+        "elements": [
+          {
+            "type": "title",
+            "content": "Best Practices for ooty",
+            "position": {
+              "left": 0.8,
+              "top": 0.6,
+              "width": 11.73,
+              "height": 0.7
+            },
+            "style": {
+              "font_size": 32,
+              "font_weight": "bold",
+              "color": "#000000",
+              "alignment": "center"
+            }
+          },
+          {
+            "type": "bullet_list",
+            "items": [
+              "Establish clear objectives and success criteria",
+              "Maintain regular stakeholder communication",
+              "Implement robust testing procedures",
+              "Document processes thoroughly for knowledge transfer"
+            ],
+            "position": {
+              "left": 0.9,
+              "top": 1.8,
+              "width": 6.8,
+              "height": 4.5
+            },
+            "style": {
+              "font_size": 16,
+              "color": "#000000",
+              "alignment": "left"
+            }
+          },
+          {
+            "type": "text",
+            "content": "Image Content",
+            "position": {
+              "left": 8.699998906386702,
+              "top": 4.5,
+              "width": 3.5,
+              "height": 0.5
+            },
+            "style": {
+              "font_size": 16,
+              "font_weight": "normal",
+              "color": "#000000",
+              "alignment": "left"
+            }
+          },
+          {
+            "type": "text",
+            "content": "5",
+            "position": {
+              "left": 12.5,
+              "top": 6.9,
+              "width": 0.7,
+              "height": 0.4
+            },
+            "style": {
+              "font_size": 16,
+              "font_weight": "normal",
+              "color": "#000000",
+              "alignment": "left"
+            }
+          }
+        ]
+      },
+      {
+        "id": "slide_6",
+        "slide_number": 7,
+        "layout_type": "content",
+        "background": {
+          "type": "color",
+          "color": "#ffffff"
+        },
+        "elements": [
+          {
+            "type": "text",
+            "content": "THANK YOU",
+            "position": {
+              "left": 4.8,
+              "top": 2.5,
+              "width": 8.0,
+              "height": 1.5
+            },
+            "style": {
+              "font_size": 16,
+              "font_weight": "normal",
+              "color": "#000000",
+              "alignment": "left"
+            }
+          },
+          {
+            "type": "text",
+            "content": "Questions & Discussion",
+            "position": {
+              "left": 4.8,
+              "top": 4.2,
+              "width": 8.0,
+              "height": 1.0
+            },
+            "style": {
+              "font_size": 16,
+              "font_weight": "normal",
+              "color": "#000000",
+              "alignment": "left"
+            }
+          },
+          {
+            "type": "text",
+            "content": "Presentation on: ooty",
+            "position": {
+              "left": 4.8,
+              "top": 5.5,
+              "width": 8.0,
+              "height": 0.8
+            },
+            "style": {
+              "font_size": 16,
+              "font_weight": "normal",
+              "color": "#000000",
+              "alignment": "left"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
