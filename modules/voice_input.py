@@ -19,7 +19,7 @@ def preprocess_audio(file_path):
         return file_path  # Return original if preprocessing fails
 
 # Load the model once when the module is imported
-model = whisper.load_model("small")
+model = whisper.load_model("tiny")
 
 def transcribe_audio(file_path):
     """

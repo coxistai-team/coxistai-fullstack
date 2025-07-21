@@ -1,8 +1,10 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useAuth } from './AuthContext';
 
 // Local user type without database dependencies
 interface LocalUser {
   id: number;
+  username: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -68,6 +70,7 @@ interface UserProviderProps {
 // Default user profile
 const defaultUser: LocalUser = {
   id: 1,
+  username: 'sharathbandaari',
   firstName: 'Sharath',
   lastName: 'Bandaari',
   email: 'sharath.bandaari@email.com',
@@ -89,65 +92,22 @@ const defaultUser: LocalUser = {
 };
 
 export const UserProvider = ({ children }: UserProviderProps) => {
-  const [user, setUser] = useState<LocalUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
-  // Load user from localStorage or use default
-  useEffect(() => {
-    const checkAuth = () => {
-      const authState = localStorage.getItem('coexist-auth-state');
-      const isAuthenticated = authState === 'authenticated';
-      
-      if (isAuthenticated) {
-        try {
-          const savedUser = localStorage.getItem('coexist-user-profile');
-          if (savedUser) {
-            setUser(JSON.parse(savedUser));
-          } else {
-            // If authenticated but no user profile, wait for login/signup to create one
-            setUser(null);
-          }
-        } catch (err) {
-          console.error('Failed to load user profile from localStorage:', err);
-          setUser(null);
-        }
-      } else {
-        setUser(null);
-      }
-      setIsLoading(false);
-    };
-
-    checkAuth();
-
-    // Listen for auth state changes via custom event
-    const handleAuthChange = () => {
-      checkAuth();
-    };
-
-    window.addEventListener('auth-change', handleAuthChange);
-    return () => window.removeEventListener('auth-change', handleAuthChange);
-  }, []);
-
   const updateProfile = async (profileData: UpdateUserProfile) => {
-    try {
-      if (!user) return;
-      
-      const updatedUser = { ...user, ...profileData };
-      setUser(updatedUser);
-      localStorage.setItem('coexist-user-profile', JSON.stringify(updatedUser));
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update profile');
-      throw err;
-    }
+    // Optionally, you can call an API to update the profile and then refresh auth
+    setError(null);
+    // This is a placeholder; actual update logic should be in AuthContext or a backend call
+    // For now, just throw if not implemented
+    throw new Error('updateProfile should be implemented in AuthContext or via API');
   };
 
   return (
     <UserContext.Provider value={{
-      user,
+      user: user as LocalUser | null,
       updateProfile,
-      isLoading,
+      isLoading: false,
       error,
     }}>
       {children}

@@ -10,10 +10,19 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import GlassmorphismButton from "@/components/ui/glassmorphism-button";
 import { useAuth } from "@/contexts/AuthContext";
+import { z } from "zod";
+
+const signupSchema = z.object({
+  fullName: z.string().min(1, "Full name is required"),
+  username: z.string().min(3, "Username is required").max(32),
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(8, "Password must be at least 8 characters"),
+});
 
 const Signup = () => {
   const [, setLocation] = useLocation();
-  const { login } = useAuth();
+  const { signup, error, loading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
@@ -24,61 +33,50 @@ const Signup = () => {
     password: "",
     confirmPassword: ""
   });
+  const [formError, setFormError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<{ fullName?: string; username?: string; email?: string; password?: string; confirmPassword?: string }>({});
+  const [isSigningUp, setIsSigningUp] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
     }));
+    setValidationErrors({ ...validationErrors, [e.target.name]: undefined });
   };
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
+    setValidationErrors({});
+    setIsSigningUp(true);
+    const result = signupSchema.safeParse(formData);
+    if (!result.success) {
+      const fieldErrors: any = {};
+      result.error.errors.forEach(err => {
+        if (err.path[0]) fieldErrors[err.path[0]] = err.message;
+      });
+      setValidationErrors(fieldErrors);
+      setIsSigningUp(false);
+      return;
+    }
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match!");
+      setValidationErrors({ confirmPassword: "Passwords do not match" });
+      setIsSigningUp(false);
       return;
     }
     if (!agreeToTerms) {
-      alert("Please agree to the terms and conditions!");
+      setFormError("Please agree to the terms and conditions!");
+      setIsSigningUp(false);
       return;
     }
-    
-    // Create user profile from signup data
-    const nameParts = formData.fullName.split(' ');
-    const firstName = nameParts[0] || '';
-    const lastName = nameParts.slice(1).join(' ') || '';
-    
-    const newUser = {
-      id: Date.now(), // Simple ID generation
-      firstName,
-      lastName,
-      email: formData.email,
-      username: formData.username,
-      phone: '',
-      bio: '',
-      location: '',
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      avatar: null,
-      dateOfBirth: '',
-      occupation: '',
-      company: '',
-      theme: 'dark',
-      emailNotifications: true,
-      pushNotifications: true,
-      marketingEmails: false,
-      weeklyDigest: true,
-      language: 'en',
-      publicProfile: false,
-    };
-    
-    // Save user profile to localStorage
-    localStorage.setItem('coexist-user-profile', JSON.stringify(newUser));
-    
-    // Use the login function from AuthContext
-    login();
-    
-    // Redirect to home page
+    const success = await signup(formData.username, formData.email, formData.password);
+    setIsSigningUp(false);
+    if (success) {
     setLocation("/");
+    } else {
+      setFormError(error || "Signup failed");
+    }
   };
 
   const handleSocialSignup = (provider: string) => {
@@ -202,6 +200,9 @@ const Signup = () => {
                   required
                 />
               </div>
+              {validationErrors.fullName && (
+                <div className="text-red-500 text-xs mt-1">{validationErrors.fullName}</div>
+              )}
             </div>
 
             {/* Username Field */}
@@ -220,6 +221,9 @@ const Signup = () => {
                   required
                 />
               </div>
+              {validationErrors.username && (
+                <div className="text-red-500 text-xs mt-1">{validationErrors.username}</div>
+              )}
             </div>
 
             {/* Email Field */}
@@ -238,6 +242,9 @@ const Signup = () => {
                   required
                 />
               </div>
+              {validationErrors.email && (
+                <div className="text-red-500 text-xs mt-1">{validationErrors.email}</div>
+              )}
             </div>
 
             {/* Password Field */}
@@ -263,6 +270,9 @@ const Signup = () => {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              {validationErrors.password && (
+                <div className="text-red-500 text-xs mt-1">{validationErrors.password}</div>
+              )}
             </div>
 
             {/* Confirm Password Field */}
@@ -288,6 +298,9 @@ const Signup = () => {
                   {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              {validationErrors.confirmPassword && (
+                <div className="text-red-500 text-xs mt-1">{validationErrors.confirmPassword}</div>
+              )}
             </div>
 
             {/* Terms and Conditions */}
@@ -314,12 +327,17 @@ const Signup = () => {
               </Label>
             </div>
 
+            {/* Error Message */}
+            {formError && (
+              <div className="text-red-500 text-sm text-center">{formError}</div>
+            )}
             {/* Signup Button */}
             <GlassmorphismButton
               type="submit"
               className="w-full py-3 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600"
+              disabled={isSigningUp}
             >
-              Create Account
+              {isSigningUp ? "Signing up..." : "Create Account"}
             </GlassmorphismButton>
           </motion.form>
 

@@ -43,11 +43,14 @@ export default function GeneralSettings() {
     showTips: true,
   });
 
+  const [isSaving, setIsSaving] = useState(false);
+
   const handleToggle = (key: keyof GeneralSettings, value: boolean | string | number) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
   const handleSave = async () => {
+    setIsSaving(true);
     try {
       await updateProfile({
         language: settings.language,
@@ -64,6 +67,8 @@ export default function GeneralSettings() {
         description: "Failed to save settings.",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -219,7 +224,7 @@ export default function GeneralSettings() {
                           />
                         )}
                         
-                        {setting.type === 'select' && setting.options && (
+                        {setting.type === 'select' && 'options' in setting && Array.isArray(setting.options) && (
                           <div className="w-48">
                             <Select
                               value={settings[setting.key as keyof GeneralSettings] as string}
@@ -249,9 +254,9 @@ export default function GeneralSettings() {
                                 onValueChange={(value) => 
                                   handleToggle(setting.key as keyof GeneralSettings, value[0])
                                 }
-                                min={setting.min}
-                                max={setting.max}
-                                step={setting.step}
+                                min={('min' in setting && typeof setting.min === 'number') ? setting.min : undefined}
+                                max={('max' in setting && typeof setting.max === 'number') ? setting.max : undefined}
+                                step={('step' in setting && typeof setting.step === 'number') ? setting.step : undefined}
                                 className="flex-1"
                               />
                               <span className="text-sm font-medium w-8 text-center">
@@ -326,8 +331,8 @@ export default function GeneralSettings() {
             transition={{ delay: 0.6 }}
             className="flex justify-end"
           >
-            <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">
-              Save Changes
+            <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700" disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save Changes'}
             </Button>
           </motion.div>
         </div>

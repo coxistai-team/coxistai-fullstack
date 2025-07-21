@@ -1,6 +1,26 @@
-node_modules
-dist
+node_modules/
+dist/
 .DS_Store
-server/public
+server/public/
 vite.config.ts.*
 *.tar.gz
+.env
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+*.so
+*.egg-info/
+.eggs/
+venv/
+.venv/
+ENV/
+.env*/
+# VSCode
+.vscode/
+# macOS
+*.DS_Store
+# Linux
+*~
+# Logs
+*.log

@@ -50,11 +50,14 @@ export default function NotificationSettings() {
     }
   });
 
+  const [isSaving, setIsSaving] = useState(false);
+
   const handleToggle = (key: keyof NotificationSettings, value: boolean) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
   const handleSave = async () => {
+    setIsSaving(true);
     try {
       await updateProfile({
         emailNotifications: settings.emailNotifications,
@@ -73,6 +76,8 @@ export default function NotificationSettings() {
         description: "Failed to save notification settings.",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -296,8 +301,8 @@ export default function NotificationSettings() {
             transition={{ delay: 0.6 }}
             className="flex justify-end"
           >
-            <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">
-              Save Changes
+            <Button onClick={handleSave} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
+              {isSaving ? 'Saving...' : 'Save Changes'}
             </Button>
           </motion.div>
         </div>

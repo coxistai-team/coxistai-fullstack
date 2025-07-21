@@ -2,6 +2,7 @@
 import React from "react"
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+
 import {
   Download,
   RefreshCw,
@@ -65,19 +66,55 @@ const AIPresentations = () => {
 
   // Background styles array
   const backgroundStyles = [
-    { name: "Purple Gradient", value: "from-purple-600 via-blue-600 to-indigo-700", type: "gradient" },
-    { name: "Ocean Gradient", value: "from-blue-500 via-teal-500 to-cyan-600", type: "gradient" },
-    { name: "Sunset Gradient", value: "from-orange-500 via-red-500 to-pink-600", type: "gradient" },
-    { name: "Forest Gradient", value: "from-green-500 via-emerald-500 to-teal-600", type: "gradient" },
-    { name: "Fire Gradient", value: "from-red-600 via-orange-500 to-yellow-500", type: "gradient" },
-    { name: "Night Gradient", value: "from-gray-900 via-purple-900 to-violet-800", type: "gradient" },
-    { name: "Aurora Gradient", value: "from-green-400 via-blue-500 to-purple-600", type: "gradient" },
-    { name: "Space Gradient", value: "from-black via-purple-900 to-blue-900", type: "gradient" },
+    {
+      name: "Purple Gradient",
+      value: "from-purple-600 via-blue-600 to-indigo-700",
+      type: "gradient",
+    },
+    {
+      name: "Ocean Gradient",
+      value: "from-blue-500 via-teal-500 to-cyan-600",
+      type: "gradient",
+    },
+    {
+      name: "Sunset Gradient",
+      value: "from-orange-500 via-red-500 to-pink-600",
+      type: "gradient",
+    },
+    {
+      name: "Forest Gradient",
+      value: "from-green-500 via-emerald-500 to-teal-600",
+      type: "gradient",
+    },
+    {
+      name: "Fire Gradient",
+      value: "from-red-600 via-orange-500 to-yellow-500",
+      type: "gradient",
+    },
+    {
+      name: "Night Gradient",
+      value: "from-gray-900 via-purple-900 to-violet-800",
+      type: "gradient",
+    },
+    {
+      name: "Aurora Gradient",
+      value: "from-green-400 via-blue-500 to-purple-600",
+      type: "gradient",
+    },
+    {
+      name: "Space Gradient",
+      value: "from-black via-purple-900 to-blue-900",
+      type: "gradient",
+    },
     { name: "Minimal White", value: "bg-white text-gray-900", type: "solid" },
-    { name: "Professional Blue", value: "bg-blue-900 text-white", type: "solid" },
+    {
+      name: "Professional Blue",
+      value: "bg-blue-900 text-white",
+      type: "solid",
+    },
     { name: "Dark Mode", value: "bg-gray-900 text-white", type: "solid" },
     { name: "Clean Gray", value: "bg-gray-100 text-gray-900", type: "solid" },
-  ]
+  ];
 
   const [slides, setSlides] = useState<Slide[]>([
     // Initial dummy slide, will be replaced by AI generated content
@@ -137,7 +174,7 @@ const AIPresentations = () => {
     content = contentElements.join("\n\n")
     return { title, subtitle, content } // Return subtitle
   }
-
+ 
   const { title: editorTitle, subtitle: editorSubtitleValue, content: editorContent } = getEditorContent(currentSlide)
 
   // Update editorSubtitle state when currentSlide changes
@@ -248,7 +285,73 @@ const AIPresentations = () => {
         description: "Generate a presentation first to save changes to backend.",
       })
     }
-  }
+  };
+
+  // Create new presentation
+  const createNewPresentation = () => {
+    setSlides(
+      safeSlides([
+        {
+          id: `slide_${Date.now()}`,
+          title: "New Presentation",
+          subtitle: "",
+          content: "",
+          backgroundStyle: "gradient",
+          backgroundGradient: "from-purple-600 via-blue-600 to-indigo-700",
+          images: [],
+          bulletPoints: [],
+        },
+      ])
+    );
+    setCurrentPresentationId(null);
+    setCurrentSlideIndex(0);
+    setHasUnsavedChanges(false); // No unsaved changes yet
+    setPendingAutoSave(true); // Trigger auto-save so it appears in the list
+  };
+
+  // Delete presentation
+  const deletePresentation = async (id: string | number) => {
+    try {
+      const res = await fetch(`/api/presentations/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to delete presentation");
+      toast({
+        title: "Presentation Deleted",
+        description: "Presentation has been removed.",
+      });
+      // Refresh list
+      fetch("/api/presentations", { credentials: "include" })
+        .then(res => res.json())
+        .then(data => {
+          setPresentations(data);
+          if (data.length > 0) {
+            setCurrentPresentationId(data[0].id.toString());
+            setSlides(safeSlides(JSON.parse(data[0].slides)));
+          } else {
+            createNewPresentation();
+          }
+        });
+    } catch (e: any) {
+      toast({
+        title: "Delete Failed",
+        description: e.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Switch presentation
+  const loadPresentation = (id: string | number) => {
+    const pres = presentations.find(p => p.id.toString() === id.toString());
+    if (pres) {
+      setCurrentPresentationId(pres.id.toString());
+      setSlides(safeSlides(JSON.parse(pres.slides)));
+      setCurrentSlideIndex(0);
+      setHasUnsavedChanges(false);
+    }
+  };
 
   // Add new slide
   const addSlide = () => {
@@ -281,8 +384,8 @@ const AIPresentations = () => {
     toast({
       title: "Slide Added",
       description: "New slide has been created successfully.",
-    })
-  }
+    });
+  };
 
   // Delete slide
   const deleteSlide = (index: number) => {
@@ -291,24 +394,26 @@ const AIPresentations = () => {
         title: "Cannot Delete",
         description: "You need at least one slide in your presentation.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
-    setSlides((prev) => prev.filter((_, i) => i !== index))
+    setSlides(prev => prev.filter((_, i) => i !== index));
     if (currentSlideIndex >= slides.length - 1) {
-      setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1))
+      setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1));
     }
+
     toast({
       title: "Slide Deleted",
       description: "Slide has been removed from your presentation.",
-    })
-  }
+    });
+  };
 
   // Duplicate slide
   const duplicateSlide = (index: number) => {
-    const slideToClone = slides[index]
+    const slideToClone = slides[index];
     const newSlide = {
       ...slideToClone,
+
       id: Date.now().toString(), // New unique ID
       slide_number: slides.length + 1, // New slide number
       elements: slideToClone.elements.map((el) => ({
@@ -321,8 +426,8 @@ const AIPresentations = () => {
     toast({
       title: "Slide Duplicated",
       description: "Slide has been copied successfully.",
-    })
-  }
+    });
+  };
 
   // Generate presentation with AI via Flask backend
   const generatePresentation = async () => {
@@ -331,11 +436,11 @@ const AIPresentations = () => {
         title: "Topic Required",
         description: "Please enter a topic for your presentation.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsGenerating(true)
+    setIsGenerating(true);
 
     try {
       // Step 1: Call /create_presentation to initiate generation and get presentation_id
@@ -429,13 +534,13 @@ const AIPresentations = () => {
         title: "Generation Failed",
         description: error.message || "There was an error generating your presentation.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsGenerating(false)
-      setShowGenerateDialog(false)
-      setGenerateTopic("")
+      setIsGenerating(false);
+      setShowGenerateDialog(false);
+      setGenerateTopic("");
     }
-  }
+  };
 
   // Export presentation via Flask backend
   const exportPresentation = async (format: string) => {
@@ -461,9 +566,10 @@ const AIPresentations = () => {
           presentationId: presentationId,
           format: format,
         }),
-      })
+      });
 
       if (!response.ok) {
+
         const errorData = await response.json()
         throw new Error(errorData.error || "Failed to export presentation")
       }
@@ -486,31 +592,31 @@ const AIPresentations = () => {
       toast({
         title: `${format.toUpperCase()} Download Complete`,
         description: `Your presentation has been downloaded as ${format.toUpperCase()}.`,
-      })
+      });
     } catch (error: any) {
       console.error("Error exporting presentation:", error)
       toast({
         title: "Download Failed",
         description: error.message || "There was an error downloading your presentation.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsDownloading(false)
+      setIsDownloading(false);
     }
   }
 
   // Navigation
   const nextSlide = () => {
     if (currentSlideIndex < slides.length - 1) {
-      setCurrentSlideIndex(currentSlideIndex + 1)
+      setCurrentSlideIndex(currentSlideIndex + 1);
     }
-  }
+  };
 
   const prevSlide = () => {
     if (currentSlideIndex > 0) {
-      setCurrentSlideIndex(currentSlideIndex - 1)
+      setCurrentSlideIndex(currentSlideIndex - 1);
     }
-  }
+  };
 
   // Get background classes for slide
   const getSlideBackgroundClasses = (slide: Slide) => {
@@ -935,7 +1041,20 @@ const AIPresentations = () => {
                           >
                             <Trash2 className="w-2 h-2" />
                           </Button>
-                        )}
+                          {presentations.length > 1 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-red-400 hover:text-red-300"
+                              onClick={e => {
+                                e.stopPropagation();
+                                setPresentationToDelete(pres);
+                              }}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </motion.div>
@@ -1023,9 +1142,25 @@ const AIPresentations = () => {
                   disabled={isDownloading}
                   className="h-20 flex flex-col items-center justify-center space-y-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50"
                 >
-                  <Presentation className="w-6 h-6" />
-                  <span>{isDownloading ? "Generating..." : "PowerPoint"}</span>
+                  {isGenerating ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="w-4 h-4 mr-2" />
+                      Generate Presentation
+                    </>
+                  )}
                 </Button>
+                {isGenerating && (
+                  <div className="text-center">
+                    <p className="text-slate-400 text-sm">
+                      Creating your AI-powered presentation...
+                    </p>
+                  </div>
+                )}
               </div>
               {isDownloading && (
                 <div className="text-center">
@@ -1054,6 +1189,9 @@ const AIPresentations = () => {
                   placeholder="e.g., Climate Change, Machine Learning, History of Art..."
                   className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/20 text-slate-900 dark:text-white"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Max file size: 2MB. Only images allowed.
+                </p>
               </div>
               <div>
                 <Label className="text-slate-900 dark:text-white">Number of Slides</Label>
@@ -1091,4 +1229,95 @@ const AIPresentations = () => {
   )
 }
 
-export default AIPresentations
+          {/* Background Dialog */}
+          <Dialog
+            open={showBackgroundDialog}
+            onOpenChange={setShowBackgroundDialog}
+          >
+            <DialogContent className="bg-slate-900 border-white/20 max-w-2xl">
+              <DialogHeader>
+                <DialogTitle className="text-white">
+                  Choose Background Style
+                </DialogTitle>
+              </DialogHeader>
+              <div className="grid grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                {backgroundStyles.map((style, index) => (
+                  <Button
+                    key={index}
+                    onClick={() => changeBackground(style)}
+                    className={`h-20 relative overflow-hidden ${
+                      style.type === "gradient"
+                        ? `bg-gradient-to-br ${style.value}`
+                        : style.value
+                    } hover:scale-105 transition-transform`}
+                    disabled={isGenerating}
+                  >
+                    <div className="absolute inset-0 bg-black/20 hover:bg-black/10 transition-colors" />
+                    <span className="relative z-10 text-xs font-medium">
+                      {style.name}
+                    </span>
+                  </Button>
+                ))}
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Delete Confirmation Dialog */}
+          <AlertDialog
+            open={!!presentationToDelete}
+            onOpenChange={open => {
+              if (!open) setPresentationToDelete(null);
+            }}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Presentation</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete{" "}
+                  <span className="font-semibold text-red-500">
+                    {presentationToDelete?.title || "this presentation"}
+                  </span>
+                  ?<br />
+                  This action cannot be undone and will permanently remove the
+                  presentation and its slides.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                  onClick={() => {
+                    if (presentationToDelete) {
+                      deletePresentation(presentationToDelete.id);
+                      setPresentationToDelete(null);
+                    }
+                  }}
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </main>
+    </PresentationsErrorBoundary>
+  );
+};
+
+export default AIPresentations;
+
+// Defensive helpers
+const safeArray = <T,>(val: T[] | undefined): T[] =>
+  Array.isArray(val) ? val : [];
+const safeSlides = (slides: any): Slide[] =>
+  safeArray(slides).map((slide: any, index: number) => ({
+    id: slide.id?.toString() || `slide_${index}`,
+    title: slide.title || `Slide ${index + 1}`,
+    subtitle: slide.subtitle || "",
+    content: slide.content || "",
+    backgroundStyle: slide.backgroundStyle || "gradient",
+    backgroundGradient:
+      slide.backgroundGradient || "from-purple-600 via-blue-600 to-indigo-700",
+    images: safeArray(slide.images),
+    bulletPoints: safeArray(slide.bulletPoints),
+  }));

@@ -9,6 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import GlassmorphismButton from "@/components/ui/glassmorphism-button";
 import { useAuth } from "@/contexts/AuthContext";
+import { z } from "zod";
+
+const loginSchema = z.object({
+  username: z.string().min(3, "Username is required").max(32),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
 
 const Login = () => {
   const [, setLocation] = useLocation();
@@ -17,57 +23,47 @@ const Login = () => {
     username: "",
     password: ""
   });
-  const { login } = useAuth();
+  const { login, error, loading } = useAuth();
+  const [formError, setFormError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<{ username?: string; password?: string }>({});
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
     }));
+    setValidationErrors({ ...validationErrors, [e.target.name]: undefined });
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Check if user profile exists for this login
-    const existingUser = localStorage.getItem('coexist-user-profile');
-    
-    if (!existingUser) {
-      // Create a basic user profile from login data
-      const newUser = {
-        id: Date.now(),
-        firstName: formData.username.split('.')[0] || formData.username,
-        lastName: formData.username.split('.')[1] || '',
-        email: formData.username.includes('@') ? formData.username : `${formData.username}@example.com`,
-        username: formData.username,
-        phone: '',
-        bio: '',
-        location: '',
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        avatar: null,
-        dateOfBirth: '',
-        occupation: '',
-        company: '',
-        theme: 'dark',
-        emailNotifications: true,
-        pushNotifications: true,
-        marketingEmails: false,
-        weeklyDigest: true,
-        language: 'en',
-        publicProfile: false,
-      };
-      
-      // Save user profile to localStorage
-      localStorage.setItem('coexist-user-profile', JSON.stringify(newUser));
+    setFormError(null);
+    setValidationErrors({});
+    setIsLoggingIn(true);
+    const result = loginSchema.safeParse(formData);
+    if (!result.success) {
+      const fieldErrors: any = {};
+      result.error.errors.forEach(err => {
+        if (err.path[0]) fieldErrors[err.path[0]] = err.message;
+      });
+      setValidationErrors(fieldErrors);
+      setIsLoggingIn(false);
+      return;
     }
-    
-    login();
-    setLocation("/");
+    const success = await login(formData.username, formData.password);
+    setIsLoggingIn(false);
+    if (success) {
+      setLocation("/");
+    } else {
+      setFormError(error || "Login failed");
+    }
   };
 
   const handleSocialLogin = (provider: string) => {
-    login();
-    setLocation("/");
+    // Social login is not implemented yet
+    // Optionally show a message or do nothing
+    // alert('Social login is not implemented yet.');
   };
 
   return (
@@ -126,6 +122,7 @@ const Login = () => {
               variant="outline"
               className="w-full py-3 flex items-center justify-center space-x-3 text-slate-900 dark:text-white"
               onClick={() => handleSocialLogin("google")}
+              disabled
             >
               <FaGoogle className="w-5 h-5 text-red-500" />
               <span>Continue with Google</span>
@@ -135,6 +132,7 @@ const Login = () => {
               variant="outline"
               className="w-full py-3 flex items-center justify-center space-x-3 text-slate-900 dark:text-white"
               onClick={() => handleSocialLogin("github")}
+              disabled
             >
               <FaGithub className="w-5 h-5 text-slate-900 dark:text-white" />
               <span>Continue with GitHub</span>
@@ -144,6 +142,7 @@ const Login = () => {
               variant="outline"
               className="w-full py-3 flex items-center justify-center space-x-3 text-slate-900 dark:text-white"
               onClick={() => handleSocialLogin("apple")}
+              disabled
             >
               <FaApple className="w-5 h-5 text-slate-900 dark:text-white" />
               <span>Continue with Apple</span>
@@ -186,6 +185,9 @@ const Login = () => {
                   required
                 />
               </div>
+              {validationErrors.username && (
+                <div className="text-red-500 text-xs mt-1">{validationErrors.username}</div>
+              )}
             </div>
 
             {/* Password Field */}
@@ -211,6 +213,9 @@ const Login = () => {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              {validationErrors.password && (
+                <div className="text-red-500 text-xs mt-1">{validationErrors.password}</div>
+              )}
             </div>
 
             {/* Forgot Password */}
@@ -222,12 +227,17 @@ const Login = () => {
               </Link>
             </div>
 
+            {/* Error Message */}
+            {formError && (
+              <div className="text-red-500 text-sm text-center">{formError}</div>
+            )}
             {/* Login Button */}
             <GlassmorphismButton
               type="submit"
               className="w-full py-3 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600"
+              disabled={isLoggingIn}
             >
-              Sign In
+              {isLoggingIn ? "Signing In..." : "Sign In"}
             </GlassmorphismButton>
           </motion.form>
 

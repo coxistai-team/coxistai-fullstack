@@ -5,6 +5,7 @@ import tempfile
 from werkzeug.utils import secure_filename
 import logging
 import json
+from dotenv import load_dotenv
 
 from modules.image_ocr import extract_text_from_image
 from modules.pdf_parser import extract_text_from_file
@@ -26,7 +27,11 @@ tts_engine = TextToSpeech(output_dir='temp_uploads')
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-OPENROUTER_API_KEY = "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"
+load_dotenv()
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+if not OPENROUTER_API_KEY:
+    raise RuntimeError("OPENROUTER_API_KEY not set in environment variables.")
+
 assistant = SmartDeepSeek(OPENROUTER_API_KEY)
 
 ALLOWED_EXTENSIONS = {
