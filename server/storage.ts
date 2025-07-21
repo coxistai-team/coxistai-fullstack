@@ -1,4 +1,4 @@
-import { users, documents, presentations, calendar_events, community_posts, community_replies, community_likes, community_groups, community_group_members, type User, type InsertUser, type UpdateUserProfile, type Document, type InsertDocument, type Presentation, type InsertPresentation, type CalendarEvent, type InsertCalendarEvent, type CommunityPost, type InsertCommunityPost, type CommunityReply, type InsertCommunityReply, type CommunityLike, type InsertCommunityLike, type CommunityGroup, type InsertCommunityGroup, type CommunityGroupMember, type InsertCommunityGroupMember } from "@shared/schema";
+import { users, documents, presentations, calendar_events, community_posts, community_replies, community_likes, community_groups, community_group_members, type User, type InsertUser, type UpdateUserProfile, type Document, type InsertDocument, type Presentation, type InsertPresentation, type CalendarEvent, type InsertCalendarEvent, type CommunityPost, type InsertCommunityPost, type CommunityReply, type InsertCommunityReply, type CommunityLike, type InsertCommunityLike, type CommunityGroup, type InsertCommunityGroup, type CommunityGroupMember, type InsertCommunityGroupMember, notes } from "@shared/schema";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -61,9 +61,18 @@ export interface IStorage {
   joinCommunityGroup(userId: number, groupId: number): Promise<CommunityGroupMember>;
   leaveCommunityGroup(userId: number, groupId: number): Promise<boolean>;
   getGroupMembers(groupId: number): Promise<CommunityGroupMember[]>;
+
+  // Notes CRUD
+  getNotes(userId: number): Promise<any[]>;
+  createNote(note: any): Promise<any>;
+  getNote(noteId: number, userId: number): Promise<any | undefined>;
+  updateNote(noteId: number, userId: number, updates: any): Promise<any>;
+  deleteNote(noteId: number, userId: number): Promise<boolean>;
+
+  getTopUsers(sort: string, limit: number): Promise<User[]>;
 }
 
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "./db";
 
 export class DatabaseStorage implements IStorage {
@@ -271,6 +280,53 @@ export class DatabaseStorage implements IStorage {
   }
   async getGroupMembers(groupId: number): Promise<CommunityGroupMember[]> {
     return await db.select().from(community_group_members).where(eq(community_group_members.group_id, groupId));
+  }
+
+  // Notes CRUD
+  async getNotes(userId: number) {
+    return await db.select().from(notes).where(eq(notes.user_id, userId));
+  }
+
+  async createNote(note: any) {
+    // attachments: string[] is stored as JSON string in a text column (add migration if needed)
+    const [created] = await db.insert(notes).values({
+      ...note,
+      attachments: JSON.stringify(note.attachments || []),
+      created_at: new Date(),
+      updated_at: new Date(),
+    }).returning();
+    // Parse attachments for frontend
+    return { ...created, attachments: JSON.parse(created.attachments || "[]") };
+  }
+
+  async getNote(noteId: number, userId: number) {
+    const [note] = await db.select().from(notes).where(and(eq(notes.id, noteId), eq(notes.user_id, userId)));
+    if (!note) return undefined;
+    return { ...note, attachments: JSON.parse(note.attachments || "[]") };
+  }
+
+  async updateNote(noteId: number, userId: number, updates: any) {
+    const [updated] = await db.update(notes)
+      .set({
+        ...updates,
+        attachments: JSON.stringify(updates.attachments || []),
+        updated_at: new Date(),
+      })
+      .where(and(eq(notes.id, noteId), eq(notes.user_id, userId)))
+      .returning();
+    return { ...updated, attachments: JSON.parse(updated.attachments || "[]") };
+  }
+
+  async deleteNote(noteId: number, userId: number) {
+    await db.delete(notes).where(and(eq(notes.id, noteId), eq(notes.user_id, userId)));
+    return true;
+  }
+
+  async getTopUsers(sort: string = "reputation", limit: number = 5) {
+    // Sort by reputation (descending) and limit
+    const orderBy = sort === "reputation" ? users.reputation : users.id;
+    const topUsers = await db.select().from(users).orderBy(orderBy, "desc").limit(limit);
+    return topUsers;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {

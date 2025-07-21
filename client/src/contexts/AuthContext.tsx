@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import PageLoader from "@/components/ui/page-loader";
 
 interface User {
   id: number;
@@ -16,6 +17,7 @@ interface AuthContextType {
   signup: (username: string, email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  isAuthLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,11 +39,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   // Check auth on mount
   useEffect(() => {
-    checkAuth();
-    // eslint-disable-next-line
+    const check = async () => {
+      setIsAuthLoading(true);
+      await checkAuth();
+      setIsAuthLoading(false);
+    };
+    check();
   }, []);
 
   const checkAuth = async () => {
@@ -152,8 +159,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       signup,
       logout,
       checkAuth,
+      isAuthLoading,
     }}>
-      {children}
+      {isAuthLoading ? <PageLoader fullScreen={true} /> : children}
     </AuthContext.Provider>
   );
+};
+
+export const useAuthLoading = () => {
+  const context = useContext(AuthContext);
+  return context?.isAuthLoading ?? false;
 };

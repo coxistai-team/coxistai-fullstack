@@ -1,120 +1,139 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { usePageLoading } from "@/contexts/PageLoadingContext";
+import React, { useState, useEffect } from "react";
 
-const PageLoader = () => {
-  const { isPageLoading } = usePageLoading();
+interface PageLoaderProps {
+  fullScreen?: boolean;
+}
 
-  return (
-    <AnimatePresence>
-      {isPageLoading && (
-        <motion.div 
-          className="fixed inset-0 bg-slate-900/95 backdrop-blur-sm flex items-center justify-center z-50"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <div className="text-center">
-            {/* Animated loading ring */}
-            <div className="relative w-16 h-16 mx-auto mb-4">
-              <motion.div
-                className="absolute inset-0 border-4 border-blue-500/20 rounded-full"
-                initial={{ scale: 0.8, opacity: 0.5 }}
-                animate={{ scale: 1.2, opacity: 0 }}
-                transition={{
-                  duration: 1.5,
-                  repeat: Infinity,
-                  ease: "easeOut"
-                }}
-              />
-              <motion.div
-                className="absolute inset-0 border-4 border-t-blue-500 border-r-transparent border-b-transparent border-l-transparent rounded-full"
-                animate={{ rotate: 360 }}
-                transition={{
-                  duration: 1,
-                  repeat: Infinity,
-                  ease: "linear"
-                }}
-              />
-              <motion.div
-                className="absolute inset-2 border-2 border-t-green-500 border-r-transparent border-b-transparent border-l-transparent rounded-full"
-                animate={{ rotate: -360 }}
-                transition={{
-                  duration: 0.8,
-                  repeat: Infinity,
-                  ease: "linear"
-                }}
-              />
-            </div>
-            
-            {/* Loading text */}
-            <motion.div
-              className="text-white text-lg font-medium"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              Loading...
-            </motion.div>
-            
-            {/* Animated dots */}
-            <div className="flex justify-center space-x-1 mt-2">
-              {[0, 1, 2].map((i) => (
-                <motion.div
-                  key={i}
-                  className="w-2 h-2 bg-blue-400 rounded-full"
-                  animate={{
-                    scale: [1, 1.2, 1],
-                    opacity: [0.5, 1, 0.5]
-                  }}
-                  transition={{
-                    duration: 1.5,
-                    repeat: Infinity,
-                    delay: i * 0.2
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+const PageLoader: React.FC<PageLoaderProps> = ({ fullScreen }) => {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 100) return 100;
+        const increment = prev < 70 ? Math.random() * 15 + 5 : Math.random() * 5 + 1;
+        return Math.min(prev + increment, 100);
+      });
+    }, 150);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const radius = 32;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDasharray = circumference;
+  const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+  const loader = (
+    <div className="flex flex-col items-center justify-center w-full h-full">
+      {/* Clean progress circle - main focus */}
+      <div className="relative w-24 h-24 mb-6">
+        <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 72 72">
+          <circle
+            cx="36"
+            cy="36"
+            r={radius}
+            stroke="currentColor"
+            strokeWidth="4"
+            fill="none"
+            className="text-slate-200 dark:text-slate-700"
+          />
+          <motion.circle
+            cx="36"
+            cy="36"
+            r={radius}
+            stroke="currentColor"
+            strokeWidth="4"
+            fill="none"
+            strokeLinecap="round"
+            className="text-emerald-500"
+            style={{
+              strokeDasharray,
+              strokeDashoffset,
+              transition: 'stroke-dashoffset 0.3s ease-out'
+            }}
+          />
+        </svg>
+        
+        {/* Simple percentage in center */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-lg font-semibold text-slate-600 dark:text-slate-300">
+            {Math.round(progress)}%
+          </span>
+        </div>
+      </div>
+
+      {/* Minimal loading text */}
+      <span className="text-slate-600 dark:text-slate-400 text-lg font-medium">
+        Loading...
+      </span>
+    </div>
   );
+
+  if (fullScreen) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm">
+        {loader}
+      </div>
+    );
+  }
+
+  return loader;
 };
 
-// Mini loader component for inline loading states
-export const MiniLoader = ({ size = "sm", className = "" }: { size?: "xs" | "sm" | "md"; className?: string }) => {
-  const sizeMap = {
-    xs: "w-3 h-3",
-    sm: "w-4 h-4", 
-    md: "w-6 h-6"
+// Simplified mini loader
+export const MiniLoader = ({
+  size = "sm",
+  className = "",
+}: {
+  size?: "xs" | "sm" | "md";
+  className?: string;
+}) => {
+  const sizeClasses = {
+    xs: "w-4 h-4",
+    sm: "w-6 h-6", 
+    md: "w-8 h-8",
   };
 
   return (
-    <div className={`relative ${sizeMap[size]} ${className}`}>
+    <div className={`relative ${sizeClasses[size]} ${className}`}>
       <motion.div
-        className="absolute inset-0 border-2 border-t-blue-500 border-r-transparent border-b-transparent border-l-transparent rounded-full"
+        className="absolute inset-0 border-2 border-slate-200 dark:border-slate-700 border-t-emerald-500 rounded-full"
         animate={{ rotate: 360 }}
         transition={{
           duration: 1,
           repeat: Infinity,
-          ease: "linear"
+          ease: "linear",
         }}
       />
     </div>
   );
 };
 
-// Skeleton loader for content placeholders
-export const SkeletonLoader = ({ className = "", lines = 3 }: { className?: string; lines?: number }) => {
+interface SkeletonLoaderProps {
+  lines?: number;
+  className?: string;
+}
+
+export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
+  lines = 3,
+  className = "",
+}) => {
   return (
-    <div className={`animate-pulse ${className}`}>
+    <div className={`space-y-4 ${className}`}>
       {Array.from({ length: lines }).map((_, i) => (
-        <div
+        <motion.div
           key={i}
-          className={`bg-slate-700 rounded h-4 mb-2 ${
-            i === lines - 1 ? 'w-3/4' : 'w-full'
-          }`}
+          className="h-4 bg-slate-100 dark:bg-slate-800 rounded-md overflow-hidden"
+          animate={{ opacity: [0.6, 0.8, 0.6] }}
+          transition={{
+            duration: 1.8,
+            repeat: Infinity,
+            delay: i * 0.1,
+            ease: "easeInOut"
+          }}
         />
       ))}
     </div>

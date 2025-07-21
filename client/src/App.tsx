@@ -86,7 +86,6 @@ function App() {
                     </div>
                     <Footer />
                     <Toaster />
-                    <PageLoader />
                   </div>
                 </PageLoadingProvider>
               </LoadingProvider>

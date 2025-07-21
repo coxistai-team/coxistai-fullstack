@@ -1137,6 +1137,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // --- NOTES ROUTES ---
+  app.get("/api/notes", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user.id;
+      const notes = await storage.getNotes(userId);
+      res.json(notes);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch notes." });
+    }
+  });
+
+  app.post("/api/notes", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user.id;
+      const { title, content, tags, category, attachments } = req.body;
+      const note = await storage.createNote({
+        user_id: userId,
+        title,
+        content,
+        tags,
+        category,
+        attachments: attachments || [],
+      });
+      res.status(201).json(note);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create note." });
+    }
+  });
+
+  app.get("/api/notes/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user.id;
+      const note = await storage.getNote(parseInt(req.params.id), userId);
+      if (!note) return res.status(404).json({ error: "Note not found." });
+      res.json(note);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch note." });
+    }
+  });
+
+  app.put("/api/notes/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user.id;
+      const noteId = parseInt(req.params.id);
+      const { title, content, tags, category, attachments } = req.body;
+      const updated = await storage.updateNote(noteId, userId, {
+        title,
+        content,
+        tags,
+        category,
+        attachments: attachments || [],
+      });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update note." });
+    }
+  });
+
+  app.delete("/api/notes/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user.id;
+      const noteId = parseInt(req.params.id);
+      await storage.deleteNote(noteId, userId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete note." });
+    }
+  });
+
+  // --- COMMUNITY POSTS ROUTES ---
+  app.get("/api/community-posts", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const posts = await storage.getCommunityPosts(userId);
+      res.json(posts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch community posts." });
+    }
+  });
+
+  app.post("/api/community-posts", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const post = await storage.createCommunityPost({ ...req.body, user_id: userId });
+      res.status(201).json(post);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create community post." });
+    }
+  });
+
+  // --- COMMUNITY GROUPS ROUTES ---
+  app.get("/api/community-groups", requireAuth, async (req, res) => {
+    try {
+      const groups = await storage.getCommunityGroups();
+      res.json(groups);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch community groups." });
+    }
+  });
+
+  app.post("/api/community-groups", requireAuth, async (req, res) => {
+    try {
+      const group = await storage.createCommunityGroup(req.body);
+      res.status(201).json(group);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create community group." });
+    }
+  });
+
+  // --- USERS LEADERBOARD ROUTE ---
+  app.get("/api/users", requireAuth, async (req, res) => {
+    try {
+      const sort = req.query.sort as string | undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
+      const users = await storage.getTopUsers(sort, limit);
+      res.json(users);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch users." });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

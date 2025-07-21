@@ -25,6 +25,7 @@ export const users = pgTable("users", {
   weeklyDigest: boolean("weekly_digest").default(true),
   language: text("language").default("en"),
   publicProfile: boolean("public_profile").default(false),
+  reputation: integer("reputation").notNull().default(0), // Add this line for leaderboard
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -49,6 +50,7 @@ export const notes = pgTable('notes', {
   title: varchar('title', { length: 255 }).notNull(),
   content: text('content').notNull(),
   tags: varchar('tags', { length: 64 }).array(),
+  attachments: text('attachments').default('[]'), // Add this line for file URLs
   created_at: timestamp('created_at').notNull().defaultNow(),
   updated_at: timestamp('updated_at').notNull().defaultNow(),
 });

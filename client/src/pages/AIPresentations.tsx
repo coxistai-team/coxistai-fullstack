@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 
 import { useState, useRef, useEffect } from "react"
 import { motion } from "framer-motion"
@@ -32,6 +32,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
+import { UploadButton } from "@/lib/uploadthing";
+import { SkeletonLoader } from "@/components/ui/page-loader";
 
 interface Slide {
   id: string
@@ -93,6 +95,17 @@ interface PresentationRecord {
   updated_at: string;
 }
 
+// ErrorBoundary for Presentations
+class PresentationsErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean}> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(error: any, info: any) { console.error('AIPresentations error:', error, info); }
+  render() { if (this.state.hasError) return <div className="text-red-500 text-center py-8">Something went wrong in Presentations.</div>; return this.props.children; }
+}
+
 const AIPresentations = () => {
   const { toast } = useToast()
   const [slides, setSlides] = useState<Slide[]>([
@@ -131,20 +144,23 @@ const AIPresentations = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [presentations, setPresentations] = useState<PresentationRecord[]>([])
+  const [isPresentationsLoading, setIsPresentationsLoading] = useState(true);
 
   // Fetch all presentations for the user on mount
   useEffect(() => {
+    setIsPresentationsLoading(true);
     fetch("/api/presentations", { credentials: "include" })
       .then(res => res.json())
       .then(data => {
-        setPresentations(data)
+        setPresentations(data);
         if (data.length > 0) {
-          setCurrentPresentationId(data[0].id.toString())
-          setSlides(JSON.parse(data[0].slides))
+          setCurrentPresentationId(data[0].id.toString());
+          setSlides(safeSlides(JSON.parse(data[0].slides)));
         }
       })
       .catch(() => setPresentations([]))
-  }, [])
+      .finally(() => setIsPresentationsLoading(false));
+  }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const currentSlide = slides[currentSlideIndex]
@@ -351,18 +367,16 @@ const AIPresentations = () => {
 
   // Create new presentation
   const createNewPresentation = () => {
-    setSlides([
-      {
-        id: `slide_${Date.now()}`,
-        title: "New Presentation",
-        subtitle: "",
-        content: "",
-        backgroundStyle: "gradient",
-        backgroundGradient: "from-purple-600 via-blue-600 to-indigo-700",
-        images: [],
-        bulletPoints: [],
-      },
-    ])
+    setSlides(safeSlides([{
+      id: `slide_${Date.now()}`,
+      title: 'New Presentation',
+      subtitle: '',
+      content: '',
+      backgroundStyle: 'gradient',
+      backgroundGradient: 'from-purple-600 via-blue-600 to-indigo-700',
+      images: [],
+      bulletPoints: [],
+    }]));
     setCurrentPresentationId(null)
     setCurrentSlideIndex(0)
     setHasUnsavedChanges(true)
@@ -385,7 +399,7 @@ const AIPresentations = () => {
           setPresentations(data)
           if (data.length > 0) {
             setCurrentPresentationId(data[0].id.toString())
-            setSlides(JSON.parse(data[0].slides))
+            setSlides(safeSlides(JSON.parse(data[0].slides)))
           } else {
             createNewPresentation()
           }
@@ -400,7 +414,7 @@ const AIPresentations = () => {
     const pres = presentations.find(p => p.id.toString() === id.toString())
     if (pres) {
       setCurrentPresentationId(pres.id.toString())
-      setSlides(JSON.parse(pres.slides))
+      setSlides(safeSlides(JSON.parse(pres.slides)))
       setCurrentSlideIndex(0)
       setHasUnsavedChanges(false)
     }
@@ -633,28 +647,20 @@ const AIPresentations = () => {
     }
   }
   
-  // Add image to slide
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const imageUrl = e.target?.result as string
-        setSlides((prev) =>
-          prev.map((slide, index) =>
-            index === currentSlideIndex ? { ...slide, images: [...slide.images, imageUrl] } : slide,
-          ),
-        )
-        setHasUnsavedChanges(true)
-        toast({
-          title: "Image Added",
-          description: "Image has been added to your slide.",
-        })
-      }
-      reader.readAsDataURL(file)
-    }
-    setShowImageDialog(false)
-  }
+  // Replace handleImageUpload and add UploadThing UI
+  const handleImageUpload = (url: string) => {
+    setSlides((prev) =>
+      prev.map((slide, index) =>
+        index === currentSlideIndex ? { ...slide, images: [...slide.images, url] } : slide,
+      ),
+    );
+    setHasUnsavedChanges(true);
+    toast({
+      title: "Image Added",
+      description: "Image has been added to your slide.",
+    });
+    setShowImageDialog(false);
+  };
 
   // Add chart to slide
   const addChart = (chartType: string) => {
@@ -761,652 +767,733 @@ const AIPresentations = () => {
     return aiTexts[Math.floor(Math.random() * aiTexts.length)]
   }
 
-  return (
-    <main className="relative z-10 pt-20">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <motion.h1
-            className="text-4xl font-bold mb-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            AI Presentations Studio
-          </motion.h1>
-          <motion.p
-            className="text-slate-400 mb-6"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.6 }}
-          >
-            Create stunning presentations with AI assistance and professional templates
-          </motion.p>
-
-          {/* Quick Actions */}
-          <div className="flex flex-wrap justify-center gap-4 mb-8">
-            {hasUnsavedChanges && (
-              <GlassmorphismButton
-                onClick={savePresentation}
-                disabled={isSaving}
-                className="px-6 py-3 bg-green-600 hover:bg-green-700"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                {isSaving ? "Saving..." : "Save Changes"}
-              </GlassmorphismButton>
-            )}
-            <GlassmorphismButton onClick={() => setShowExportDialog(true)} variant="outline" className="px-6 py-3">
-              <Download className="w-4 h-4 mr-2" />
-              Export
-            </GlassmorphismButton>
-            <GlassmorphismButton
-              onClick={() => setIsPreviewMode(!isPreviewMode)}
-              variant="outline"
-              className="px-6 py-3"
-            >
-              {isPreviewMode ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-              {isPreviewMode ? "Exit Fullscreen" : "Fullscreen Preview"}
-            </GlassmorphismButton>
+  if (isPresentationsLoading) {
+    return (
+      <main className="relative z-10 pt-20">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          {/* Header Skeleton */}
+          <div className="text-center mb-8">
+            <SkeletonLoader className="mx-auto mb-4 w-1/2 h-10" lines={1} />
+            <SkeletonLoader className="mx-auto mb-6 w-1/3 h-6" lines={1} />
+            <div className="flex flex-wrap justify-center gap-4 mb-8">
+              {[...Array(3)].map((_, i) => (
+                <SkeletonLoader key={i} className="w-32 h-10 rounded-xl" lines={1} />
+              ))}
+            </div>
           </div>
-        </div>
-
-        {/* Fullscreen Preview Mode */}
-        {isPreviewMode && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black flex items-center justify-center"
-          >
-            <div className="absolute top-4 right-4 z-60 flex space-x-3">
-              <GlassmorphismButton
-                onClick={() => setShowExportDialog(true)}
-                variant="outline"
-                className="text-white border-white/30 hover:bg-white/20 px-4 py-2"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download
-              </GlassmorphismButton>
-              <GlassmorphismButton
-                onClick={() => setIsPreviewMode(false)}
-                variant="outline"
-                className="text-white border-white/30 hover:bg-white/20 px-4 py-2"
-              >
-                <Minimize2 className="w-5 h-5 mr-2" />
-                <span className="font-medium">{generateMinimizeText()}</span>
-              </GlassmorphismButton>
-            </div>
-
-            <div className="w-full h-full max-w-6xl max-h-[80vh] flex items-center justify-center p-8">
-              <div
-                className={`w-full h-full ${
-                  currentSlide.backgroundStyle === "gradient"
-                    ? `bg-gradient-to-br ${currentSlide.backgroundGradient}`
-                    : currentSlide.backgroundGradient
-                } rounded-2xl p-8 text-white flex flex-col justify-center overflow-hidden shadow-2xl`}
-                style={{ aspectRatio: "16/9" }}
-              >
-                <div className="text-center space-y-6">
-                  <h1 className="text-5xl font-bold leading-tight">{currentSlide.title}</h1>
-                  <h2 className="text-2xl opacity-90">{currentSlide.subtitle}</h2>
-
-                  {currentSlide.content && (
-                    <p className="text-xl opacity-80 max-w-4xl mx-auto leading-relaxed">{currentSlide.content}</p>
-                  )}
-
-                  {currentSlide.bulletPoints.length > 0 && (
-                    <div className="space-y-3 text-left max-w-3xl mx-auto">
-                      {currentSlide.bulletPoints.map((point, index) => (
-                        <motion.div
-                          key={index}
-                          className="flex items-start space-x-4"
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.2 }}
-                        >
-                          <div className="w-3 h-3 bg-white rounded-full mt-3 flex-shrink-0"></div>
-                          <span className="text-xl">{point}</span>
-                        </motion.div>
-                      ))}
-                    </div>
-                  )}
-
-                  {currentSlide.images.length > 0 && (
-                    <div className="flex justify-center space-x-4 mt-6">
-                      {currentSlide.images.map((image, index) => (
-                        <img
-                          key={index}
-                          src={image || "/placeholder.svg"}
-                          alt={`Slide image ${index + 1}`}
-                          className="max-w-md max-h-60 object-cover rounded-xl shadow-2xl"
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Navigation in fullscreen */}
-            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="lg"
-                onClick={prevSlide}
-                disabled={currentSlideIndex === 0}
-                className="glassmorphism text-white hover:bg-white/20"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </Button>
-              <span className="text-white bg-black/50 px-4 py-2 rounded-lg">
-                {currentSlideIndex + 1} / {slides.length}
-              </span>
-              <Button
-                variant="ghost"
-                size="lg"
-                onClick={nextSlide}
-                disabled={currentSlideIndex === slides.length - 1}
-                className="glassmorphism text-white hover:bg-white/20"
-              >
-                <ChevronRight className="w-6 h-6" />
-              </Button>
-            </div>
-          </motion.div>
-        )}
-
-        <div className={`grid lg:grid-cols-3 gap-8 ${isPreviewMode ? "hidden" : ""}`}>
-          {/* Slide Preview */}
-          <div className="lg:col-span-2">
-            <motion.div
-              className="glassmorphism rounded-xl p-6"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              {/* Controls */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-2">
-                  <Button variant="ghost" size="sm" onClick={prevSlide} disabled={currentSlideIndex === 0}>
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-                  <span className="text-sm text-slate-300">
-                    {currentSlideIndex + 1} / {slides.length}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={nextSlide}
-                    disabled={currentSlideIndex === slides.length - 1}
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  {hasUnsavedChanges && (
-                    <GlassmorphismButton
-                      onClick={savePresentation}
-                      disabled={isSaving}
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      <Save className="w-4 h-4 mr-1" />
-                      {isSaving ? "Saving..." : "Save"}
-                    </GlassmorphismButton>
-                  )}
-                  <GlassmorphismButton onClick={() => setShowExportDialog(true)} variant="outline" size="sm">
-                    <Download className="w-4 h-4 mr-1" />
-                    Download
-                  </GlassmorphismButton>
-                </div>
-              </div>
-
-              {/* Slide Canvas - Fixed aspect ratio */}
-              <motion.div
-                className={`glassmorphism rounded-lg p-6 mb-4 ${
-                  currentSlide.backgroundStyle === "gradient"
-                    ? `bg-gradient-to-br ${currentSlide.backgroundGradient}`
-                    : currentSlide.backgroundGradient
-                } text-white flex flex-col justify-center overflow-hidden`}
-                style={{ aspectRatio: "16/9", minHeight: "400px" }}
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.3 }}
-              >
-                <div className="text-center space-y-4">
-                  <h1 className="text-3xl font-bold leading-tight">{currentSlide.title}</h1>
-                  <h2 className="text-lg opacity-90">{currentSlide.subtitle}</h2>
-
-                  {currentSlide.content && (
-                    <p className="text-base opacity-80 max-w-2xl mx-auto leading-relaxed">{currentSlide.content}</p>
-                  )}
-
-                  {currentSlide.bulletPoints.length > 0 && (
-                    <div className="space-y-2 text-left max-w-xl mx-auto">
-                      {currentSlide.bulletPoints.map((point, index) => (
-                        <motion.div
-                          key={index}
-                          className="flex items-start space-x-3"
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                        >
-                          <div className="w-2 h-2 bg-white rounded-full mt-2 flex-shrink-0"></div>
-                          <span className="text-sm">{point}</span>
-                        </motion.div>
-                      ))}
-                    </div>
-                  )}
-
-                  {currentSlide.images.length > 0 && (
-                    <div className="flex justify-center space-x-3 mt-4">
-                      {currentSlide.images.map((image, index) => (
-                        <img
-                          key={index}
-                          src={image || "/placeholder.svg"}
-                          alt={`Slide image ${index + 1}`}
-                          className="max-w-xs max-h-32 object-cover rounded-lg shadow-lg"
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-
-              {/* Slide Thumbnails */}
-              <div className="flex space-x-2 overflow-x-auto pb-2">
-                {presentations.map((pres, index) => (
-                  <motion.div
-                    key={pres.id}
-                    className={`relative flex-shrink-0 w-24 h-16 glassmorphism rounded cursor-pointer transition-all group ${
-                      currentPresentationId === pres.id.toString() ? "border-2 border-blue-500" : "opacity-70 hover:opacity-100"
-                    }`}
-                    onClick={() => loadPresentation(pres.id)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <div
-                      className={`w-full h-full rounded ${
-                        pres.slides.includes("gradient")
-                          ? `bg-gradient-to-br ${pres.slides.split("gradient")[1].split("to")[0].replace("via-", "").replace("to-", "")}`
-                          : pres.slides.split("bg-")[1].split("text-")[0]
-                      } flex items-center justify-center relative`}
-                    >
-                      <span className="text-xs text-white font-bold">{index + 1}</span>
-
-                      {/* Slide actions */}
-                      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity space-x-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            // Duplicate presentation logic would go here if implemented
-                          }}
-                        >
-                          <Copy className="w-3 h-3" />
-                        </Button>
-                        {presentations.length > 1 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 text-red-400 hover:text-red-300"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              deletePresentation(pres.id)
-                            }}
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-
-                {/* Add slide button */}
-                <motion.div
-                  className="flex-shrink-0 w-24 h-16 glassmorphism rounded cursor-pointer flex items-center justify-center hover:bg-white/10 transition-colors"
-                  onClick={createNewPresentation}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Plus className="w-6 h-6 text-white" />
-                </motion.div>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Content Editor */}
-          <div className="lg:col-span-1">
-            <motion.div
-              className="glassmorphism rounded-xl p-6 space-y-6"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold">Edit Slide</h2>
-                <div className="flex space-x-2">
-                  <GlassmorphismButton
-                    size="sm"
-                    onClick={() => setShowGenerateDialog(true)}
-                    className="bg-gradient-to-r from-blue-500 to-green-500"
-                  >
-                    <Wand2 className="w-4 h-4 mr-2" />
-                    Generate
-                  </GlassmorphismButton>
-                  <GlassmorphismButton size="sm" onClick={enhanceWithAI} variant="outline">
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Enhance
-                  </GlassmorphismButton>
-                </div>
-              </div>
-
-              {/* Unsaved changes indicator */}
-              {hasUnsavedChanges && (
-                <div className="bg-yellow-600/20 border border-yellow-600/30 rounded-lg p-3 text-yellow-200 text-sm">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-                    <span>You have unsaved changes</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Content Form */}
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-white">Title</Label>
-                  <Input
-                    value={currentSlide.title}
-                    onChange={(e) => updateSlide("title", e.target.value)}
-                    className="bg-white/5 border-white/20 text-white"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-white">Subtitle</Label>
-                  <Input
-                    value={currentSlide.subtitle}
-                    onChange={(e) => updateSlide("subtitle", e.target.value)}
-                    className="bg-white/5 border-white/20 text-white"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-white">Content</Label>
-                  <Textarea
-                    value={currentSlide.content}
-                    onChange={(e) => updateSlide("content", e.target.value)}
-                    className="bg-white/5 border-white/20 text-white min-h-[100px]"
-                    placeholder="Add your slide content..."
-                  />
-                </div>
-
-                {/* Bullet Points */}
-                <div>
-                  <Label className="text-white">Bullet Points</Label>
-                  <div className="space-y-2">
-                    {currentSlide.bulletPoints.map((point, index) => (
-                      <div key={index} className="flex items-center space-x-2">
-                        <span className="text-white text-sm flex-1">{point}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeBulletPoint(index)}
-                          className="h-8 w-8 p-0 text-red-400 hover:text-red-300"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    ))}
-                    <div className="flex space-x-2">
-                      <Input
-                        value={newBulletPoint}
-                        onChange={(e) => setNewBulletPoint(e.target.value)}
-                        placeholder="Add new point..."
-                        className="bg-white/5 border-white/20 text-white"
-                        onKeyPress={(e) => e.key === "Enter" && addBulletPoint()}
-                      />
-                      <Button onClick={addBulletPoint} size="sm">
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <GlassmorphismButton
-                      variant="outline"
-                      onClick={() => setShowImageDialog(true)}
-                      className="w-full h-12 flex items-center justify-center"
-                    >
-                      <ImageIcon className="w-4 h-4 mr-2" />
-                      Add Image
-                    </GlassmorphismButton>
-                    <GlassmorphismButton
-                      variant="outline"
-                      onClick={() => setShowChartDialog(true)}
-                      className="w-full h-12 flex items-center justify-center"
-                    >
-                      <BarChart className="w-4 h-4 mr-2" />
-                      Add Chart
-                    </GlassmorphismButton>
-                  </div>
-                  <GlassmorphismButton
-                    variant="outline"
-                    onClick={() => setShowBackgroundDialog(true)}
-                    className="w-full h-12 flex items-center justify-center"
-                  >
-                    <Palette className="w-4 h-4 mr-2" />
-                    Change Background
-                  </GlassmorphismButton>
-                  <GlassmorphismButton
-                    onClick={() => setShowGenerateDialog(true)}
-                    className="w-full h-12 flex items-center justify-center bg-gradient-to-r from-green-500 to-blue-500"
-                  >
-                    <Wand2 className="w-4 h-4 mr-2" />
-                    Generate AI
-                  </GlassmorphismButton>
-                </div>
-              </div>
-
-              {/* AI Suggestions */}
-              <div className="pt-6 border-t border-white/10">
-                <h3 className="font-semibold mb-3 flex items-center text-white">
-                  <Lightbulb className="w-4 h-4 mr-2 text-green-500" />
-                  AI Suggestions
-                </h3>
-                <div className="space-y-2">
-                  {aiSuggestions.map((suggestion, index) => (
-                    <motion.button
-                      key={index}
-                      className="w-full text-left p-3 glassmorphism rounded-lg text-sm hover:bg-white/10 transition-colors text-white"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => {
-                        updateSlide("content", currentSlide.content + " " + suggestion)
-                        toast({
-                          title: "Suggestion Applied",
-                          description: "AI suggestion has been added to your slide.",
-                        })
-                      }}
-                    >
-                      {suggestion}
-                    </motion.button>
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Slide Preview Skeleton */}
+            <div className="lg:col-span-2">
+              <div className="glassmorphism rounded-xl p-6">
+                <SkeletonLoader className="mb-4 w-2/3 h-8" lines={1} />
+                <SkeletonLoader className="rounded-lg mb-4 h-64" lines={8} />
+                <div className="flex space-x-2 overflow-x-auto pb-2 mt-4">
+                  {[...Array(4)].map((_, i) => (
+                    <SkeletonLoader key={i} className="w-24 h-16 rounded" lines={1} />
                   ))}
                 </div>
               </div>
-            </motion.div>
+            </div>
+            {/* Editor Skeleton */}
+            <div className="lg:col-span-1">
+              <div className="glassmorphism rounded-xl p-6 space-y-6">
+                <SkeletonLoader className="mb-4 w-1/2 h-8" lines={1} />
+                <SkeletonLoader className="mb-4 h-32" lines={4} />
+                <SkeletonLoader className="mb-4 h-16" lines={2} />
+              </div>
+            </div>
           </div>
         </div>
+      </main>
+    );
+  }
 
-        {/* Export Dialog */}
-        <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-          <DialogContent className="bg-slate-900 border-white/20">
-            <DialogHeader>
-              <DialogTitle className="text-white">Export Presentation</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <p className="text-slate-300">Choose your export format:</p>
+  return (
+    <PresentationsErrorBoundary>
+      <main className="relative z-10 pt-20">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <motion.h1
+              className="text-4xl font-bold mb-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              AI Presentations Studio
+            </motion.h1>
+            <motion.p
+              className="text-slate-400 mb-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+            >
+              Create stunning presentations with AI assistance and professional templates
+            </motion.p>
+
+            {/* Quick Actions */}
+            <div className="flex flex-wrap justify-center gap-4 mb-8">
               {hasUnsavedChanges && (
-                <div className="bg-yellow-600/20 border border-yellow-600/30 rounded-lg p-3 text-yellow-200 text-sm">
-                  Your changes will be saved automatically before export.
-                </div>
-              )}
-              <div className="grid grid-cols-2 gap-4">
-                <Button
-                  onClick={() => exportPresentation("pdf")}
-                  disabled={isDownloading || !currentPresentationId}
-                  className="h-20 flex flex-col items-center justify-center space-y-2 bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                <GlassmorphismButton
+                  onClick={savePresentation}
+                  disabled={isSaving}
+                  className="px-6 py-3 bg-green-600 hover:bg-green-700"
                 >
-                  <FileText className="w-6 h-6" />
-                  <span>{isDownloading ? "Generating..." : "PDF"}</span>
-                </Button>
-                <Button
-                  onClick={() => exportPresentation("pptx")}
-                  disabled={isDownloading || !currentPresentationId}
-                  className="h-20 flex flex-col items-center justify-center space-y-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50"
-                >
-                  <Presentation className="w-6 h-6" />
-                  <span>{isDownloading ? "Generating..." : "PowerPoint"}</span>
-                </Button>
-              </div>
-              {!currentPresentationId && (
-                <p className="text-yellow-400 text-sm text-center">Generate a presentation first to enable downloads</p>
+                  <Save className="w-4 h-4 mr-2" />
+                  {isSaving ? "Saving..." : "Save Changes"}
+                </GlassmorphismButton>
               )}
-              {isDownloading && (
-                <div className="text-center">
-                  <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                  <p className="text-slate-400 text-sm">Preparing your presentation for download...</p>
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Generate Dialog */}
-        <Dialog open={showGenerateDialog} onOpenChange={setShowGenerateDialog}>
-          <DialogContent className="bg-slate-900 border-white/20">
-            <DialogHeader>
-              <DialogTitle className="text-white">Generate AI Presentation</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label className="text-white">Topic</Label>
-                <Input
-                  value={generateTopic}
-                  onChange={(e) => setGenerateTopic(e.target.value)}
-                  placeholder="e.g., Climate Change, Machine Learning, History of Art..."
-                  className="bg-white/5 border-white/20 text-white"
-                />
-              </div>
-              <div>
-                <Label className="text-white">Number of Slides</Label>
-                <Input
-                  type="number"
-                  value={slideCount}
-                  onChange={(e) => setSlideCount(Number.parseInt(e.target.value) || 5)}
-                  min="3"
-                  max="20"
-                  className="bg-white/5 border-white/20 text-white"
-                />
-              </div>
-              <Button
-                onClick={generatePresentation}
-                disabled={isGenerating}
-                className="w-full bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600"
+              <GlassmorphismButton onClick={() => setShowExportDialog(true)} variant="outline" className="px-6 py-3">
+                <Download className="w-4 h-4 mr-2" />
+                Export
+              </GlassmorphismButton>
+              <GlassmorphismButton
+                onClick={() => setIsPreviewMode(!isPreviewMode)}
+                variant="outline"
+                className="px-6 py-3"
               >
-                {isGenerating ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Wand2 className="w-4 h-4 mr-2" />
-                    Generate Presentation
-                  </>
+                {isPreviewMode ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+                {isPreviewMode ? "Exit Fullscreen" : "Fullscreen Preview"}
+              </GlassmorphismButton>
+            </div>
+          </div>
+
+          {/* Fullscreen Preview Mode */}
+          {isPreviewMode && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black flex items-center justify-center"
+            >
+              <div className="absolute top-4 right-4 z-60 flex space-x-3">
+                <GlassmorphismButton
+                  onClick={() => setShowExportDialog(true)}
+                  variant="outline"
+                  className="text-white border-white/30 hover:bg-white/20 px-4 py-2"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </GlassmorphismButton>
+                <GlassmorphismButton
+                  onClick={() => setIsPreviewMode(false)}
+                  variant="outline"
+                  className="text-white border-white/30 hover:bg-white/20 px-4 py-2"
+                >
+                  <Minimize2 className="w-5 h-5 mr-2" />
+                  <span className="font-medium">{generateMinimizeText()}</span>
+                </GlassmorphismButton>
+              </div>
+
+              <div className="w-full h-full max-w-6xl max-h-[80vh] flex items-center justify-center p-8">
+                <div
+                  className={`w-full h-full ${
+                    currentSlide.backgroundStyle === "gradient"
+                      ? `bg-gradient-to-br ${currentSlide.backgroundGradient}`
+                      : currentSlide.backgroundGradient
+                  } rounded-2xl p-8 text-white flex flex-col justify-center overflow-hidden shadow-2xl`}
+                  style={{ aspectRatio: "16/9" }}
+                >
+                  <div className="text-center space-y-6">
+                    <h1 className="text-5xl font-bold leading-tight">{currentSlide.title}</h1>
+                    <h2 className="text-2xl opacity-90">{currentSlide.subtitle}</h2>
+
+                    {currentSlide.content && (
+                      <p className="text-xl opacity-80 max-w-4xl mx-auto leading-relaxed">{currentSlide.content}</p>
+                    )}
+
+                    {currentSlide.bulletPoints.length > 0 && (
+                      <div className="space-y-3 text-left max-w-3xl mx-auto">
+                        {currentSlide.bulletPoints.map((point, index) => (
+                          <motion.div
+                            key={index}
+                            className="flex items-start space-x-4"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.2 }}
+                          >
+                            <div className="w-3 h-3 bg-white rounded-full mt-3 flex-shrink-0"></div>
+                            <span className="text-xl">{point}</span>
+                          </motion.div>
+                        ))}
+                      </div>
+                    )}
+
+                    {currentSlide.images.length > 0 && (
+                      <div className="flex justify-center space-x-4 mt-6">
+                        {currentSlide.images.map((image, index) => (
+                          <img
+                            key={index}
+                            src={image || "/placeholder.svg"}
+                            alt={`Slide image ${index + 1}`}
+                            className="max-w-md max-h-60 object-cover rounded-xl shadow-2xl"
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Navigation in fullscreen */}
+              <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center space-x-4">
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  onClick={prevSlide}
+                  disabled={currentSlideIndex === 0}
+                  className="glassmorphism text-white hover:bg-white/20"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </Button>
+                <span className="text-white bg-black/50 px-4 py-2 rounded-lg">
+                  {currentSlideIndex + 1} / {slides.length}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  onClick={nextSlide}
+                  disabled={currentSlideIndex === slides.length - 1}
+                  className="glassmorphism text-white hover:bg-white/20"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          <div className={`grid lg:grid-cols-3 gap-8 ${isPreviewMode ? "hidden" : ""}`}>
+            {/* Slide Preview */}
+            <div className="lg:col-span-2">
+              <motion.div
+                className="glassmorphism rounded-xl p-6"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6 }}
+              >
+                {/* Controls */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-2">
+                    <Button variant="ghost" size="sm" onClick={prevSlide} disabled={currentSlideIndex === 0}>
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <span className="text-sm text-slate-300">
+                      {currentSlideIndex + 1} / {slides.length}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={nextSlide}
+                      disabled={currentSlideIndex === slides.length - 1}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    {hasUnsavedChanges && (
+                      <GlassmorphismButton
+                        onClick={savePresentation}
+                        disabled={isSaving}
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        <Save className="w-4 h-4 mr-1" />
+                        {isSaving ? "Saving..." : "Save"}
+                      </GlassmorphismButton>
+                    )}
+                    <GlassmorphismButton onClick={() => setShowExportDialog(true)} variant="outline" size="sm">
+                      <Download className="w-4 h-4 mr-1" />
+                      Download
+                    </GlassmorphismButton>
+                  </div>
+                </div>
+
+                {/* Slide Canvas - Fixed aspect ratio */}
+                <motion.div
+                  className={`glassmorphism rounded-lg p-6 mb-4 ${
+                    currentSlide.backgroundStyle === "gradient"
+                      ? `bg-gradient-to-br ${currentSlide.backgroundGradient}`
+                      : currentSlide.backgroundGradient
+                  } text-white flex flex-col justify-center overflow-hidden`}
+                  style={{ aspectRatio: "16/9", minHeight: "400px" }}
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="text-center space-y-4">
+                    <h1 className="text-3xl font-bold leading-tight">{currentSlide.title}</h1>
+                    <h2 className="text-lg opacity-90">{currentSlide.subtitle}</h2>
+
+                    {currentSlide.content && (
+                      <p className="text-base opacity-80 max-w-2xl mx-auto leading-relaxed">{currentSlide.content}</p>
+                    )}
+
+                    {currentSlide.bulletPoints.length > 0 && (
+                      <div className="space-y-2 text-left max-w-xl mx-auto">
+                        {currentSlide.bulletPoints.map((point, index) => (
+                          <motion.div
+                            key={index}
+                            className="flex items-start space-x-3"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                          >
+                            <div className="w-2 h-2 bg-white rounded-full mt-2 flex-shrink-0"></div>
+                            <span className="text-sm">{point}</span>
+                          </motion.div>
+                        ))}
+                      </div>
+                    )}
+
+                    {currentSlide.images.length > 0 && (
+                      <div className="flex justify-center space-x-3 mt-4">
+                        {currentSlide.images.map((image, index) => (
+                          <img
+                            key={index}
+                            src={image || "/placeholder.svg"}
+                            alt={`Slide image ${index + 1}`}
+                            className="max-w-xs max-h-32 object-cover rounded-lg shadow-lg"
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+
+                {/* Slide Thumbnails */}
+                <div className="flex space-x-2 overflow-x-auto pb-2">
+                  {presentations.map((pres, index) => (
+                    <motion.div
+                      key={pres.id}
+                      className={`relative flex-shrink-0 w-24 h-16 glassmorphism rounded cursor-pointer transition-all group ${
+                        currentPresentationId === pres.id.toString() ? "border-2 border-blue-500" : "opacity-70 hover:opacity-100"
+                      }`}
+                      onClick={() => loadPresentation(pres.id)}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <div
+                        className={`w-full h-full rounded ${
+                          pres.slides.includes("gradient")
+                            ? `bg-gradient-to-br ${pres.slides.split("gradient")[1].split("to")[0].replace("via-", "").replace("to-", "")}`
+                            : pres.slides.split("bg-")[1].split("text-")[0]
+                        } flex items-center justify-center relative`}
+                      >
+                        <span className="text-xs text-white font-bold">{index + 1}</span>
+
+                        {/* Slide actions */}
+                        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              // Duplicate presentation logic would go here if implemented
+                            }}
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                          {presentations.length > 1 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-red-400 hover:text-red-300"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                deletePresentation(pres.id)
+                              }}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+
+                  {/* Add slide button */}
+                  <motion.div
+                    className="flex-shrink-0 w-24 h-16 glassmorphism rounded cursor-pointer flex items-center justify-center hover:bg-white/10 transition-colors"
+                    onClick={isSaving ? undefined : createNewPresentation}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    style={isSaving ? { opacity: 0.5, pointerEvents: 'none' } : {}}
+                  >
+                    <Plus className="w-6 h-6 text-white" />
+                  </motion.div>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Content Editor */}
+            <div className="lg:col-span-1">
+              <motion.div
+                className="glassmorphism rounded-xl p-6 space-y-6"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6 }}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold">Edit Slide</h2>
+                  <div className="flex space-x-2">
+                    <GlassmorphismButton
+                      size="sm"
+                      onClick={() => setShowGenerateDialog(true)}
+                      className="bg-gradient-to-r from-blue-500 to-green-500"
+                      disabled={isGenerating}
+                    >
+                      <Wand2 className="w-4 h-4 mr-2" />
+                      Generate
+                    </GlassmorphismButton>
+                    <GlassmorphismButton size="sm" onClick={enhanceWithAI} variant="outline" disabled={isGenerating}>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Enhance
+                    </GlassmorphismButton>
+                  </div>
+                </div>
+
+                {/* Unsaved changes indicator */}
+                {hasUnsavedChanges && (
+                  <div className="bg-yellow-600/20 border border-yellow-600/30 rounded-lg p-3 text-yellow-200 text-sm">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                      <span>You have unsaved changes</span>
+                    </div>
+                  </div>
                 )}
-              </Button>
-              {isGenerating && (
-                <div className="text-center">
-                  <p className="text-slate-400 text-sm">Creating your AI-powered presentation...</p>
+
+                {/* Content Form */}
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-white">Title</Label>
+                    <Input
+                      value={currentSlide.title}
+                      onChange={(e) => updateSlide("title", e.target.value)}
+                      className="bg-white/5 border-white/20 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-white">Subtitle</Label>
+                    <Input
+                      value={currentSlide.subtitle}
+                      onChange={(e) => updateSlide("subtitle", e.target.value)}
+                      className="bg-white/5 border-white/20 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-white">Content</Label>
+                    <Textarea
+                      value={currentSlide.content}
+                      onChange={(e) => updateSlide("content", e.target.value)}
+                      className="bg-white/5 border-white/20 text-white min-h-[100px]"
+                      placeholder="Add your slide content..."
+                    />
+                  </div>
+
+                  {/* Bullet Points */}
+                  <div>
+                    <Label className="text-white">Bullet Points</Label>
+                    <div className="space-y-2">
+                      {currentSlide.bulletPoints.map((point, index) => (
+                        <div key={index} className="flex items-center space-x-2">
+                          <span className="text-white text-sm flex-1">{point}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeBulletPoint(index)}
+                            className="h-8 w-8 p-0 text-red-400 hover:text-red-300"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      ))}
+                      <div className="flex space-x-2">
+                        <Input
+                          value={newBulletPoint}
+                          onChange={(e) => setNewBulletPoint(e.target.value)}
+                          placeholder="Add new point..."
+                          className="bg-white/5 border-white/20 text-white"
+                          onKeyPress={(e) => e.key === "Enter" && addBulletPoint()}
+                        />
+                        <Button onClick={addBulletPoint} size="sm">
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <GlassmorphismButton
+                        variant="outline"
+                        onClick={() => setShowImageDialog(true)}
+                        className="w-full h-12 flex items-center justify-center"
+                        disabled={isGenerating}
+                      >
+                        <ImageIcon className="w-4 h-4 mr-2" />
+                        Add Image
+                      </GlassmorphismButton>
+                      <GlassmorphismButton
+                        variant="outline"
+                        onClick={() => setShowChartDialog(true)}
+                        className="w-full h-12 flex items-center justify-center"
+                        disabled={isGenerating}
+                      >
+                        <BarChart className="w-4 h-4 mr-2" />
+                        Add Chart
+                      </GlassmorphismButton>
+                    </div>
+                    <GlassmorphismButton
+                      variant="outline"
+                      onClick={() => setShowBackgroundDialog(true)}
+                      className="w-full h-12 flex items-center justify-center"
+                      disabled={isGenerating}
+                    >
+                      <Palette className="w-4 h-4 mr-2" />
+                      Change Background
+                    </GlassmorphismButton>
+                    <GlassmorphismButton
+                      onClick={generatePresentation}
+                      className="w-full h-12 flex items-center justify-center bg-gradient-to-r from-green-500 to-blue-500"
+                      disabled={isGenerating}
+                    >
+                      <Wand2 className="w-4 h-4 mr-2" />
+                      Generate AI
+                    </GlassmorphismButton>
+                  </div>
                 </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
 
-        {/* Image Dialog */}
-        <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
-          <DialogContent className="bg-slate-900 border-white/20">
-            <DialogHeader>
-              <DialogTitle className="text-white">Add Image</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <Button
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full h-20 border-2 border-dashed border-white/20 hover:border-white/40 bg-transparent"
-              >
-                <div className="text-center">
-                  <ImageIcon className="w-8 h-8 mx-auto mb-2" />
-                  <span>Click to upload image</span>
+                {/* AI Suggestions */}
+                <div className="pt-6 border-t border-white/10">
+                  <h3 className="font-semibold mb-3 flex items-center text-white">
+                    <Lightbulb className="w-4 h-4 mr-2 text-green-500" />
+                    AI Suggestions
+                  </h3>
+                  <div className="space-y-2">
+                    {aiSuggestions.map((suggestion, index) => (
+                      <motion.button
+                        key={index}
+                        className="w-full text-left p-3 glassmorphism rounded-lg text-sm hover:bg-white/10 transition-colors text-white"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => {
+                          updateSlide("content", currentSlide.content + " " + suggestion)
+                          toast({
+                            title: "Suggestion Applied",
+                            description: "AI suggestion has been added to your slide.",
+                          })
+                        }}
+                      >
+                        {suggestion}
+                      </motion.button>
+                    ))}
+                  </div>
                 </div>
-              </Button>
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+              </motion.div>
             </div>
-          </DialogContent>
-        </Dialog>
+          </div>
 
-        {/* Chart Dialog */}
-        <Dialog open={showChartDialog} onOpenChange={setShowChartDialog}>
-          <DialogContent className="bg-slate-900 border-white/20">
-            <DialogHeader>
-              <DialogTitle className="text-white">Add Chart</DialogTitle>
-            </DialogHeader>
-            <div className="grid grid-cols-2 gap-4">
-              {chartTypes.map((chart) => (
-                <Button
-                  key={chart.id}
-                  onClick={() => addChart(chart.name)}
-                  className="h-20 flex flex-col items-center justify-center space-y-2 bg-slate-800 hover:bg-slate-700"
-                >
-                  <chart.icon className="w-6 h-6" />
-                  <span className="text-sm">{chart.name}</span>
-                </Button>
-              ))}
-            </div>
-          </DialogContent>
-        </Dialog>
+          {/* Export Dialog */}
+          <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+            <DialogContent className="bg-slate-900 border-white/20">
+              <DialogHeader>
+                <DialogTitle className="text-white">Export Presentation</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-slate-300">Choose your export format:</p>
+                {hasUnsavedChanges && (
+                  <div className="bg-yellow-600/20 border border-yellow-600/30 rounded-lg p-3 text-yellow-200 text-sm">
+                    Your changes will be saved automatically before export.
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-4">
+                  <Button
+                    onClick={() => exportPresentation("pdf")}
+                    disabled={isDownloading || !currentPresentationId}
+                    className="h-20 flex flex-col items-center justify-center space-y-2 bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                  >
+                    <FileText className="w-6 h-6" />
+                    <span>{isDownloading ? "Generating..." : "PDF"}</span>
+                  </Button>
+                  <Button
+                    onClick={() => exportPresentation("pptx")}
+                    disabled={isDownloading || !currentPresentationId}
+                    className="h-20 flex flex-col items-center justify-center space-y-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50"
+                  >
+                    <Presentation className="w-6 h-6" />
+                    <span>{isDownloading ? "Generating..." : "PowerPoint"}</span>
+                  </Button>
+                </div>
+                {!currentPresentationId && (
+                  <p className="text-yellow-400 text-sm text-center">Generate a presentation first to enable downloads</p>
+                )}
+                {isDownloading && (
+                  <div className="text-center">
+                    <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                    <p className="text-slate-400 text-sm">Preparing your presentation for download...</p>
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
 
-        {/* Background Dialog */}
-        <Dialog open={showBackgroundDialog} onOpenChange={setShowBackgroundDialog}>
-          <DialogContent className="bg-slate-900 border-white/20 max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="text-white">Choose Background Style</DialogTitle>
-            </DialogHeader>
-            <div className="grid grid-cols-3 gap-3 max-h-96 overflow-y-auto">
-              {backgroundStyles.map((style, index) => (
+          {/* Generate Dialog */}
+          <Dialog open={showGenerateDialog} onOpenChange={setShowGenerateDialog}>
+            <DialogContent className="bg-slate-900 border-white/20">
+              <DialogHeader>
+                <DialogTitle className="text-white">Generate AI Presentation</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-white">Topic</Label>
+                  <Input
+                    value={generateTopic}
+                    onChange={(e) => setGenerateTopic(e.target.value)}
+                    placeholder="e.g., Climate Change, Machine Learning, History of Art..."
+                    className="bg-white/5 border-white/20 text-white"
+                  />
+                </div>
+                <div>
+                  <Label className="text-white">Number of Slides</Label>
+                  <Input
+                    type="number"
+                    value={slideCount}
+                    onChange={(e) => setSlideCount(Number.parseInt(e.target.value) || 5)}
+                    min="3"
+                    max="20"
+                    className="bg-white/5 border-white/20 text-white"
+                  />
+                </div>
                 <Button
-                  key={index}
-                  onClick={() => changeBackground(style)}
-                  className={`h-20 relative overflow-hidden ${
-                    style.type === "gradient" ? `bg-gradient-to-br ${style.value}` : style.value
-                  } hover:scale-105 transition-transform`}
+                  onClick={generatePresentation}
+                  disabled={isGenerating}
+                  className="w-full bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600"
                 >
-                  <div className="absolute inset-0 bg-black/20 hover:bg-black/10 transition-colors" />
-                  <span className="relative z-10 text-xs font-medium">{style.name}</span>
+                  {isGenerating ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="w-4 h-4 mr-2" />
+                      Generate Presentation
+                    </>
+                  )}
                 </Button>
-              ))}
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-    </main>
+                {isGenerating && (
+                  <div className="text-center">
+                    <p className="text-slate-400 text-sm">Creating your AI-powered presentation...</p>
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Image Dialog */}
+          <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
+            <DialogContent className="bg-slate-900 border-white/20">
+              <DialogHeader>
+                <DialogTitle className="text-white">Upload Image</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <UploadButton
+                  endpoint="presentationImage"
+                  onClientUploadComplete={(res: Array<{ url: string }>) => {
+                    if (res && res[0]) {
+                      handleImageUpload(res[0].url);
+                    }
+                  }}
+                  onUploadError={(err: { message: string }) => {
+                    toast({
+                      title: "Upload Failed",
+                      description: err.message,
+                      variant: "destructive",
+                    });
+                  }}
+                  onUploadBegin={() => {
+                    toast({
+                      title: "Uploading...",
+                      description: "Your image is being uploaded.",
+                    });
+                  }}
+                  className="w-full"
+                  appearance={{
+                    button: 'w-full bg-muted hover:bg-muted/80 text-foreground',
+                    allowedContent: 'hidden',
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">Max file size: 2MB. Only images allowed.</p>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Chart Dialog */}
+          <Dialog open={showChartDialog} onOpenChange={setShowChartDialog}>
+            <DialogContent className="bg-slate-900 border-white/20">
+              <DialogHeader>
+                <DialogTitle className="text-white">Add Chart</DialogTitle>
+              </DialogHeader>
+              <div className="grid grid-cols-2 gap-4">
+                {chartTypes.map((chart) => (
+                  <Button
+                    key={chart.id}
+                    onClick={() => addChart(chart.name)}
+                    className="h-20 flex flex-col items-center justify-center space-y-2 bg-slate-800 hover:bg-slate-700"
+                    disabled={isGenerating}
+                  >
+                    <chart.icon className="w-6 h-6" />
+                    <span className="text-sm">{chart.name}</span>
+                  </Button>
+                ))}
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Background Dialog */}
+          <Dialog open={showBackgroundDialog} onOpenChange={setShowBackgroundDialog}>
+            <DialogContent className="bg-slate-900 border-white/20 max-w-2xl">
+              <DialogHeader>
+                <DialogTitle className="text-white">Choose Background Style</DialogTitle>
+              </DialogHeader>
+              <div className="grid grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                {backgroundStyles.map((style, index) => (
+                  <Button
+                    key={index}
+                    onClick={() => changeBackground(style)}
+                    className={`h-20 relative overflow-hidden ${
+                      style.type === "gradient" ? `bg-gradient-to-br ${style.value}` : style.value
+                    } hover:scale-105 transition-transform`}
+                    disabled={isGenerating}
+                  >
+                    <div className="absolute inset-0 bg-black/20 hover:bg-black/10 transition-colors" />
+                    <span className="relative z-10 text-xs font-medium">{style.name}</span>
+                  </Button>
+                ))}
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </main>
+    </PresentationsErrorBoundary>
   )
 }
 
 export default AIPresentations
+
+// Defensive helpers
+const safeArray = <T,>(val: T[] | undefined): T[] => Array.isArray(val) ? val : [];
+const safeSlides = (slides: any): Slide[] => safeArray(slides).map((slide: any, index: number) => ({
+  id: slide.id?.toString() || `slide_${index}`,
+  title: slide.title || `Slide ${index + 1}`,
+  subtitle: slide.subtitle || '',
+  content: slide.content || '',
+  backgroundStyle: slide.backgroundStyle || 'gradient',
+  backgroundGradient: slide.backgroundGradient || 'from-purple-600 via-blue-600 to-indigo-700',
+  images: safeArray(slide.images),
+  bulletPoints: safeArray(slide.bulletPoints),
+}));
