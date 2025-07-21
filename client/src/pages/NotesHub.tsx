@@ -165,7 +165,7 @@ const NotesHub = () => {
   };
 
   // Helper to check if a note is a template (not saved in backend)
-  const isTemplateNote = (note: Note) => isNaN(Number(note.id));
+  const isTemplateNote = (note: Note) => note.id.startsWith("template-");
 
   const handleUpdateNote = async (content: string) => {
     if (!selectedNote) return;
@@ -226,6 +226,30 @@ const NotesHub = () => {
 
   const handleSaveNote = async () => {
     if (!selectedNote) return;
+
+    if (isTemplateNote(selectedNote)) {
+      // Save as new note (POST)
+      try {
+        const response = await fetch('/api/notes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...selectedNote,
+            // Optionally, remove the template id so backend generates a real id
+            id: undefined,
+          }),
+        });
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const newNote: Note = safeNote(await response.json());
+        setNotes(prev => prev.map(note => note.id === selectedNote.id ? newNote : note));
+        setSelectedNote(newNote);
+        setIsEditing(false);
+        toast({ title: 'Note Saved', description: 'Template note saved as a new note.' });
+      } catch (error) {
+        toast({ title: 'Failed to save note', description: 'Could not save template note.', variant: 'destructive' });
+      }
+      return;
+    }
 
     try {
       const response = await fetch(`/api/notes/${selectedNote.id}`, {
@@ -783,7 +807,7 @@ const NotesHub = () => {
                           whileTap={{ scale: 0.98 }}
                           onClick={() => {
                             const newNote: Note = {
-                              id: Date.now().toString(),
+                              id: `template-${Date.now()}`,
                               title: template.title,
                               content: template.content,
                               tags: [template.category],
@@ -1165,7 +1189,7 @@ const NotesHub = () => {
                         whileTap={{ scale: 0.98 }}
                         onClick={() => {
                           const newNote: Note = {
-                            id: Date.now().toString(),
+                            id: `template-${Date.now()}`,
                             title: template.title,
                             content: template.content,
                             tags: [template.category],
