@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -43,17 +43,14 @@ export const documents = pgTable("documents", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const notes = pgTable("notes", {
-  id: serial("id").primaryKey(),
-  title: text("title").notNull(),
-  content: text("content").default(""),
-  tags: text("tags").array().default([]),
-  userId: integer("user_id").references(() => users.id),
-  isPublic: boolean("is_public").default(false),
-  shareCode: text("share_code"),
-  category: text("category").default("Math"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+export const notes = pgTable('notes', {
+  id: serial('id').primaryKey(),
+  user_id: integer('user_id').notNull().references(() => users.id),
+  title: varchar('title', { length: 255 }).notNull(),
+  content: text('content').notNull(),
+  tags: varchar('tags', { length: 64 }).array(),
+  created_at: timestamp('created_at').notNull().defaultNow(),
+  updated_at: timestamp('updated_at').notNull().defaultNow(),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -70,7 +67,7 @@ export const documentsRelations = relations(documents, ({ one }) => ({
 
 export const notesRelations = relations(notes, ({ one }) => ({
   user: one(users, {
-    fields: [notes.userId],
+    fields: [notes.user_id],
     references: [users.id],
   }),
 }));
@@ -114,8 +111,6 @@ export const insertNoteSchema = createInsertSchema(notes).pick({
   title: true,
   content: true,
   tags: true,
-  isPublic: true,
-  category: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -123,5 +118,5 @@ export type UpdateUserProfile = z.infer<typeof updateUserProfileSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 export type Document = typeof documents.$inferSelect;
-export type InsertNote = z.infer<typeof insertNoteSchema>;
 export type Note = typeof notes.$inferSelect;
+export type InsertNote = z.infer<typeof insertNoteSchema>;

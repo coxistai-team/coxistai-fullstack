@@ -219,7 +219,7 @@ export default function GeneralSettings() {
                           />
                         )}
                         
-                        {setting.type === 'select' && setting.options && (
+                        {setting.type === 'select' && 'options' in setting && Array.isArray(setting.options) && (
                           <div className="w-48">
                             <Select
                               value={settings[setting.key as keyof GeneralSettings] as string}
@@ -249,9 +249,9 @@ export default function GeneralSettings() {
                                 onValueChange={(value) => 
                                   handleToggle(setting.key as keyof GeneralSettings, value[0])
                                 }
-                                min={setting.min}
-                                max={setting.max}
-                                step={setting.step}
+                                min={('min' in setting && typeof setting.min === 'number') ? setting.min : undefined}
+                                max={('max' in setting && typeof setting.max === 'number') ? setting.max : undefined}
+                                step={('step' in setting && typeof setting.step === 'number') ? setting.step : undefined}
                                 className="flex-1"
                               />
                               <span className="text-sm font-medium w-8 text-center">

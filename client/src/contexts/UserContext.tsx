@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 // Local user type without database dependencies
 interface LocalUser {
   id: number;
+  username: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -68,6 +69,7 @@ interface UserProviderProps {
 // Default user profile
 const defaultUser: LocalUser = {
   id: 1,
+  username: 'sharathbandaari',
   firstName: 'Sharath',
   lastName: 'Bandaari',
   email: 'sharath.bandaari@email.com',
