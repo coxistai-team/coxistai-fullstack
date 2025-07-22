@@ -146,7 +146,7 @@ import CodeSparkPreview from "@/pages/CodeSparkPreview";
 
 // Adding GA4 initialization
 import ReactGA from "react-ga4";
-ReactGA.initialize("G-XXXXXXXXXX"); 
+ReactGA.initialize("G-Y3R66DW7YJ"); 
 
 function Router() {
   useScrollToTop();
