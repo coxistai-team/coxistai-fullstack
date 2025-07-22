@@ -98,7 +98,8 @@
 
 // export default App;
 
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter"; 
+import { useEffect } from "react"; 
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -143,8 +144,11 @@ import AIPresentationsPreview from "@/pages/AIPresentationsPreview";
 import SmartCalendarPreview from "@/pages/SmartCalendarPreview";
 import CodeSparkPreview from "@/pages/CodeSparkPreview";
 
+// Adding GA4 initialization
+import ReactGA from "react-ga4";
+ReactGA.initialize("G-XXXXXXXXXX"); 
+
 function Router() {
-  // Use the scroll to top hook to reset scroll position on route changes
   useScrollToTop();
   
   return (
@@ -175,6 +179,12 @@ function Router() {
 }
 
 function App() {
+  const [location] = useLocation(); 
+
+  useEffect(() => {
+    ReactGA.send({ hitType: "pageview", page: location });
+  }, [location]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
