@@ -27,7 +27,7 @@ interface Author {
   username: string;
   firstName?: string;
   lastName?: string;
-  avatar?: string;
+    avatar?: string;
 }
 
 interface Reply {

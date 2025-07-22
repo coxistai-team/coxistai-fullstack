@@ -35,7 +35,7 @@ interface CalendarEvent {
   id: string;
   title: string;
   description?: string;
-  date: Date;
+  date: string; // <-- string, not Date
   time: string;
   duration: number; // in minutes
   location?: string;
@@ -90,9 +90,21 @@ const SmartCalendar = () => {
     return [];
   });
 
-  const [newEvent, setNewEvent] = useState<Partial<CalendarEvent>>({
+  // Define typeDefaults at the top of the component
+  const typeDefaults = {
+    study: { title: 'Study Session', duration: 60 },
+    exam: { title: 'Exam', duration: 120 },
+    assignment: { title: 'Assignment Due', duration: 30 },
+    group: { title: 'Group Study', duration: 90 },
+    personal: { title: 'Personal Event', duration: 60 }
+  };
+
+  // 1. Add date to newEvent state and bind to input
+  // newEvent.date is always a string (yyyy-mm-dd)
+  const [newEvent, setNewEvent] = useState<Partial<CalendarEvent> & { date: string }>({
     title: '',
     description: '',
+    date: '',
     time: '09:00',
     duration: 60,
     type: 'study',
@@ -114,7 +126,7 @@ const SmartCalendar = () => {
     fetch("/api/calendar", { credentials: "include" })
       .then(res => res.json())
       .then(data => {
-        setEvents(data.map((e: any) => ({ ...e, date: new Date(e.date) })));
+        setEvents(data.map((e: any) => ({ ...e, date: typeof e.date === 'string' ? e.date : (new Date(e.date)).toISOString().split('T')[0] })));
       })
       .catch(() => setEvents([]))
       .finally(() => setIsEventsLoading(false));
@@ -170,7 +182,7 @@ const SmartCalendar = () => {
 
   // Get events for a specific date
   const getEventsForDate = (date: Date) => {
-    return events.filter(event => isSameDay(event.date, date));
+    return events.filter(event => isSameDay(new Date(event.date), date));
   };
 
   // Get tasks for a specific date
@@ -181,11 +193,11 @@ const SmartCalendar = () => {
   // Add or update event (persistent)
   const saveEvent = async () => {
     setIsSavingEvent(true);
-    if (!newEvent.title || !selectedDate) return;
+    if (!newEvent.title || !newEvent.date) return;
     const eventData: any = {
       title: newEvent.title,
       description: newEvent.description,
-      date: selectedDate.toISOString().split("T")[0],
+      date: newEvent.date,
       time: newEvent.time,
       duration: newEvent.duration,
       location: newEvent.location,
@@ -222,7 +234,7 @@ const SmartCalendar = () => {
       // Refetch events
       fetch("/api/calendar", { credentials: "include" })
         .then(res => res.json())
-        .then(data => setEvents(data.map((e: any) => ({ ...e, date: new Date(e.date) }))));
+        .then(data => setEvents(data.map((e: any) => ({ ...e, date: typeof e.date === 'string' ? e.date : (new Date(e.date)).toISOString().split('T')[0] }))));
       toast({ title: editingEvent ? "Event Updated" : "Event Created", description: `Event ${editingEvent ? "updated" : "created"} successfully.` });
       resetEventDialog();
     } catch (e: any) {
@@ -243,7 +255,7 @@ const SmartCalendar = () => {
       // Refetch events
       fetch("/api/calendar", { credentials: "include" })
         .then(res => res.json())
-        .then(data => setEvents(data.map((e: any) => ({ ...e, date: new Date(e.date) }))));
+        .then(data => setEvents(data.map((e: any) => ({ ...e, date: typeof e.date === 'string' ? e.date : (new Date(e.date)).toISOString().split('T')[0] }))));
       toast({ title: "Event Deleted", description: "Event has been removed." });
     } catch (e: any) {
       toast({ title: "Delete Failed", description: e.message, variant: "destructive" });
@@ -257,6 +269,7 @@ const SmartCalendar = () => {
     setNewEvent({
       title: '',
       description: '',
+      date: '', // <-- reset date
       time: '09:00',
       duration: 60,
       type: 'study',
@@ -269,40 +282,37 @@ const SmartCalendar = () => {
 
   // Open event dialog for specific date with optional event type preset
   const openEventDialog = (date: Date, event?: CalendarEvent, eventType?: 'study' | 'exam' | 'assignment' | 'personal' | 'group') => {
-    setSelectedDate(date);
     if (event) {
       setEditingEvent(event);
       setNewEvent({
         title: event.title,
         description: event.description,
+        date: event.date,
         time: event.time,
         duration: event.duration,
         location: event.location,
         type: event.type,
+        color: event.color,
         reminder: event.reminder,
         attachments: event.attachments
       });
       setEventAttachments(event.attachments || []);
-    } else if (eventType) {
-      const typeDefaults = {
-        study: { title: 'Study Session', duration: 60 },
-        exam: { title: 'Exam', duration: 120 },
-        assignment: { title: 'Assignment Due', duration: 30 },
-        group: { title: 'Group Study', duration: 90 },
-        personal: { title: 'Personal Event', duration: 60 }
-      };
-      
+      // Do not setSelectedDate to a string
+    } else {
+      const dateStr = date.toISOString().split('T')[0];
       setNewEvent({
-        title: typeDefaults[eventType].title,
+        title: eventType ? typeDefaults[eventType].title : '',
         description: '',
+        date: dateStr,
         time: '09:00',
-        duration: typeDefaults[eventType].duration,
-        type: eventType,
-        color: eventColors[eventType],
+        duration: eventType ? typeDefaults[eventType].duration : 60,
+        type: eventType || 'study',
+        color: eventType ? eventColors[eventType] : '#3B82F6',
         reminder: 15,
         attachments: []
       });
       setEventAttachments([]);
+      // Do not setSelectedDate to a string
     }
     setShowEventDialog(true);
   };
@@ -397,7 +407,7 @@ const SmartCalendar = () => {
   const getAISuggestions = () => {
     const today = new Date();
     const todaysEvents = getEventsForDate(today);
-    const upcomingExams = events.filter(e => e.type === 'exam' && e.date > today).length;
+    const upcomingExams = events.filter(e => e.type === 'exam' && new Date(e.date) > today).length;
     
     const suggestions = [];
     
@@ -428,7 +438,7 @@ const SmartCalendar = () => {
     id: event.id?.toString() || Date.now().toString(),
     title: event.title || 'Untitled',
     description: event.description || '',
-    date: event.date ? new Date(event.date) : new Date(),
+    date: typeof event.date === 'string' ? event.date : (new Date(event.date)).toISOString().split('T')[0],
     time: event.time || '',
     duration: typeof event.duration === 'number' ? event.duration : 60,
     location: event.location || '',
@@ -1032,17 +1042,29 @@ const SmartCalendar = () => {
             </DialogHeader>
             
             <div className="space-y-4 mt-6">
+              {/* Date Field */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Event Title *
+                  Date
                 </label>
                 <Input
-                  value={newEvent.title || ''}
-                  onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="Enter event title..."
+                  type="date"
+                  value={newEvent.date || ''}
+                  onChange={e => setNewEvent(prev => ({ ...prev, date: e.target.value }))}
                   className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
                 />
               </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Event Title *
+                  </label>
+                  <Input
+                    value={newEvent.title || ''}
+                    onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Enter event title..."
+                    className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
+                  />
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">

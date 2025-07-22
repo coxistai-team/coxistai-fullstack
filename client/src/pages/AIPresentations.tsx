@@ -2,6 +2,7 @@
 import React from "react"
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useEffect, useRef } from "react";
 
 import {
   Download,
@@ -63,6 +64,10 @@ const AIPresentations = () => {
   const { toast } = useToast()
   const [presentationId, setPresentationId] = useState<string | null>(null)
   const [presentationTopic, setPresentationTopic] = useState<string>("AI Presentation") // New state for download filename
+  const [savedPresentations, setSavedPresentations] = useState<any[]>([]);
+  const [isLoadingPresentations, setIsLoadingPresentations] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const saveTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // Background styles array
   const backgroundStyles = [
@@ -241,43 +246,9 @@ const AIPresentations = () => {
 
     setSlides(updatedSlides)
 
-    if (presentationId) {
-      try {
-        const slideToUpdate = updatedSlides[currentSlideIndex]
-        const response = await fetch("http://localhost:5002/update_slide", {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            presentation_id: presentationId,
-            slide_id: slideToUpdate.id,
-            slide_data: slideToUpdate,
-          }),
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || "Failed to update slide on backend.")
-        }
-
-        toast({
-          title: "Slide Updated",
-          description: "Changes saved to backend.",
-        })
-      } catch (error: any) {
-        console.error("Error updating slide on backend:", error)
-        toast({
-          title: "Update Failed",
-          description: error.message || "Failed to save changes to backend.",
-          variant: "destructive",
-        })
-      }
-    } else {
-      toast({
-        title: "Slide Updated Locally",
-        description: "Generate a presentation first to save changes to backend.",
-      })
+    // Save to DB if presentationId exists
+    if (presentationId && presentationTopic) {
+      debouncedSave(presentationId, presentationTopic, { slides: updatedSlides });
     }
   }
 
@@ -743,6 +714,92 @@ const AIPresentations = () => {
     )
   }
 
+  // Fetch saved presentations on mount
+  useEffect(() => {
+    const fetchPresentations = async () => {
+      setIsLoadingPresentations(true);
+      try {
+        const res = await fetch('/api/presentations', { credentials: 'include' });
+        if (!res.ok) throw new Error('Failed to fetch presentations');
+        const data = await res.json();
+        setSavedPresentations(data);
+      } catch (e) {
+        setSavedPresentations([]);
+      } finally {
+        setIsLoadingPresentations(false);
+      }
+    };
+    fetchPresentations();
+  }, []);
+
+  // Load a saved presentation
+  const loadPresentation = async (id: string) => {
+    setIsLoadingPresentations(true);
+    try {
+      const res = await fetch(`/api/presentations/${id}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch presentation');
+      const data = await res.json();
+      setSlides(data.json_data.slides);
+      setPresentationId(data.id);
+      setPresentationTopic(data.topic);
+      setCurrentSlideIndex(0);
+    } catch (e) {
+      // handle error
+    } finally {
+      setIsLoadingPresentations(false);
+    }
+  };
+
+  // Save a new presentation after generation
+  const savePresentation = async (id: string, topic: string, json_data: any) => {
+    setIsSaving(true);
+    try {
+      const res = await fetch('/api/presentations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ id, topic, json_data })
+      });
+      if (!res.ok) throw new Error('Failed to save presentation');
+      const created = await res.json();
+      setSavedPresentations(prev => [created, ...prev]);
+      toast({ title: 'Presentation Saved', description: 'Presentation saved to your account.' });
+    } catch (e) {
+      toast({ title: 'Save Failed', description: 'Could not save presentation.', variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Update an existing presentation (PUT)
+  const updatePresentation = async (id: string, topic: string, json_data: any) => {
+    setIsSaving(true);
+    try {
+      const res = await fetch(`/api/presentations/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ topic, json_data })
+      });
+      if (!res.ok) throw new Error('Failed to update presentation');
+      const updated = await res.json();
+      setSavedPresentations(prev => prev.map(p => p.id === id ? updated : p));
+      toast({ title: 'Saved!', description: 'Presentation updated.' });
+    } catch (e) {
+      toast({ title: 'Save Failed', description: 'Could not update presentation.', variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Debounced save on edit
+  const debouncedSave = (id: string, topic: string, json_data: any) => {
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(() => {
+      updatePresentation(id, topic, json_data);
+    }, 1000);
+  };
+
   return (
     <main className="relative z-10 pt-20 min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -840,6 +897,27 @@ const AIPresentations = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        <div className="mb-6">
+          <h2 className="text-lg font-bold mb-2 text-slate-900 dark:text-white">Your Saved Presentations</h2>
+          {isLoadingPresentations ? (
+            <div>Loading...</div>
+          ) : savedPresentations.length === 0 ? (
+            <div className="text-slate-500">No saved presentations yet.</div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {savedPresentations.map((pres) => (
+                <button
+                  key={pres.id}
+                  className={`px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors ${pres.id === presentationId ? 'border-blue-500' : ''}`}
+                  onClick={() => loadPresentation(pres.id)}
+                >
+                  {pres.topic}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className={`grid lg:grid-cols-3 gap-8 ${isPreviewMode ? "hidden" : ""}`}>
           <div className="lg:col-span-2">

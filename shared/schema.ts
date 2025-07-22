@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, varchar, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -56,10 +56,10 @@ export const notes = pgTable('notes', {
 });
 
 export const presentations = pgTable('presentations', {
-  id: serial('id').primaryKey(),
+  id: varchar('id', { length: 64 }).primaryKey(),
   user_id: integer('user_id').notNull().references(() => users.id),
-  title: varchar('title', { length: 255 }).notNull(),
-  slides: text('slides').notNull(), // store JSON string
+  topic: varchar('topic', { length: 255 }).notNull(),
+  json_data: jsonb('json_data').notNull(),
   created_at: timestamp('created_at').notNull().defaultNow(),
   updated_at: timestamp('updated_at').notNull().defaultNow(),
 });

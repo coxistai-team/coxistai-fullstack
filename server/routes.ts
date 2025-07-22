@@ -730,74 +730,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // --- Presentations CRUD ---
-  app.get("/api/presentations", requireAuth, async (req: Request, res: Response) => {
+  // Presentations API
+  app.get('/api/presentations', requireAuth, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).user.id;
-      const presentations = await storage.getPresentations(userId);
+      const userId = req.user.id;
+      const presentations = await storage.getPresentationsByUser(userId);
       res.json(presentations);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch presentations" });
+      res.status(500).json({ error: 'Failed to fetch presentations.' });
     }
   });
 
-  app.get("/api/presentations/:id", requireAuth, async (req: Request, res: Response) => {
+  app.get('/api/presentations/:id', requireAuth, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).user.id;
-      const id = parseInt(req.params.id);
-      const presentation = await storage.getPresentation(id);
-      if (!presentation || presentation.user_id !== userId) {
-        return res.status(404).json({ error: "Presentation not found" });
-      }
+      const userId = req.user.id;
+      const id = req.params.id;
+      const presentation = await storage.getPresentationById(id, userId);
+      if (!presentation) return res.status(404).json({ error: 'Presentation not found.' });
       res.json(presentation);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch presentation" });
+      res.status(500).json({ error: 'Failed to fetch presentation.' });
     }
   });
 
-  app.post("/api/presentations", requireAuth, async (req: Request, res: Response) => {
+  app.post('/api/presentations', requireAuth, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).user.id;
-      const parse = insertPresentationSchema.safeParse(req.body);
-      if (!parse.success) {
-        return res.status(400).json({ error: "Invalid presentation data" });
-      }
-      const created = await storage.createPresentation({ ...parse.data, user_id: userId });
+      const userId = req.user.id;
+      const { id, topic, json_data } = req.body;
+      if (!id || !topic || !json_data) return res.status(400).json({ error: 'Missing required fields.' });
+      const created = await storage.createPresentation({ id, user_id: userId, topic, json_data });
       res.status(201).json(created);
     } catch (error) {
-      res.status(500).json({ error: "Failed to create presentation" });
+      res.status(500).json({ error: 'Failed to create presentation.' });
     }
   });
 
-  app.put("/api/presentations/:id", requireAuth, async (req: Request, res: Response) => {
+  app.put('/api/presentations/:id', requireAuth, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).user.id;
-      const id = parseInt(req.params.id);
-      const presentation = await storage.getPresentation(id);
-      if (!presentation || presentation.user_id !== userId) {
-        return res.status(404).json({ error: "Presentation not found" });
-      }
-      // Only allow updating title and slides
-      const { title, slides } = req.body;
-      const updated = await storage.updatePresentation(id, { title, slides });
+      const userId = req.user.id;
+      const id = req.params.id;
+      const { topic, json_data } = req.body;
+      const updated = await storage.updatePresentation(id, userId, { topic, json_data });
+      if (!updated) return res.status(404).json({ error: 'Presentation not found or not owned by user.' });
       res.json(updated);
     } catch (error) {
-      res.status(500).json({ error: "Failed to update presentation" });
-    }
-  });
-
-  app.delete("/api/presentations/:id", requireAuth, async (req: Request, res: Response) => {
-    try {
-      const userId = (req as any).user.id;
-      const id = parseInt(req.params.id);
-      const presentation = await storage.getPresentation(id);
-      if (!presentation || presentation.user_id !== userId) {
-        return res.status(404).json({ error: "Presentation not found" });
-      }
-      await storage.deletePresentation(id);
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to delete presentation" });
+      res.status(500).json({ error: 'Failed to update presentation.' });
     }
   });
 
@@ -1091,6 +1068,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(users);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch users." });
+    }
+  });
+
+  // --- NOTES ROUTES ---
+  app.get("/api/notes", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user.id;
+      const notes = await storage.getNotes(userId);
+      res.json(notes);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch notes." });
+    }
+  });
+
+  app.post("/api/notes", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user.id;
+      const noteData = { ...req.body, user_id: userId };
+      const note = await storage.createNote(noteData);
+      res.status(201).json(note);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create note." });
+    }
+  });
+
+  app.put("/api/notes/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user.id;
+      const noteId = parseInt(req.params.id);
+      const updates = req.body;
+      const updatedNote = await storage.updateNote(noteId, userId, updates);
+      res.json(updatedNote);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update note." });
     }
   });
 

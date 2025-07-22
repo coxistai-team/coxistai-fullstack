@@ -421,12 +421,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserPassword(id: number, newPassword: string): Promise<User> {
-    const [updatedUser] = await db
-      .update(users)
+    const [updatedUser] = await db.update(users)
       .set({ password: newPassword, updatedAt: new Date() })
       .where(eq(users.id, id))
       .returning();
     return updatedUser;
+  }
+
+  async getPresentationsByUser(userId: number) {
+    return db.select().from(presentations).where(eq(presentations.user_id, userId)).orderBy(desc(presentations.created_at));
+  }
+  async getPresentationById(id: string, userId: number) {
+    return db.select().from(presentations).where(and(eq(presentations.id, id), eq(presentations.user_id, userId))).then(rows => rows[0] || null);
+  }
+  async createPresentation(data: { id: string, user_id: number, topic: string, json_data: any }) {
+    const [created] = await db.insert(presentations).values({ ...data }).returning();
+    return created;
+  }
+  async updatePresentation(id: string, userId: number, data: { topic?: string, json_data?: any }) {
+    const [updated] = await db.update(presentations).set({ ...data, updated_at: new Date() }).where(and(eq(presentations.id, id), eq(presentations.user_id, userId))).returning();
+    return updated;
   }
 }
 
