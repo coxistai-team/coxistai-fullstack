@@ -184,7 +184,6 @@ const AIPresentations = () => {
 
   // Update slide content and sync with backend
   const updateSlideContent = async (field: "title" | "subtitle" | "content", value: string) => {
-    // Add "subtitle" to field type
     const updatedSlides = slides.map((slide, index) => {
       if (index === currentSlideIndex) {
         const newElements = slide.elements.map((el) => {
@@ -192,10 +191,8 @@ const AIPresentations = () => {
             return { ...el, content: value }
           }
           if (field === "subtitle" && el.type === "subtitle") {
-            // Handle subtitle update
             return { ...el, content: value }
           }
-          // For 'content', update the first text or bullet_list element
           if (field === "content" && (el.type === "text" || el.type === "bullet_list")) {
             if (el.type === "text") {
               return { ...el, content: value }
@@ -209,14 +206,13 @@ const AIPresentations = () => {
           return el
         })
 
-        // If 'subtitle' is updated and no subtitle element exists, add one (only for title slide)
         if (field === "subtitle" && !newElements.some((el) => el.type === "subtitle") && currentSlideIndex === 0) {
           newElements.push({
             type: "subtitle",
             content: value,
-            position: { left: 0, top: 0, width: 0, height: 0 }, // Dummy position, backend will re-layout
+            position: { left: 0, top: 0, width: 0, height: 0 },
             style: {
-              font_size: 24, // Default size for new subtitle
+              font_size: 24,
               font_weight: "normal",
               color: "#FFFFFF",
               alignment: "center",
@@ -224,12 +220,11 @@ const AIPresentations = () => {
           })
         }
 
-        // If 'content' is updated and no text/bullet_list element exists, add one
         if (field === "content" && !newElements.some((el) => el.type === "text" || el.type === "bullet_list")) {
           newElements.push({
             type: "text",
             content: value,
-            position: { left: 0, top: 0, width: 0, height: 0 }, // Dummy position, backend will re-layout
+            position: { left: 0, top: 0, width: 0, height: 0 },
             style: {
               font_size: 16,
               font_weight: "normal",
@@ -246,7 +241,6 @@ const AIPresentations = () => {
 
     setSlides(updatedSlides)
 
-    // Sync with backend
     if (presentationId) {
       try {
         const slideToUpdate = updatedSlides[currentSlideIndex]
@@ -258,7 +252,7 @@ const AIPresentations = () => {
           body: JSON.stringify({
             presentation_id: presentationId,
             slide_id: slideToUpdate.id,
-            slide_data: slideToUpdate, // Send the entire updated slide object
+            slide_data: slideToUpdate,
           }),
         })
 
@@ -285,73 +279,29 @@ const AIPresentations = () => {
         description: "Generate a presentation first to save changes to backend.",
       })
     }
-  };
+  }
 
   // Create new presentation
   const createNewPresentation = () => {
-    setSlides(
-      safeSlides([
-        {
-          id: `slide_${Date.now()}`,
-          title: "New Presentation",
-          subtitle: "",
-          content: "",
-          backgroundStyle: "gradient",
-          backgroundGradient: "from-purple-600 via-blue-600 to-indigo-700",
-          images: [],
-          bulletPoints: [],
-        },
-      ])
-    );
-    setCurrentPresentationId(null);
-    setCurrentSlideIndex(0);
-    setHasUnsavedChanges(false); // No unsaved changes yet
-    setPendingAutoSave(true); // Trigger auto-save so it appears in the list
-  };
-
-  // Delete presentation
-  const deletePresentation = async (id: string | number) => {
-    try {
-      const res = await fetch(`/api/presentations/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to delete presentation");
-      toast({
-        title: "Presentation Deleted",
-        description: "Presentation has been removed.",
-      });
-      // Refresh list
-      fetch("/api/presentations", { credentials: "include" })
-        .then(res => res.json())
-        .then(data => {
-          setPresentations(data);
-          if (data.length > 0) {
-            setCurrentPresentationId(data[0].id.toString());
-            setSlides(safeSlides(JSON.parse(data[0].slides)));
-          } else {
-            createNewPresentation();
-          }
-        });
-    } catch (e: any) {
-      toast({
-        title: "Delete Failed",
-        description: e.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Switch presentation
-  const loadPresentation = (id: string | number) => {
-    const pres = presentations.find(p => p.id.toString() === id.toString());
-    if (pres) {
-      setCurrentPresentationId(pres.id.toString());
-      setSlides(safeSlides(JSON.parse(pres.slides)));
-      setCurrentSlideIndex(0);
-      setHasUnsavedChanges(false);
-    }
-  };
+    setSlides([
+      {
+        id: `slide_${Date.now()}`,
+        slide_number: 1,
+        layout_type: "title",
+        background: { type: "gradient", gradient: "from-purple-600 via-blue-600 to-indigo-700" },
+        elements: [
+          {
+            type: "title",
+            content: "New Presentation",
+            position: { left: 0, top: 0, width: 0, height: 0 },
+            style: { font_size: 40, font_weight: "bold", color: "#FFFFFF", alignment: "center" },
+          },
+        ],
+      },
+    ])
+    setPresentationId(null)
+    setCurrentSlideIndex(0)
+  }
 
   // Add new slide
   const addSlide = () => {
@@ -384,8 +334,8 @@ const AIPresentations = () => {
     toast({
       title: "Slide Added",
       description: "New slide has been created successfully.",
-    });
-  };
+    })
+  }
 
   // Delete slide
   const deleteSlide = (index: number) => {
@@ -394,40 +344,38 @@ const AIPresentations = () => {
         title: "Cannot Delete",
         description: "You need at least one slide in your presentation.",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
-    setSlides(prev => prev.filter((_, i) => i !== index));
+    setSlides(prev => prev.filter((_, i) => i !== index))
     if (currentSlideIndex >= slides.length - 1) {
-      setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1));
+      setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1))
     }
 
     toast({
       title: "Slide Deleted",
       description: "Slide has been removed from your presentation.",
-    });
-  };
+    })
+  }
 
   // Duplicate slide
   const duplicateSlide = (index: number) => {
-    const slideToClone = slides[index];
+    const slideToClone = slides[index]
     const newSlide = {
       ...slideToClone,
-
-      id: Date.now().toString(), // New unique ID
-      slide_number: slides.length + 1, // New slide number
+      id: Date.now().toString(),
+      slide_number: slides.length + 1,
       elements: slideToClone.elements.map((el) => ({
-        // Deep copy elements
         ...el,
-        content: el.content ? `${el.content} (Copy)` : el.content, // Add (Copy) to text content
+        content: el.content ? `${el.content} (Copy)` : el.content,
       })),
     }
     setSlides((prev) => [...prev.slice(0, index + 1), newSlide, ...prev.slice(index + 1)])
     toast({
       title: "Slide Duplicated",
       description: "Slide has been copied successfully.",
-    });
-  };
+    })
+  }
 
   // Generate presentation with AI via Flask backend
   const generatePresentation = async () => {
@@ -436,14 +384,13 @@ const AIPresentations = () => {
         title: "Topic Required",
         description: "Please enter a topic for your presentation.",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
 
-    setIsGenerating(true);
+    setIsGenerating(true)
 
     try {
-      // Step 1: Call /create_presentation to initiate generation and get presentation_id
       const createResponse = await fetch("http://localhost:5002/create_presentation", {
         method: "POST",
         headers: {
@@ -468,10 +415,9 @@ const AIPresentations = () => {
       }
 
       const newPresentationId = createData.presentation_id
-      setPresentationId(newPresentationId) // Store the new presentation ID
-      setPresentationTopic(createData.topic) // Store the topic for download filename
+      setPresentationId(newPresentationId)
+      setPresentationTopic(createData.topic)
 
-      // Step 2: Call /get_presentation_json to fetch the detailed slide data
       const getJsonResponse = await fetch(`http://localhost:5002/get_presentation_json/${newPresentationId}`, {
         method: "GET",
         headers: {
@@ -496,7 +442,6 @@ const AIPresentations = () => {
         throw new Error(getJsonData.error || "Retrieved presentation JSON is empty or malformed.")
       }
 
-      // Convert backend slides to use gradient backgrounds
       const convertedSlides = getJsonData.json_data.slides.map((slide: any, index: number) => {
         const backgroundStyle = backgroundStyles[index % backgroundStyles.length]
         return {
@@ -520,7 +465,6 @@ const AIPresentations = () => {
         }
       })
 
-      // Directly use the converted slide structure
       setSlides(convertedSlides)
       setCurrentSlideIndex(0)
 
@@ -534,13 +478,13 @@ const AIPresentations = () => {
         title: "Generation Failed",
         description: error.message || "There was an error generating your presentation.",
         variant: "destructive",
-      });
+      })
     } finally {
-      setIsGenerating(false);
-      setShowGenerateDialog(false);
-      setGenerateTopic("");
+      setIsGenerating(false)
+      setShowGenerateDialog(false)
+      setGenerateTopic("")
     }
-  };
+  }
 
   // Export presentation via Flask backend
   const exportPresentation = async (format: string) => {
@@ -566,17 +510,14 @@ const AIPresentations = () => {
           presentationId: presentationId,
           format: format,
         }),
-      });
+      })
 
       if (!response.ok) {
-
         const errorData = await response.json()
         throw new Error(errorData.error || "Failed to export presentation")
       }
 
-      // The backend sends the file directly, so we handle the blob
       const blob = await response.blob()
-      // Use presentationTopic for filename, sanitize it
       const sanitizedTopic = presentationTopic.replace(/[^a-z0-9]/gi, "_").toLowerCase()
       const filename = `${sanitizedTopic || "presentation"}.${format}`
 
@@ -592,31 +533,31 @@ const AIPresentations = () => {
       toast({
         title: `${format.toUpperCase()} Download Complete`,
         description: `Your presentation has been downloaded as ${format.toUpperCase()}.`,
-      });
+      })
     } catch (error: any) {
       console.error("Error exporting presentation:", error)
       toast({
         title: "Download Failed",
         description: error.message || "There was an error downloading your presentation.",
         variant: "destructive",
-      });
+      })
     } finally {
-      setIsDownloading(false);
+      setIsDownloading(false)
     }
   }
 
   // Navigation
   const nextSlide = () => {
     if (currentSlideIndex < slides.length - 1) {
-      setCurrentSlideIndex(currentSlideIndex + 1);
+      setCurrentSlideIndex(currentSlideIndex + 1)
     }
-  };
+  }
 
   const prevSlide = () => {
     if (currentSlideIndex > 0) {
-      setCurrentSlideIndex(currentSlideIndex - 1);
+      setCurrentSlideIndex(currentSlideIndex - 1)
     }
-  };
+  }
 
   // Get background classes for slide
   const getSlideBackgroundClasses = (slide: Slide) => {
@@ -625,7 +566,7 @@ const AIPresentations = () => {
     } else if (slide.background.type === "solid" && slide.background.color) {
       return slide.background.color
     }
-    return "bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700" // fallback
+    return "bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700"
   }
 
   // Render individual slide elements
@@ -635,7 +576,6 @@ const AIPresentations = () => {
     )
     const imageElements = elements.filter((el) => el.type === "image")
 
-    // Determine if it's a two-column layout (has both text and images)
     const isTwoColumnLayout = imageElements.length > 0 && textElements.length > 0
 
     return (
@@ -644,7 +584,6 @@ const AIPresentations = () => {
           isTwoColumnLayout ? "md:grid md:grid-cols-2 md:gap-12" : "space-y-6"
         } ${isFullscreen ? "p-16" : "p-8"}`}
       >
-        {/* Slide Number Display */}
         <div
           className={`absolute bottom-4 right-4 text-sm font-bold bg-black/50 px-3 py-1 rounded-full z-10 text-white`}
         >
@@ -653,7 +592,6 @@ const AIPresentations = () => {
 
         {isTwoColumnLayout ? (
           <>
-            {/* Left Column for Text */}
             <div className="flex flex-col justify-center space-y-4 md:col-span-1">
               {textElements.map((element, elIndex) => {
                 const baseStyle: React.CSSProperties = {
@@ -713,7 +651,6 @@ const AIPresentations = () => {
                 }
               })}
             </div>
-            {/* Right Column for Image */}
             <div className="flex items-center justify-center md:col-span-1">
               {imageElements.map((element, elIndex) => (
                 <img
@@ -730,7 +667,6 @@ const AIPresentations = () => {
             </div>
           </>
         ) : (
-          // Single column layout
           elements.map((element, elIndex) => {
             const baseStyle: React.CSSProperties = {
               fontSize: element.style?.font_size
@@ -810,7 +746,6 @@ const AIPresentations = () => {
   return (
     <main className="relative z-10 pt-20 min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
         <div className="text-center mb-8">
           <motion.h1
             className="text-4xl font-bold mb-4 text-slate-900 dark:text-white"
@@ -829,13 +764,12 @@ const AIPresentations = () => {
             Create stunning presentations with AI assistance and professional templates
           </motion.p>
 
-          {/* Quick Actions */}
           <div className="flex flex-wrap justify-center gap-4 mb-8">
             <GlassmorphismButton
               onClick={() => setShowExportDialog(true)}
               variant="outline"
               className="px-6 py-3"
-              disabled={!presentationId} // Disable export if no presentation is generated
+              disabled={!presentationId}
             >
               <Download className="w-4 h-4 mr-2" />
               Export
@@ -851,7 +785,6 @@ const AIPresentations = () => {
           </div>
         </div>
 
-        {/* Fullscreen Preview Mode */}
         <AnimatePresence>
           {isPreviewMode && (
             <motion.div
@@ -860,7 +793,6 @@ const AIPresentations = () => {
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-50 bg-black"
             >
-              {/* Full screen presentation */}
               <div className="w-screen h-screen flex items-center justify-center">
                 <div
                   className={`w-full h-full flex flex-col justify-center overflow-hidden ${getSlideBackgroundClasses(currentSlide)}`}
@@ -869,7 +801,6 @@ const AIPresentations = () => {
                 </div>
               </div>
 
-              {/* Bottom Navigation Controls */}
               <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center space-x-6 bg-black/70 backdrop-blur-sm rounded-2xl px-8 py-4">
                 <Button
                   variant="ghost"
@@ -896,7 +827,6 @@ const AIPresentations = () => {
                   Next
                   <ChevronRight className="w-6 h-6 ml-2" />
                 </Button>
-                {/* Exit Fullscreen Button */}
                 <div className="border-l border-white/30 pl-6 ml-2">
                   <button
                     onClick={() => setIsPreviewMode(false)}
@@ -912,7 +842,6 @@ const AIPresentations = () => {
         </AnimatePresence>
 
         <div className={`grid lg:grid-cols-3 gap-8 ${isPreviewMode ? "hidden" : ""}`}>
-          {/* Slide Preview */}
           <div className="lg:col-span-2">
             <motion.div
               className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-2xl"
@@ -920,7 +849,6 @@ const AIPresentations = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
             >
-              {/* Controls */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-2">
                   <Button variant="ghost" size="sm" onClick={prevSlide} disabled={currentSlideIndex === 0}>
@@ -946,7 +874,6 @@ const AIPresentations = () => {
                 </div>
               </div>
 
-              {/* Slide Canvas - Fixed aspect ratio and proper sizing */}
               <motion.div
                 className={`w-full rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden shadow-xl ${getSlideBackgroundClasses(currentSlide)}`}
                 style={{
@@ -960,7 +887,6 @@ const AIPresentations = () => {
                 {renderSlideElements(currentSlide.elements, false, currentSlide.slide_number, currentSlide)}
               </motion.div>
 
-              {/* Slide Thumbnails */}
               <div className="flex space-x-2 overflow-x-auto pb-2 mt-4">
                 {slides.map((slide, index) => (
                   <motion.div
@@ -1016,7 +942,6 @@ const AIPresentations = () => {
                         })}
                       </div>
 
-                      {/* Slide actions */}
                       <div className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity space-x-0.5 z-20">
                         <Button
                           variant="ghost"
@@ -1041,26 +966,12 @@ const AIPresentations = () => {
                           >
                             <Trash2 className="w-2 h-2" />
                           </Button>
-                          {presentations.length > 1 && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0 text-red-400 hover:text-red-300"
-                              onClick={e => {
-                                e.stopPropagation();
-                                setPresentationToDelete(pres);
-                              }}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
+                        )}
                       </div>
                     </div>
                   </motion.div>
                 ))}
 
-                {/* Add slide button */}
                 <motion.div
                   className="flex-shrink-0 w-24 h-16 glassmorphism rounded cursor-pointer flex items-center justify-center hover:bg-white/10 transition-colors"
                   onClick={addSlide}
@@ -1073,7 +984,6 @@ const AIPresentations = () => {
             </motion.div>
           </div>
 
-          {/* Content Editor */}
           <div className="lg:col-span-1">
             <motion.div
               className="bg-white dark:bg-slate-800 rounded-xl p-6 space-y-6 border border-slate-200 dark:border-slate-700"
@@ -1085,7 +995,6 @@ const AIPresentations = () => {
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">Edit Slide</h2>
               </div>
 
-              {/* Content Form */}
               <div className="space-y-4">
                 <div>
                   <Label className="text-slate-900 dark:text-white">Title</Label>
@@ -1120,7 +1029,6 @@ const AIPresentations = () => {
           </div>
         </div>
 
-        {/* Export Dialog */}
         <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
           <DialogContent className="bg-white dark:bg-slate-900 border-slate-300 dark:border-white/20">
             <DialogHeader>
@@ -1142,25 +1050,9 @@ const AIPresentations = () => {
                   disabled={isDownloading}
                   className="h-20 flex flex-col items-center justify-center space-y-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50"
                 >
-                  {isGenerating ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Wand2 className="w-4 h-4 mr-2" />
-                      Generate Presentation
-                    </>
-                  )}
+                  <Presentation className="w-6 h-6" />
+                  <span>{isDownloading ? "Generating..." : "PPTX"}</span>
                 </Button>
-                {isGenerating && (
-                  <div className="text-center">
-                    <p className="text-slate-400 text-sm">
-                      Creating your AI-powered presentation...
-                    </p>
-                  </div>
-                )}
               </div>
               {isDownloading && (
                 <div className="text-center">
@@ -1174,7 +1066,6 @@ const AIPresentations = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Generate Dialog */}
         <Dialog open={showGenerateDialog} onOpenChange={setShowGenerateDialog}>
           <DialogContent className="bg-white dark:bg-slate-900 border-slate-300 dark:border-white/20">
             <DialogHeader>
@@ -1189,9 +1080,6 @@ const AIPresentations = () => {
                   placeholder="e.g., Climate Change, Machine Learning, History of Art..."
                   className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/20 text-slate-900 dark:text-white"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Max file size: 2MB. Only images allowed.
-                </p>
               </div>
               <div>
                 <Label className="text-slate-900 dark:text-white">Number of Slides</Label>
@@ -1221,6 +1109,13 @@ const AIPresentations = () => {
                   </>
                 )}
               </Button>
+              {isGenerating && (
+                <div className="text-center">
+                  <p className="text-slate-400 text-sm">
+                    Creating your AI-powered presentation...
+                  </p>
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>
@@ -1229,95 +1124,4 @@ const AIPresentations = () => {
   )
 }
 
-          {/* Background Dialog */}
-          <Dialog
-            open={showBackgroundDialog}
-            onOpenChange={setShowBackgroundDialog}
-          >
-            <DialogContent className="bg-slate-900 border-white/20 max-w-2xl">
-              <DialogHeader>
-                <DialogTitle className="text-white">
-                  Choose Background Style
-                </DialogTitle>
-              </DialogHeader>
-              <div className="grid grid-cols-3 gap-3 max-h-96 overflow-y-auto">
-                {backgroundStyles.map((style, index) => (
-                  <Button
-                    key={index}
-                    onClick={() => changeBackground(style)}
-                    className={`h-20 relative overflow-hidden ${
-                      style.type === "gradient"
-                        ? `bg-gradient-to-br ${style.value}`
-                        : style.value
-                    } hover:scale-105 transition-transform`}
-                    disabled={isGenerating}
-                  >
-                    <div className="absolute inset-0 bg-black/20 hover:bg-black/10 transition-colors" />
-                    <span className="relative z-10 text-xs font-medium">
-                      {style.name}
-                    </span>
-                  </Button>
-                ))}
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          {/* Delete Confirmation Dialog */}
-          <AlertDialog
-            open={!!presentationToDelete}
-            onOpenChange={open => {
-              if (!open) setPresentationToDelete(null);
-            }}
-          >
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Presentation</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete{" "}
-                  <span className="font-semibold text-red-500">
-                    {presentationToDelete?.title || "this presentation"}
-                  </span>
-                  ?<br />
-                  This action cannot be undone and will permanently remove the
-                  presentation and its slides.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
-                  onClick={() => {
-                    if (presentationToDelete) {
-                      deletePresentation(presentationToDelete.id);
-                      setPresentationToDelete(null);
-                    }
-                  }}
-                >
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </main>
-    </PresentationsErrorBoundary>
-  );
-};
-
-export default AIPresentations;
-
-// Defensive helpers
-const safeArray = <T,>(val: T[] | undefined): T[] =>
-  Array.isArray(val) ? val : [];
-const safeSlides = (slides: any): Slide[] =>
-  safeArray(slides).map((slide: any, index: number) => ({
-    id: slide.id?.toString() || `slide_${index}`,
-    title: slide.title || `Slide ${index + 1}`,
-    subtitle: slide.subtitle || "",
-    content: slide.content || "",
-    backgroundStyle: slide.backgroundStyle || "gradient",
-    backgroundGradient:
-      slide.backgroundGradient || "from-purple-600 via-blue-600 to-indigo-700",
-    images: safeArray(slide.images),
-    bulletPoints: safeArray(slide.bulletPoints),
-  }));
+export default AIPresentations

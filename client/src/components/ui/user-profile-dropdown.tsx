@@ -81,7 +81,8 @@ export default function UserProfileDropdown({ className = "" }: UserProfileDropd
 
   const getUserName = () => {
     if (!user) return 'Loading...';
-    return `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User';
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    return fullName || user.username;
   };
 
   const getPlanColor = () => {

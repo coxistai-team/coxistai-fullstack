@@ -29,22 +29,21 @@ export interface IStorage {
   deleteCalendarEvent(id: number): Promise<boolean>;
 
   // Community post operations
-  getCommunityPosts(userId: number): Promise<CommunityPost[]>;
+  getCommunityPosts(): Promise<any[]>;
   getCommunityPost(id: number): Promise<CommunityPost | undefined>;
   createCommunityPost(data: InsertCommunityPost & { user_id: number }): Promise<CommunityPost>;
   updateCommunityPost(id: number, updates: Partial<CommunityPost>): Promise<CommunityPost>;
-  deleteCommunityPost(id: number): Promise<boolean>;
+  deleteCommunityPost(id: number, userId: number): Promise<boolean>;
 
   // Community replies
   getCommunityReplies(postId: number): Promise<CommunityReply[]>;
   getCommunityReply(id: number): Promise<CommunityReply | undefined>;
   createCommunityReply(data: InsertCommunityReply & { user_id: number; post_id: number }): Promise<CommunityReply>;
   updateCommunityReply(id: number, updates: Partial<CommunityReply>): Promise<CommunityReply>;
-  deleteCommunityReply(id: number): Promise<boolean>;
+  deleteCommunityReply(id: number, userId: number): Promise<boolean>;
 
   // Community likes
-  likePost(userId: number, postId: number): Promise<CommunityLike>;
-  unlikePost(userId: number, postId: number): Promise<boolean>;
+  togglePostLike(userId: number, postId: number): Promise<{ liked: boolean; likesCount: number; }>;
   likeReply(userId: number, replyId: number): Promise<CommunityLike>;
   unlikeReply(userId: number, replyId: number): Promise<boolean>;
   getLikesForPost(postId: number): Promise<CommunityLike[]>;
@@ -72,8 +71,9 @@ export interface IStorage {
   getTopUsers(sort: string, limit: number): Promise<User[]>;
 }
 
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray, desc } from "drizzle-orm";
 import { db } from "./db";
+import { count } from "drizzle-orm";
 
 export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
@@ -183,8 +183,60 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount || 0) > 0;
   }
 
-  async getCommunityPosts(userId: number): Promise<CommunityPost[]> {
-    return await db.select().from(community_posts).where(eq(community_posts.user_id, userId));
+  async getCommunityPosts(): Promise<any[]> {
+    const posts = await db.select({
+      id: community_posts.id,
+      title: community_posts.title,
+      content: community_posts.content,
+      category: community_posts.category,
+      tags: community_posts.tags,
+      createdAt: community_posts.created_at,
+      author: {
+        id: users.id,
+        username: users.username,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        avatar: users.avatar,
+      },
+    })
+    .from(community_posts)
+    .leftJoin(users, eq(community_posts.user_id, users.id))
+    .orderBy(desc(community_posts.created_at));
+
+    if (!posts.length) {
+      return [];
+    }
+
+    const postIds = posts.map((p: any) => p.id);
+
+    const replies = await db.select({
+      id: community_replies.id,
+      content: community_replies.content,
+      createdAt: community_replies.created_at,
+      postId: community_replies.post_id,
+      author: {
+        id: users.id,
+        username: users.username,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        avatar: users.avatar,
+      },
+    })
+    .from(community_replies)
+    .leftJoin(users, eq(community_replies.user_id, users.id))
+    .where(inArray(community_replies.post_id, postIds))
+    .orderBy(desc(community_replies.created_at));
+
+    const likes = await db.select()
+      .from(community_likes)
+      .where(inArray(community_likes.post_id, postIds));
+
+    return posts.map((post: any) => ({
+      ...post,
+      replies: replies.filter((r: any) => r.postId === post.id),
+      likes: likes.filter((l: any) => l.post_id === post.id),
+      likesCount: likes.filter((l: any) => l.post_id === post.id).length,
+    }));
   }
   async getCommunityPost(id: number): Promise<CommunityPost | undefined> {
     const [post] = await db.select().from(community_posts).where(eq(community_posts.id, id));
@@ -198,8 +250,13 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db.update(community_posts).set({ ...updates, updated_at: new Date() }).where(eq(community_posts.id, id)).returning();
     return updated;
   }
-  async deleteCommunityPost(id: number): Promise<boolean> {
-    const result = await db.delete(community_posts).where(eq(community_posts.id, id));
+  async deleteCommunityPost(id: number, userId: number): Promise<boolean> {
+    // Delete likes for the post
+    await db.delete(community_likes).where(eq(community_likes.post_id, id));
+    // Delete replies for the post
+    await db.delete(community_replies).where(eq(community_replies.post_id, id));
+    // Delete the post (only if owner)
+    const result = await db.delete(community_posts).where(and(eq(community_posts.id, id), eq(community_posts.user_id, userId)));
     return (result.rowCount || 0) > 0;
   }
 
@@ -211,28 +268,57 @@ export class DatabaseStorage implements IStorage {
     const [reply] = await db.select().from(community_replies).where(eq(community_replies.id, id));
     return reply || undefined;
   }
-  async createCommunityReply(data: InsertCommunityReply & { user_id: number; post_id: number }): Promise<CommunityReply> {
+  async createCommunityReply(data: InsertCommunityReply & { user_id: number; post_id: number }): Promise<any> {
     const [created] = await db.insert(community_replies).values(data).returning();
-    return created;
+    // Fetch the reply with author info
+    const [replyWithAuthor] = await db.select({
+      id: community_replies.id,
+      content: community_replies.content,
+      createdAt: community_replies.created_at,
+      postId: community_replies.post_id,
+      author: {
+        id: users.id,
+        username: users.username,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        avatar: users.avatar,
+      },
+    })
+    .from(community_replies)
+    .leftJoin(users, eq(community_replies.user_id, users.id))
+    .where(eq(community_replies.id, created.id));
+    return replyWithAuthor;
   }
   async updateCommunityReply(id: number, updates: Partial<CommunityReply>): Promise<CommunityReply> {
     const [updated] = await db.update(community_replies).set({ ...updates, updated_at: new Date() }).where(eq(community_replies.id, id)).returning();
     return updated;
   }
-  async deleteCommunityReply(id: number): Promise<boolean> {
-    const result = await db.delete(community_replies).where(eq(community_replies.id, id));
+  async deleteCommunityReply(id: number, userId: number): Promise<boolean> {
+    const result = await db.delete(community_replies).where(and(eq(community_replies.id, id), eq(community_replies.user_id, userId)));
     return (result.rowCount || 0) > 0;
   }
 
   // Community likes
-  async likePost(userId: number, postId: number): Promise<CommunityLike> {
-    const [like] = await db.insert(community_likes).values({ user_id: userId, post_id: postId }).onConflictDoNothing().returning();
-    return like;
+  async togglePostLike(userId: number, postId: number): Promise<{ liked: boolean; likesCount: number; }> {
+    const existingLike = await db.select().from(community_likes).where(and(eq(community_likes.user_id, userId), eq(community_likes.post_id, postId)));
+
+    let liked = false;
+    if (existingLike.length > 0) {
+      // Unlike
+      await db.delete(community_likes).where(and(eq(community_likes.user_id, userId), eq(community_likes.post_id, postId)));
+      liked = false;
+    } else {
+      // Like
+      await db.insert(community_likes).values({ user_id: userId, post_id: postId });
+      liked = true;
+    }
+
+    const likesCountResult = await db.select({ count: count() }).from(community_likes).where(eq(community_likes.post_id, postId));
+    const likesCount = likesCountResult[0]?.count ?? 0;
+
+    return { liked, likesCount };
   }
-  async unlikePost(userId: number, postId: number): Promise<boolean> {
-    const result = await db.delete(community_likes).where(eq(community_likes.user_id, userId)).where(eq(community_likes.post_id, postId));
-    return (result.rowCount || 0) > 0;
-  }
+
   async likeReply(userId: number, replyId: number): Promise<CommunityLike> {
     const [like] = await db.insert(community_likes).values({ user_id: userId, reply_id: replyId }).onConflictDoNothing().returning();
     return like;
