@@ -9,84 +9,82 @@ from pptx.enum.text import PP_ALIGN
 from pptx.enum.shapes import MSO_SHAPE
 from datetime import datetime
 import argparse
-
+from pathlib import Path
 
 try:
-    from PIL import Image
+    from PIL import Image, ImageDraw
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
-    print("PIL not available. Image fitting will be skipped.")
+    print("PIL not available. Image fitting will be limited.")
+
+import os
+import requests
+from PIL import Image, ImageDraw
 
 class SimpleImageGenerator:
     def __init__(self):
-        self.api_key = "VcHus6XWASVDBMma2S2vZXkiCTtwe1XB4BYE0lJrkYim6piqbc3AOuUC"
-        self.headers = {'Authorization': self.api_key}
-    
-    def generate_images(self, description, count=3):
-        """Generate images based on text description"""
-        print(f" Searching for images: '{description}'")
-        
-        url = "https://api.pexels.com/v1/search"
-        params = {
-            'query': description,
-            'per_page': count,
-            'size': 'large'
-        }
-        
+        self.api_key = "dUHpS4Tu7AcVoOMlOWnzodfM8THUVpThn9E593veWGU"
+        self.headers = {'Authorization': f'Client-ID {self.api_key}'}
+        self.request_count = 0  
+
+    def generate_images(self, topic, num_slides=5):  
+        """Get ALL images in ONE request - compatible with your existing code"""
+        self.request_count = 0
         try:
-            response = requests.get(url, headers=self.headers, params=params)
+            # SINGLE API REQUEST
+            self.request_count += 1
+            response = requests.get(
+                "https://api.unsplash.com/search/photos",
+                headers=self.headers,
+                params={
+                    'query': topic,
+                    'per_page': num_slides,  # Now using correct parameter
+                    'orientation': 'landscape'
+                },
+                timeout=20
+            )
             response.raise_for_status()
-            data = response.json()
+
+            os.makedirs("presentation_images", exist_ok=True)
+            images = []
             
-            if not data.get('photos'):
-                print(f" No images found for: {description}")
-                return []
-            
-            os.makedirs("images", exist_ok=True)
-            downloaded_images = []
-            
-            for i, photo in enumerate(data['photos'], 1):
-                filename = f"{description.replace(' ', '_')}_{i}.jpg"
-                filename = "".join(c for c in filename if c.isalnum() or c in ('_', '.')).rstrip()
+            for photo in response.json()['results'][:num_slides]:
+                img_id = photo['id']
+                filename = f"{topic[:20]}_{img_id}.jpg"
+                filepath = os.path.join("presentation_images", filename)
                 
-                if self.download_image(photo['src']['large'], filename):
-                    downloaded_images.append({
-                        'filename': filename,
-                        'filepath': os.path.join("images", filename),
-                        'photographer': photo['photographer'],
-                        'url': photo['url']
-                    })
+                if not os.path.exists(filepath):
+                    with open(filepath, 'wb') as f:
+                        f.write(requests.get(photo['urls']['regular']).content)
+                
+                images.append({
+                    'filepath': filepath,
+                    'photographer': photo['user']['name']
+                })
             
-            print(f" Downloaded {len(downloaded_images)} images for '{description}'")
-            return downloaded_images
+            print(f"Generated {len(images)} images in 1 request")
+            return images
             
         except Exception as e:
-            print(f" Error generating images for '{description}': {e}")
-            return []
-    
-    def download_image(self, url, filename):
-        """Download single image"""
-        try:
-            response = requests.get(url)
-            response.raise_for_status()
-            
-            filepath = os.path.join("images", filename)
-            with open(filepath, 'wb') as f:
-                f.write(response.content)
-            
-            print(f"  ✓ {filename}")
-            return True
-        except:
-            return False
+            print(f"Error: {str(e)}")
+            return self._create_placeholders(topic, num_slides)
+
+    def _create_placeholders(self, topic, num_slides):
+        """Fallback image generation"""
+        return [{
+            'filepath': None,
+            'photographer': "Placeholder"
+        } for _ in range(num_slides)]
+
 
 def generate_ai_content(topic, num_slides, api_key):
-    """Generate presentation content using AI"""
+    """Generate presentation content using AI with improved error handling"""
     prompt = f"""Create a PowerPoint presentation with exactly {num_slides} slides about "{topic}".
 
 Return ONLY a valid JSON array of slide objects. Each slide must have:
 - "title": A clear, descriptive slide title (5-8 words)
-- "content": An array of exactly 3-4 bullet points (each 10-15 words)
+- "content": An array of exactly 3-4 bullet points (each 10-12 words)
 
 Format example:
 [
@@ -127,7 +125,7 @@ Make the content educational, specific, and valuable. Focus on {topic}."""
             "max_tokens": 1000
         }
 
-        print("Generating AI content...")
+        print("\nGenerating AI content...")
         response = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
             headers=headers,
@@ -142,7 +140,8 @@ Make the content educational, specific, and valuable. Focus on {topic}."""
         ai_response = response.json()['choices'][0]['message']['content']
         print(f"AI Response received: {len(ai_response)} characters")
         
-        ai_response = ai_response.replace('\`\`\`json', '').replace('\`\`\`', '').strip()
+        # Clean response
+        ai_response = ai_response.replace('```json', '').replace('```', '').strip()
         
         try:
             content = json.loads(ai_response)
@@ -153,7 +152,7 @@ Make the content educational, specific, and valuable. Focus on {topic}."""
                 print(f"Successfully parsed {len(content)} slides from AI")
                 return content
             else:
-                print(" AI response is not a valid list")
+                print("AI response is not a valid list")
                 return create_default_content(topic, num_slides)
         except json.JSONDecodeError as e:
             print(f"JSON parsing error: {e}")
@@ -161,7 +160,7 @@ Make the content educational, specific, and valuable. Focus on {topic}."""
             return parse_text_to_slides(ai_response, num_slides, topic)
 
     except Exception as e:
-        print(f"Error generating AI content: {e}")
+        print(f"Error generating AI content: {str(e)}")
         return create_default_content(topic, num_slides)
 
 def parse_text_to_slides(text, num_slides, topic):
@@ -199,7 +198,7 @@ def parse_text_to_slides(text, num_slides, topic):
 
 def create_default_content(topic, num_slides):
     """Create default content if AI fails"""
-    print(" Using fallback content generation...")
+    print("\nUsing fallback content generation...")
     
     default_slides = [
         {
@@ -319,138 +318,54 @@ def get_color_theme():
             'name': 'Tech Innovation',
             'font_primary': 'Roboto',
             'font_secondary': 'Inter'
-        },
-        'creative_studio': {
-            'primary': RGBColor(219, 39, 119),
-            'secondary': RGBColor(236, 72, 153),
-            'accent': RGBColor(245, 158, 11),
-            'text': RGBColor(31, 41, 55),
-            'light_text': RGBColor(75, 85, 99),
-            'background': RGBColor(253, 242, 248),
-            'content_bg': RGBColor(252, 231, 243),
-            'card_bg': RGBColor(255, 255, 255),
-            'border': RGBColor(251, 207, 232),
-            'header_bg': RGBColor(190, 24, 93),
-            'name': 'Creative Studio',
-            'font_primary': 'Poppins',
-            'font_secondary': 'Nunito Sans'
-        },
-        'nature_organic': {
-            'primary': RGBColor(22, 101, 52),
-            'secondary': RGBColor(34, 197, 94),
-            'accent': RGBColor(251, 191, 36),
-            'text': RGBColor(20, 83, 45),
-            'light_text': RGBColor(75, 85, 99),
-            'background': RGBColor(240, 253, 244),
-            'content_bg': RGBColor(220, 252, 231),
-            'card_bg': RGBColor(255, 255, 255),
-            'border': RGBColor(187, 247, 208),
-            'header_bg': RGBColor(22, 101, 52),
-            'name': 'Nature Organic',
-            'font_primary': 'Merriweather',
-            'font_secondary': 'Lato'
-        },
-        'ocean_depth': {
-            'primary': RGBColor(12, 74, 110),
-            'secondary': RGBColor(14, 116, 144),
-            'accent': RGBColor(6, 182, 212),
-            'text': RGBColor(8, 47, 73),
-            'light_text': RGBColor(75, 85, 99),
-            'background': RGBColor(236, 254, 255),
-            'content_bg': RGBColor(207, 250, 254),
-            'card_bg': RGBColor(255, 255, 255),
-            'border': RGBColor(165, 243, 252),
-            'header_bg': RGBColor(12, 74, 110),
-            'name': 'Ocean Depth',
-            'font_primary': 'Raleway',
-            'font_secondary': 'Work Sans'
-        },
-        'sunset_warmth': {
-            'primary': RGBColor(154, 52, 18),
-            'secondary': RGBColor(194, 65, 12),
-            'accent': RGBColor(251, 146, 60),
-            'text': RGBColor(124, 45, 18),
-            'light_text': RGBColor(75, 85, 99),
-            'background': RGBColor(255, 247, 237),
-            'content_bg': RGBColor(254, 237, 213),
-            'card_bg': RGBColor(255, 255, 255),
-            'border': RGBColor(253, 186, 116),
-            'header_bg': RGBColor(154, 52, 18),
-            'name': 'Sunset Warmth',
-            'font_primary': 'Crimson Text',
-            'font_secondary': 'PT Sans'
-        },
-        'royal_purple': {
-            'primary': RGBColor(88, 28, 135),
-            'secondary': RGBColor(124, 58, 237),
-            'accent': RGBColor(245, 101, 101),
-            'text': RGBColor(59, 7, 100),
-            'light_text': RGBColor(75, 85, 99),
-            'background': RGBColor(245, 243, 255),
-            'content_bg': RGBColor(237, 233, 254),
-            'card_bg': RGBColor(255, 255, 255),
-            'border': RGBColor(196, 181, 253),
-            'header_bg': RGBColor(88, 28, 135),
-            'name': 'Royal Purple',
-            'font_primary': 'Libre Baskerville',
-            'font_secondary': 'Fira Sans'
-        },
-        'arctic_frost': {
-            'primary': RGBColor(30, 58, 138),
-            'secondary': RGBColor(59, 130, 246),
-            'accent': RGBColor(168, 85, 247),
-            'text': RGBColor(30, 58, 138),
-            'light_text': RGBColor(75, 85, 99),
-            'background': RGBColor(248, 250, 252),
-            'content_bg': RGBColor(241, 245, 249),
-            'card_bg': RGBColor(255, 255, 255),
-            'border': RGBColor(203, 213, 225),
-            'header_bg': RGBColor(30, 58, 138),
-            'name': 'Arctic Frost',
-            'font_primary': 'IBM Plex Sans',
-            'font_secondary': 'IBM Plex Sans'
-        },
-        'golden_hour': {
-            'primary': RGBColor(146, 64, 14),
-            'secondary': RGBColor(217, 119, 6),
-            'accent': RGBColor(34, 197, 94),
-            'text': RGBColor(120, 53, 15),
-            'light_text': RGBColor(75, 85, 99),
-            'background': RGBColor(255, 251, 235),
-            'content_bg': RGBColor(254, 243, 199),
-            'card_bg': RGBColor(255, 255, 255),
-            'border': RGBColor(252, 211, 77),
-            'header_bg': RGBColor(146, 64, 14),
-            'name': 'Golden Hour',
-            'font_primary': 'Oswald',
-            'font_secondary': 'Oxygen'
         }
     }
     
     theme_key = random.choice(list(THEMES.keys()))
     return THEMES[theme_key]
 
-def generate_slide_images(content, topic, image_generator):
-    """Generate images for each slide"""
-    print("\nGenerating images for slides...")
-    slide_images = {}
-    
-    print(f"Using search term: '{topic}'")
-    
-    images = image_generator.generate_images(topic, count=len(content))
-    
-    if images:
-        for idx in range(len(content)):
-            if idx < len(images):
-                slide_images[idx] = images[idx]['filepath']
-                print(f"Image {idx + 1}: {images[idx]['filename']}")
+def fit_image_to_shape(image_path, target_width, target_height):
+    """Resize and crop image to fit the target dimensions"""
+    if not PIL_AVAILABLE:
+        print("PIL not available, using original image")
+        return image_path
+        
+    try:
+        with Image.open(image_path) as img:
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+            
+            target_width_px = int(target_width * 96)
+            target_height_px = int(target_height * 96)
+            
+            img_ratio = img.width / img.height
+            target_ratio = target_width_px / target_height_px
+            
+            if img_ratio > target_ratio:
+                new_height = img.height
+                new_width = int(new_height * target_ratio)
+                left = (img.width - new_width) // 2
+                top = 0
+                right = left + new_width
+                bottom = img.height
             else:
-                slide_images[idx] = images[0]['filepath']
-                print(f"Reusing image for slide {idx + 1}")
-    else:
-        print(f" No images found for topic '{topic}'")
-    
-    return slide_images
+                new_width = img.width
+                new_height = int(new_width / target_ratio)
+                left = 0
+                top = (img.height - new_height) // 2
+                right = img.width
+                bottom = top + new_height
+            
+            cropped_img = img.crop((left, top, right, bottom))
+            resized_img = cropped_img.resize((target_width_px, target_height_px), Image.Resampling.LANCZOS)
+            
+            processed_path = image_path.replace('.jpg', '_fitted.jpg')
+            resized_img.save(processed_path, 'JPEG', quality=95)
+            
+            return processed_path
+    except Exception as e:
+        print(f"Error processing image {image_path}: {str(e)}")
+        return image_path
 
 def create_thank_you_slide(prs, COLORS, topic):
     """Create a professional thank you slide"""
@@ -527,63 +442,32 @@ def create_thank_you_slide(prs, COLORS, topic):
     accent_line.fill.fore_color.rgb = COLORS['accent']
     accent_line.line.fill.background()
 
-def fit_image_to_shape(image_path, target_width, target_height):
-    """Resize and crop image to fit the target dimensions"""
-    if not PIL_AVAILABLE:
-        print("PIL not available, returning original image")
-        return image_path
-        
-    try:
-        with Image.open(image_path) as img:
-            if img.mode != 'RGB':
-                img = img.convert('RGB')
-            
-            target_width_px = int(target_width * 96)
-            target_height_px = int(target_height * 96)
-            
-            img_ratio = img.width / img.height
-            target_ratio = target_width_px / target_height_px
-            
-            if img_ratio > target_ratio:
-                new_height = img.height
-                new_width = int(new_height * target_ratio)
-                left = (img.width - new_width) // 2
-                top = 0
-                right = left + new_width
-                bottom = img.height
-            else:
-                new_width = img.width
-                new_height = int(new_width / target_ratio)
-                left = 0
-                top = (img.height - new_height) // 2
-                right = img.width
-                bottom = top + new_height
-            
-            cropped_img = img.crop((left, top, right, bottom))
-            resized_img = cropped_img.resize((target_width_px, target_height_px), Image.Resampling.LANCZOS)
-            
-            processed_path = image_path.replace('.jpg', '_fitted.jpg')
-            resized_img.save(processed_path, 'JPEG', quality=95)
-            
-            return processed_path
-    except Exception as e:
-        print(f"Error processing image {image_path}: {e}")
-        return image_path
-
 def create_powerpoint(content, topic):
-    """Create professional PowerPoint presentation"""
+    """Create professional PowerPoint presentation with improved error handling"""
     try:
         image_generator = SimpleImageGenerator()
-        slide_images = generate_slide_images(content, topic, image_generator)
         COLORS = get_color_theme()
         
+        print(f"\nCreating presentation with {COLORS['name']} theme...")
+        print(f"Typography: {COLORS['font_primary']} (Headers) + {COLORS['font_secondary']} (Body)")
+
         prs = Presentation()
         prs.slide_width = Inches(13.33)
         prs.slide_height = Inches(7.5)
 
-        print(f"Creating presentation with {COLORS['name']} theme...")
-        print(f"Typography: {COLORS['font_primary']} (Headers) + {COLORS['font_secondary']} (Body)")
+        # --- EFFICIENT IMAGE FETCHING LOGIC ---
+        print(f"Fetching {len(content)} images for the topic '{topic}' in a single request...")
+        all_images = image_generator.generate_images(topic, num_slides=len(content))
 
+        slide_images = {}
+        for idx, slide_data in enumerate(content):
+            
+            if all_images and idx < len(all_images) and all_images[idx]['filepath']:
+                slide_images[idx] = all_images[idx]['filepath']
+                print(f"Assigned image for slide {idx + 1}: {slide_data['title']}")
+            else:
+                slide_images[idx] = None
+                print(f"Using placeholder for slide {idx + 1}: {slide_data['title']}")
         # TITLE SLIDE
         title_slide = prs.slides.add_slide(prs.slide_layouts[6])
         
@@ -724,7 +608,7 @@ def create_powerpoint(content, topic):
                 p.font.bold = False
 
             slide_idx = idx - 1
-            if slide_idx in slide_images and os.path.exists(slide_images[slide_idx]):
+            if slide_idx in slide_images and slide_images[slide_idx] and os.path.exists(slide_images[slide_idx]):
                 try:
                     processed_image = fit_image_to_shape(slide_images[slide_idx], 4.5, 3.8)
                     
@@ -733,9 +617,9 @@ def create_powerpoint(content, topic):
                         Inches(8.2), Inches(1.8), 
                         Inches(4.5), Inches(3.8)
                     )
-                    print(f"  Added perfectly fitted image to slide {idx}")
+                    print(f"Added image to slide {idx}")
                 except Exception as e:
-                    print(f"  Could not add image to slide {idx}: {e}")
+                    print(f"Error adding image to slide {idx}: {str(e)}")
                     add_professional_image_placeholder(slide, COLORS)
             else:
                 add_professional_image_placeholder(slide, COLORS)
@@ -765,14 +649,12 @@ def create_powerpoint(content, topic):
         filename = f"{topic.replace(' ', '_').replace('/', '_')}_presentation_{COLORS['name'].replace(' ', '_').lower()}.pptx"
         prs.save(filename)
         
-        print(f"Professional PowerPoint created successfully: {filename}")
+        print(f"\nProfessional PowerPoint created successfully: {filename}")
         print(f"Theme: {COLORS['name']} with {COLORS['font_primary']} + {COLORS['font_secondary']} typography")
         return filename
 
     except Exception as e:
-        print(f"Error creating PowerPoint: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"\nError creating PowerPoint: {str(e)}")
         return None
 
 def add_professional_image_placeholder(slide, COLORS):
@@ -806,256 +688,38 @@ def add_professional_image_placeholder(slide, COLORS):
     img_para.font.color.rgb = COLORS['light_text']
     img_para.font.name = COLORS['font_secondary']
     img_para.alignment = PP_ALIGN.CENTER
-    
-import json
-from pathlib import Path
-import base64
-from io import BytesIO
 
-class WebPresentationGenerator:
-    def __init__(self, ppt_path):
-        self.ppt = Presentation(ppt_path)
-        self.slides_data = []
+def main():
+    """Main entry point for command line execution"""
+    parser = argparse.ArgumentParser(description='Generate PowerPoint presentations')
+    parser.add_argument('--topic', type=str, required=True, help='Presentation topic')
+    parser.add_argument('--slides', type=int, default=5, help='Number of slides')
     
-    def extract_slides_data(self):
-        """Extract all slide content, styling, and images"""
-        for slide_idx, slide in enumerate(self.ppt.slides):
-            slide_data = {
-                'slide_number': slide_idx + 1,
-                'background': self.extract_background(slide),
-                'shapes': [],
-                'images': []
-            }
+    args = parser.parse_args()
+    
+    OPENROUTER_API_KEY = "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"
+    
+    try:
+        print(f"\nGenerating presentation about '{args.topic}' with {args.slides} slides")
+        content = generate_ai_content(args.topic, args.slides, OPENROUTER_API_KEY)
+        
+        if not content:
+            print("PPT_SUCCESS:False")
+            print("ERROR: Failed to generate content")
+            return
+        
+        filename = create_powerpoint(content, args.topic)
+        
+        if filename and os.path.exists(filename):
+            print(f"PPT_FILE:{filename}")
+            print("PPT_SUCCESS:True")
+        else:
+            print("PPT_SUCCESS:False")
+            print("ERROR: Failed to create PowerPoint file")
             
-            for shape in slide.shapes:
-                if hasattr(shape, 'text'):
-                    # Extract text content and formatting
-                    shape_data = {
-                        'type': 'text',
-                        'content': shape.text,
-                        'font_size': shape.text_frame.paragraphs[0].runs[0].font.size,
-                        'font_color': self.get_font_color(shape),
-                        'position': {
-                            'left': shape.left,
-                            'top': shape.top,
-                            'width': shape.width,
-                            'height': shape.height
-                        }
-                    }
-                    slide_data['shapes'].append(shape_data)
-                
-                elif shape.shape_type == 13:  # Picture
-                    # Extract images
-                    image_data = self.extract_image(shape)
-                    slide_data['images'].append(image_data)
-            
-            self.slides_data.append(slide_data)
-    
-    def extract_image(self, shape):
-        """Extract image as base64"""
-        image = shape.image
-        image_bytes = image.blob
-        image_base64 = base64.b64encode(image_bytes).decode()
-        
-        return {
-            'data': f"data:image/png;base64,{image_base64}",
-            'position': {
-                'left': shape.left,
-                'top': shape.top,
-                'width': shape.width,
-                'height': shape.height
-            }
-        }
-    
-    def generate_html(self):
-        """Generate complete HTML presentation"""
-        html_template = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Your Startup Presentation</title>
-            <style>
-                /* Your custom CSS matching PPT theme */
-                body { margin: 0; font-family: 'Segoe UI', sans-serif; }
-                .presentation-container { 
-                    width: 100vw; 
-                    height: 100vh; 
-                    position: relative;
-                    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-                }
-                .slide { 
-                    display: none; 
-                    width: 100%; 
-                    height: 100%; 
-                    position: absolute;
-                    padding: 60px;
-                    box-sizing: border-box;
-                }
-                .slide.active { display: block; }
-                .slide-content { 
-                    max-width: 1200px; 
-                    margin: 0 auto; 
-                    height: 100%;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                }
-                /* Navigation */
-                .nav-buttons {
-                    position: fixed;
-                    bottom: 30px;
-                    right: 30px;
-                    z-index: 1000;
-                }
-                .nav-btn {
-                    background: rgba(255,255,255,0.2);
-                    border: none;
-                    padding: 15px 20px;
-                    margin: 0 5px;
-                    border-radius: 50px;
-                    color: white;
-                    cursor: pointer;
-                    backdrop-filter: blur(10px);
-                }
-                .nav-btn:hover { background: rgba(255,255,255,0.3); }
-            </style>
-        </head>
-        <body>
-            <div class="presentation-container">
-                {slides_html}
-                <div class="nav-buttons">
-                    <button class="nav-btn" onclick="previousSlide()">‹ Previous</button>
-                    <button class="nav-btn" onclick="nextSlide()">Next ›</button>
-                </div>
-            </div>
-            
-            <script>
-                let currentSlide = 0;
-                const slides = document.querySelectorAll('.slide');
-                
-                function showSlide(n) {
-                    slides[currentSlide].classList.remove('active');
-                    currentSlide = (n + slides.length) % slides.length;
-                    slides[currentSlide].classList.add('active');
-                }
-                
-                function nextSlide() { showSlide(currentSlide + 1); }
-                function previousSlide() { showSlide(currentSlide - 1); }
-                
-                // Keyboard navigation
-                document.addEventListener('keydown', (e) => {
-                    if (e.key === 'ArrowRight') nextSlide();
-                    if (e.key === 'ArrowLeft') previousSlide();
-                });
-                
-                // Show first slide
-                slides[0].classList.add('active');
-            </script>
-        </body>
-        </html>
-        """
-        
-        slides_html = ""
-        for slide_data in self.slides_data:
-            slide_html = f"""
-            <div class="slide">
-                <div class="slide-content">
-                    {self.generate_slide_content(slide_data)}
-                </div>
-            </div>
-            """
-            slides_html += slide_html
-        
-        return html_template.format(slides_html=slides_html)
-    
-    def generate_slide_content(self, slide_data):
-        """Generate HTML for individual slide content"""
-        content_html = ""
-        
-        # Add text content
-        for shape in slide_data['shapes']:
-            if shape['type'] == 'text':
-                content_html += f"""
-                <div style="
-                    font-size: {self.convert_font_size(shape['font_size'])}px;
-                    color: white;
-                    margin: 20px 0;
-                ">
-                    {shape['content']}
-                </div>
-                """
-        
-        # Add images
-        for image in slide_data['images']:
-            content_html += f"""
-            <img src="{image['data']}" style="
-                max-width: 100%;
-                height: auto;
-                margin: 20px 0;
-            ">
-            """
-        
-        return content_html
-    
-    def save_web_presentation(self, output_path="presentation.html"):
-        """Save the complete HTML presentation"""
-        self.extract_slides_data()
-        html_content = self.generate_html()
-        
-        with open(output_path, 'w', encoding='utf-8') as f:
-            f.write(html_content)
-        
-        print(f"Web presentation saved to: {output_path}")
-        return output_path
+    except Exception as e:
+        print("PPT_SUCCESS:False")
+        print(f"ERROR: {str(e)}")
 
-# Integration with your existing code
-def your_existing_ppt_function():
-    # Your existing python-pptx code
-    prs = Presentation()
-    # ... your slide creation logic ...
-    
-    # Save PPT
-    ppt_path = "your_presentation.pptx"
-    prs.save(ppt_path)
-    
-    # NEW: Generate web version
-    web_gen = WebPresentationGenerator(ppt_path)
-    html_path = web_gen.save_web_presentation("web_presentation.html")
-    
-    return ppt_path, html_path
-
-# def main():
-#     """Main entry point for command line execution"""
-#     parser = argparse.ArgumentParser(description='Generate PowerPoint presentations')
-#     parser.add_argument('--topic', type=str, required=True, help='Presentation topic')
-#     parser.add_argument('--slides', type=int, default=5, help='Number of slides')
-    
-#     args = parser.parse_args()
-    
-#     OPENROUTER_API_KEY = "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"
-    
-#     try:
-#         print(f"Generating presentation about '{args.topic}' with {args.slides} slides")
-#         content = generate_ai_content(args.topic, args.slides, OPENROUTER_API_KEY)
-        
-#         if not content:
-#             print("PPT_SUCCESS:False")
-#             print("ERROR: Failed to generate content")
-#             return
-        
-#         filename = create_powerpoint(content, args.topic)
-        
-#         if filename and os.path.exists(filename):
-#             print(f"PPT_FILE:{filename}")
-#             print("PPT_SUCCESS:True")
-#         else:
-#             print("PPT_SUCCESS:False")
-#             print("ERROR: Failed to create PowerPoint file")
-            
-#     except Exception as e:
-#         print("PPT_SUCCESS:False")
-#         print(f"ERROR: {str(e)}")
-#         raise
-
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()
