@@ -7,6 +7,7 @@ import { exec, spawn } from "child_process";
 import fs from "fs/promises";
 import path from "path";
 import { promisify } from "util";
+import { globSync } from "glob";
 
 // --- AUTH & EMAIL UTILS ---
 import jwt from "jsonwebtoken";
@@ -37,7 +38,7 @@ function signJwt(payload: object, options?: jwt.SignOptions) {
 
 function verifyJwt(token: string) {
   try {
-    return jwt.verify(token, JWT_SECRET);
+  return jwt.verify(token, JWT_SECRET);
   } catch (error) {
     return null;
   }
@@ -615,6 +616,32 @@ const upload = multer({
   },
 });
 
+// Utility to delete a file if it exists
+async function safeUnlink(filePath: string) {
+  try {
+    await fs.unlink(filePath);
+  } catch (err) {
+    // Ignore if file doesn't exist
+  }
+}
+// Cleanup all files related to a presentation
+async function cleanupPresentationFiles(presentation: any) {
+  const id = presentation.id;
+  const topic = presentation.topic;
+  // 1. Remove PPTX
+  await safeUnlink(path.join(process.cwd(), `${topic.replace(/ /g, '_')}_presentation_executive_elegance.pptx`));
+  await safeUnlink(path.join(process.cwd(), "generated_ppts", `${topic.replace(/ /g, '_')}_presentation_executive_elegance.pptx`));
+  // 2. Remove JSON
+  await safeUnlink(path.join(process.cwd(), "presentation_json", `${id}_structure.json`));
+  await safeUnlink(path.join(process.cwd(), "presentations", `${id}.json`));
+  // 3. Remove images (all images with topic in filename)
+  const imagesGlob = path.join(process.cwd(), "presentation_images", `${topic.replace(/ /g, '*')}*`);
+  const imageFiles = globSync(imagesGlob);
+  for (const img of imageFiles) {
+    await safeUnlink(img);
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   await registerAuthRoutes(app);
   // Document routes
@@ -719,11 +746,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.deleteDocument(id);
-      
       if (!success) {
         return res.status(404).json({ error: "Document not found" });
       }
-      
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete document" });
@@ -775,6 +800,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updated);
     } catch (error) {
       res.status(500).json({ error: 'Failed to update presentation.' });
+    }
+  });
+
+  // Delete a presentation
+  app.delete('/api/presentations/:id', requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user.id;
+      const id = req.params.id;
+      const presentation = await storage.getPresentationById(id, userId);
+      if (!presentation) return res.status(404).json({ error: 'Presentation not found or not owned by user.' });
+      const success = await storage.deletePresentation(id);
+      if (!success) return res.status(404).json({ error: 'Presentation not found.' });
+      // Cleanup files
+      await cleanupPresentationFiles(presentation);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to delete presentation.' });
+    }
+  });
+
+  // --- Slide Delete Route ---
+  app.delete('/api/presentations/:id/slides/:slideIndex', requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user.id;
+      const id = req.params.id;
+      const slideIndex = parseInt(req.params.slideIndex);
+      if (isNaN(slideIndex)) return res.status(400).json({ error: 'Invalid slide index.' });
+      const presentation = await storage.getPresentationById(id, userId);
+      if (!presentation) return res.status(404).json({ error: 'Presentation not found.' });
+      const json_data = presentation.json_data;
+      if (!json_data || !Array.isArray(json_data.slides) || slideIndex < 0 || slideIndex >= json_data.slides.length) {
+        return res.status(400).json({ error: 'Invalid slide index.' });
+      }
+      // Remove the slide
+      json_data.slides.splice(slideIndex, 1);
+      // Save updated presentation
+      const updated = await storage.updatePresentation(id, userId, { json_data });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to delete slide.' });
     }
   });
 
@@ -954,7 +1019,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const post = await storage.getCommunityPost(id);
       if (post) {
-        res.json(post);
+      res.json(post);
       } else {
         res.status(404).json({ error: "Post not found" });
       }

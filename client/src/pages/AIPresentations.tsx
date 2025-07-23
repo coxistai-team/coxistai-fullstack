@@ -25,6 +25,18 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog"
 
 // New interface for individual elements within a slide, mirroring Flask's JSON
 interface SlideElement {
@@ -68,6 +80,10 @@ const AIPresentations = () => {
   const [isLoadingPresentations, setIsLoadingPresentations] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const saveTimeout = useRef<NodeJS.Timeout | null>(null);
+  // Add state for dialog controls
+  const [pendingDeletePresentation, setPendingDeletePresentation] = useState<string | null>(null)
+  const [pendingDeleteSlide, setPendingDeleteSlide] = useState<number | null>(null)
+  const [isLoadingSlides, setIsLoadingSlides] = useState(false)
 
   // Background styles array
   const backgroundStyles = [
@@ -255,8 +271,8 @@ const AIPresentations = () => {
   // Create new presentation
   const createNewPresentation = () => {
     setSlides([
-      {
-        id: `slide_${Date.now()}`,
+        {
+          id: `slide_${Date.now()}`,
         slide_number: 1,
         layout_type: "title",
         background: { type: "gradient", gradient: "from-purple-600 via-blue-600 to-indigo-700" },
@@ -272,7 +288,7 @@ const AIPresentations = () => {
     ])
     setPresentationId(null)
     setCurrentSlideIndex(0)
-  }
+    }
 
   // Add new slide
   const addSlide = () => {
@@ -305,27 +321,6 @@ const AIPresentations = () => {
     toast({
       title: "Slide Added",
       description: "New slide has been created successfully.",
-    })
-  }
-
-  // Delete slide
-  const deleteSlide = (index: number) => {
-    if (slides.length === 1) {
-      toast({
-        title: "Cannot Delete",
-        description: "You need at least one slide in your presentation.",
-        variant: "destructive",
-      })
-      return
-    }
-    setSlides(prev => prev.filter((_, i) => i !== index))
-    if (currentSlideIndex >= slides.length - 1) {
-      setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1))
-    }
-
-    toast({
-      title: "Slide Deleted",
-      description: "Slide has been removed from your presentation.",
     })
   }
 
@@ -438,6 +433,13 @@ const AIPresentations = () => {
 
       setSlides(convertedSlides)
       setCurrentSlideIndex(0)
+      setPresentationId(newPresentationId)
+      setPresentationTopic(createData.topic)
+
+      // Immediately save to DB after generation
+      if (newPresentationId && createData.topic && getJsonData.json_data) {
+        await savePresentation(newPresentationId, createData.topic, getJsonData.json_data);
+      }
 
       toast({
         title: "Presentation Generated",
@@ -732,9 +734,20 @@ const AIPresentations = () => {
     fetchPresentations();
   }, []);
 
+  // Auto-load the most recent saved presentation if available
+  useEffect(() => {
+    if (!isLoadingPresentations && savedPresentations.length > 0) {
+      const mostRecent = savedPresentations[0];
+      setSlides(mostRecent.json_data.slides);
+      setPresentationId(mostRecent.id);
+      setPresentationTopic(mostRecent.topic);
+      setCurrentSlideIndex(0);
+    }
+  }, [isLoadingPresentations, savedPresentations]);
+
   // Load a saved presentation
   const loadPresentation = async (id: string) => {
-    setIsLoadingPresentations(true);
+    setIsLoadingSlides(true);
     try {
       const res = await fetch(`/api/presentations/${id}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch presentation');
@@ -746,7 +759,7 @@ const AIPresentations = () => {
     } catch (e) {
       // handle error
     } finally {
-      setIsLoadingPresentations(false);
+      setIsLoadingSlides(false);
     }
   };
 
@@ -800,6 +813,124 @@ const AIPresentations = () => {
     }, 1000);
   };
 
+  // Delete a presentation
+  const deletePresentation = async (id: string) => {
+    setIsLoadingPresentations(true);
+    try {
+      const res = await fetch(`/api/presentations/${id}`, { method: 'DELETE', credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to delete presentation');
+      setSavedPresentations(prev => prev.filter(p => p.id !== id));
+      if (presentationId === id) {
+        // If deleted presentation is active, load another or fallback
+        const remaining = savedPresentations.filter(p => p.id !== id);
+        if (remaining.length > 0) {
+          loadPresentation(remaining[0].id);
+        } else {
+          setSlides([
+            {
+              id: "1",
+              slide_number: 1,
+              layout_type: "title",
+              background: { type: "gradient", gradient: "from-purple-600 via-blue-600 to-indigo-700" },
+              elements: [
+                {
+                  type: "title",
+                  content: "Welcome to AI Presentations",
+                  position: { left: 0, top: 0, width: 0, height: 0 },
+                  style: { font_size: 40, font_weight: "bold", color: "#FFFFFF", alignment: "center" },
+                },
+                {
+                  type: "text",
+                  content: "Generate stunning slides with AI",
+                  position: { left: 0, top: 0, width: 0, height: 0 },
+                  style: { font_size: 20, font_weight: "normal", color: "#FFFFFF", alignment: "center" },
+                },
+              ],
+            },
+          ]);
+          setPresentationId(null);
+          setPresentationTopic("AI Presentation");
+        }
+      }
+      toast({ title: "Deleted", description: "Presentation deleted." });
+    } catch (e) {
+      toast({ title: "Delete Failed", description: "Could not delete presentation.", variant: "destructive" });
+    } finally {
+      setIsLoadingPresentations(false);
+      setPendingDeletePresentation(null);
+    }
+  };
+
+  // --- Slide delete API integration ---
+  const deleteSlide = async (index: number) => {
+    if (slides.length === 1) {
+      toast({
+        title: "Cannot Delete",
+        description: "You need at least one slide in your presentation.",
+        variant: "destructive",
+      });
+      setPendingDeleteSlide(null);
+      return;
+    }
+    if (!presentationId) {
+      // Local only (unsaved presentation)
+      setSlides(prev => prev.filter((_, i) => i !== index));
+      if (currentSlideIndex >= slides.length - 1) {
+        setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1));
+      }
+      toast({ title: "Slide Deleted", description: "Slide has been removed from your presentation." });
+      setPendingDeleteSlide(null);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/presentations/${presentationId}/slides/${index}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to delete slide');
+      const updated = await res.json();
+      setSlides(updated.json_data.slides);
+      if (currentSlideIndex >= updated.json_data.slides.length) {
+        setCurrentSlideIndex(Math.max(0, updated.json_data.slides.length - 1));
+      }
+      toast({ title: "Slide Deleted", description: "Slide has been removed from your presentation." });
+    } catch (e) {
+      toast({ title: "Delete Failed", description: "Could not delete slide.", variant: "destructive" });
+    } finally {
+      setPendingDeleteSlide(null);
+    }
+  };
+
+  // --- Keyboard navigation for fullscreen mode ---
+  const [showArrowHint, setShowArrowHint] = useState(false);
+  useEffect(() => {
+    if (isPreviewMode) {
+      setShowArrowHint(true);
+      const timeout = setTimeout(() => setShowArrowHint(false), 3000);
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'ArrowRight') nextSlide();
+        if (e.key === 'ArrowLeft') prevSlide();
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        clearTimeout(timeout);
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [isPreviewMode, currentSlideIndex, slides.length]);
+
+  // Render loading state while fetching presentations
+  if (isLoadingPresentations) {
+    return (
+      <main className="relative z-10 pt-20 min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex flex-col items-center justify-center">
+        <div className="flex flex-col items-center justify-center py-16">
+          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <div className="text-lg text-slate-600 dark:text-slate-300">Loading your presentations…</div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="relative z-10 pt-20 min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -850,6 +981,16 @@ const AIPresentations = () => {
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-50 bg-black"
             >
+              {showArrowHint && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="absolute top-8 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-6 py-2 rounded-xl shadow-lg text-lg font-medium z-50"
+                >
+                  Use ← and → arrow keys to navigate slides
+                </motion.div>
+              )}
               <div className="w-screen h-screen flex items-center justify-center">
                 <div
                   className={`w-full h-full flex flex-col justify-center overflow-hidden ${getSlideBackgroundClasses(currentSlide)}`}
@@ -901,19 +1042,69 @@ const AIPresentations = () => {
         <div className="mb-6">
           <h2 className="text-lg font-bold mb-2 text-slate-900 dark:text-white">Your Saved Presentations</h2>
           {isLoadingPresentations ? (
-            <div>Loading...</div>
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex items-center gap-4 p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow animate-pulse">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-3 w-1/3" />
+                  </div>
+                  <Skeleton className="h-8 w-8 rounded" />
+                </div>
+              ))}
+            </div>
           ) : savedPresentations.length === 0 ? (
             <div className="text-slate-500">No saved presentations yet.</div>
           ) : (
-            <div className="flex flex-wrap gap-2">
+            <div className="space-y-3">
               {savedPresentations.map((pres) => (
-                <button
-                  key={pres.id}
-                  className={`px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors ${pres.id === presentationId ? 'border-blue-500' : ''}`}
-                  onClick={() => loadPresentation(pres.id)}
-                >
-                  {pres.topic}
-                </button>
+                <div key={pres.id} className={`flex items-center gap-4 p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow transition-all group ${pres.id === presentationId ? 'ring-2 ring-blue-400 border-blue-500' : ''}`}> 
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+                    {pres.topic?.[0]?.toUpperCase() || 'P'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="truncate font-semibold text-slate-900 dark:text-white">{pres.topic}</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{pres.created_at ? new Date(pres.created_at).toLocaleString() : ''}</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="hover:bg-blue-100 dark:hover:bg-blue-900"
+                      aria-label="Load presentation"
+                      onClick={() => loadPresentation(pres.id)}
+                      disabled={pres.id === presentationId || isLoadingSlides}
+                    >
+                      <Eye className="w-5 h-5" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-red-400 hover:text-red-300"
+                          aria-label="Delete presentation"
+                          disabled={isLoadingSlides}
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Presentation?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete <span className="font-semibold">{pres.topic}</span>? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => { setPendingDeletePresentation(pres.id); deletePresentation(pres.id); }}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
               ))}
             </div>
           )}
@@ -922,187 +1113,223 @@ const AIPresentations = () => {
         <div className={`grid lg:grid-cols-3 gap-8 ${isPreviewMode ? "hidden" : ""}`}>
           <div className="lg:col-span-2">
             <motion.div
-              className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-2xl"
+              className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-2xl min-h-[500px]"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-2">
-                  <Button variant="ghost" size="sm" onClick={prevSlide} disabled={currentSlideIndex === 0}>
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-                  <span className="text-sm text-slate-600 dark:text-slate-300">
-                    {currentSlideIndex + 1} / {slides.length}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={nextSlide}
-                    disabled={currentSlideIndex === slides.length - 1}
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
+              {isLoadingSlides ? (
+                <div className="space-y-6">
+                  <Skeleton className="h-8 w-1/3 mb-2" />
+                  <Skeleton className="h-96 w-full rounded-lg" />
+                  <div className="flex space-x-2 mt-4">
+                    {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 w-24 rounded" />)}
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <GlassmorphismButton onClick={() => setIsPreviewMode(true)} variant="outline" size="sm">
-                    <Eye className="w-4 h-4 mr-1" />
-                    Fullscreen
-                  </GlassmorphismButton>
-                </div>
-              </div>
-
-              <motion.div
-                className={`w-full rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden shadow-xl ${getSlideBackgroundClasses(currentSlide)}`}
-                style={{
-                  aspectRatio: "16/9",
-                  minHeight: "400px",
-                  maxHeight: "500px",
-                }}
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.3 }}
-              >
-                {renderSlideElements(currentSlide.elements, false, currentSlide.slide_number, currentSlide)}
-              </motion.div>
-
-              <div className="flex space-x-2 overflow-x-auto pb-2 mt-4">
-                {slides.map((slide, index) => (
-                  <motion.div
-                    key={slide.id}
-                    className={`relative flex-shrink-0 w-24 h-16 glassmorphism rounded cursor-pointer transition-all group overflow-hidden ${
-                      currentSlideIndex === index ? "border-2 border-blue-500" : "opacity-70 hover:opacity-100"
-                    }`}
-                    onClick={() => setCurrentSlideIndex(index)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <div
-                      className={`w-full h-full rounded flex items-center justify-center p-1 relative ${getSlideBackgroundClasses(slide)}`}
-                    >
-                      <span className="text-[8px] font-bold absolute top-0.5 left-0.5 z-10 text-white">
-                        {index + 1}
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-2">
+                      <Button variant="ghost" size="sm" onClick={prevSlide} disabled={currentSlideIndex === 0}>
+                        <ChevronLeft className="w-4 h-4" />
+                      </Button>
+                      <span className="text-sm text-slate-600 dark:text-slate-300">
+                        {currentSlideIndex + 1} / {slides.length}
                       </span>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-1">
-                        {slide.elements.map((el, elIdx) => {
-                          if (el.type === "title" && el.content) {
-                            return (
-                              <p key={elIdx} className="text-[6px] font-bold leading-tight truncate w-full text-white">
-                                {el.content}
-                              </p>
-                            )
-                          }
-                          if (el.type === "subtitle" && el.content) {
-                            return (
-                              <p key={elIdx} className="text-[5px] leading-tight truncate w-full text-white">
-                                {el.content}
-                              </p>
-                            )
-                          }
-                          if ((el.type === "text" || el.type === "bullet_list") && (el.content || el.items)) {
-                            const contentText = el.content || (el.items ? el.items[0] : "")
-                            return (
-                              <p key={elIdx} className="text-[4px] truncate w-full text-white">
-                                {contentText}
-                              </p>
-                            )
-                          }
-                          if (el.type === "image" && el.src) {
-                            return (
-                              <img
-                                key={elIdx}
-                                src={el.src || "/placeholder.svg"}
-                                alt="thumb"
-                                className="absolute inset-0 w-full h-full object-cover opacity-50"
-                              />
-                            )
-                          }
-                          return null
-                        })}
-                      </div>
-
-                      <div className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity space-x-0.5 z-20">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-4 w-4 p-0 bg-black/50 hover:bg-black/70 text-white"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            duplicateSlide(index)
-                          }}
-                        >
-                          <Copy className="w-2 h-2" />
-                        </Button>
-                        {slides.length > 1 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-4 w-4 p-0 bg-black/50 hover:bg-black/70 text-red-400 hover:text-red-300"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              deleteSlide(index)
-                            }}
-                          >
-                            <Trash2 className="w-2 h-2" />
-                          </Button>
-                        )}
-                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={nextSlide}
+                        disabled={currentSlideIndex === slides.length - 1}
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
                     </div>
-                  </motion.div>
-                ))}
+                    <div className="flex items-center space-x-2">
+                      <GlassmorphismButton onClick={() => setIsPreviewMode(true)} variant="outline" size="sm">
+                        <Eye className="w-4 h-4 mr-1" />
+                        Fullscreen
+                      </GlassmorphismButton>
+                    </div>
+                  </div>
 
-                <motion.div
-                  className="flex-shrink-0 w-24 h-16 glassmorphism rounded cursor-pointer flex items-center justify-center hover:bg-white/10 transition-colors"
-                  onClick={addSlide}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Plus className="w-6 h-6 text-slate-600 dark:text-white" />
-                </motion.div>
-              </div>
+                  <motion.div
+                    className={`w-full rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden shadow-xl ${getSlideBackgroundClasses(currentSlide)}`}
+                    style={{
+                      aspectRatio: "16/9",
+                      minHeight: "400px",
+                      maxHeight: "500px",
+                    }}
+                    whileHover={{ scale: 1.02 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {renderSlideElements(currentSlide.elements, false, currentSlide.slide_number, currentSlide)}
+                  </motion.div>
+
+                  <div className="flex space-x-2 overflow-x-auto pb-2 mt-4">
+                    {slides.map((slide, index) => (
+                      <motion.div
+                        key={slide.id}
+                        className={`relative flex-shrink-0 w-24 h-16 glassmorphism rounded cursor-pointer transition-all group overflow-hidden ${
+                          currentSlideIndex === index ? "border-2 border-blue-500" : "opacity-70 hover:opacity-100"
+                        }`}
+                        onClick={() => setCurrentSlideIndex(index)}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <div
+                          className={`w-full h-full rounded flex items-center justify-center p-1 relative ${getSlideBackgroundClasses(slide)}`}
+                        >
+                          <span className="text-[8px] font-bold absolute top-0.5 left-0.5 z-10 text-white">
+                            {index + 1}
+                          </span>
+                          <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-1">
+                            {slide.elements.map((el, elIdx) => {
+                              if (el.type === "title" && el.content) {
+                                return (
+                                  <p key={elIdx} className="text-[6px] font-bold leading-tight truncate w-full text-white">
+                                    {el.content}
+                                  </p>
+                                )
+                              }
+                              if (el.type === "subtitle" && el.content) {
+                                return (
+                                  <p key={elIdx} className="text-[5px] leading-tight truncate w-full text-white">
+                                    {el.content}
+                                  </p>
+                                )
+                              }
+                              if ((el.type === "text" || el.type === "bullet_list") && (el.content || el.items)) {
+                                const contentText = el.content || (el.items ? el.items[0] : "")
+                                return (
+                                  <p key={elIdx} className="text-[4px] truncate w-full text-white">
+                                    {contentText}
+                                  </p>
+                                )
+                              }
+                              if (el.type === "image" && el.src) {
+                                return (
+                                  <img
+                                    key={elIdx}
+                                    src={el.src || "/placeholder.svg"}
+                                    alt="thumb"
+                                    className="absolute inset-0 w-full h-full object-cover opacity-50"
+                                  />
+                                )
+                              }
+                              return null
+                            })}
+                          </div>
+
+                          <div className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity space-x-0.5 z-20">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-4 w-4 p-0 bg-black/50 hover:bg-black/70 text-white"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                duplicateSlide(index)
+                              }}
+                            >
+                              <Copy className="w-2 h-2" />
+                            </Button>
+                            {slides.length > 1 && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-4 w-4 p-0 bg-black/50 hover:bg-black/70 text-red-400 hover:text-red-300"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setPendingDeleteSlide(index)
+                                }}
+                              >
+                                <Trash2 className="w-2 h-2" />
+                              </Button>
+                            )}
+                            <AlertDialog open={pendingDeleteSlide === index} onOpenChange={(open) => { if (!open) setPendingDeleteSlide(null) }}>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Slide?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete this slide? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => deleteSlide(index)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+
+                    <motion.div
+                      className="flex-shrink-0 w-24 h-16 glassmorphism rounded cursor-pointer flex items-center justify-center hover:bg-white/10 transition-colors"
+                      onClick={addSlide}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Plus className="w-6 h-6 text-slate-600 dark:text-white" />
+                    </motion.div>
+                  </div>
+                </>
+              )}
             </motion.div>
           </div>
 
           <div className="lg:col-span-1">
             <motion.div
-              className="bg-white dark:bg-slate-800 rounded-xl p-6 space-y-6 border border-slate-200 dark:border-slate-700"
+              className="bg-white dark:bg-slate-800 rounded-xl p-6 space-y-6 border border-slate-200 dark:border-slate-700 min-h-[300px]"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Edit Slide</h2>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-slate-900 dark:text-white">Title</Label>
-                  <Input
-                    value={editorTitle}
-                    onChange={(e) => updateSlideContent("title", e.target.value)}
-                    className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/20 text-slate-900 dark:text-white"
-                  />
+              {isLoadingSlides ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-6 w-1/2" />
+                  <Skeleton className="h-6 w-1/2" />
+                  <Skeleton className="h-24 w-full" />
                 </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">Edit Slide</h2>
+                  </div>
 
-                <div>
-                  <Label className="text-slate-900 dark:text-white">Subtitle</Label>
-                  <Input
-                    value={editorSubtitle}
-                    onChange={(e) => updateSlideContent("subtitle", e.target.value)}
-                    className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/20 text-slate-900 dark:text-white"
-                    placeholder="Add a subtitle (for title slide)"
-                  />
-                </div>
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-slate-900 dark:text-white">Title</Label>
+                      <Input
+                        value={editorTitle}
+                        onChange={(e) => updateSlideContent("title", e.target.value)}
+                        className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/20 text-slate-900 dark:text-white"
+                      />
+                    </div>
 
-                <div>
-                  <Label className="text-slate-900 dark:text-white">Content</Label>
-                  <Textarea
-                    value={editorContent}
-                    onChange={(e) => updateSlideContent("content", e.target.value)}
-                    className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/20 text-slate-900 dark:text-white min-h-[100px]"
-                    placeholder="Add your slide content..."
-                  />
-                </div>
-              </div>
+                    <div>
+                      <Label className="text-slate-900 dark:text-white">Subtitle</Label>
+                      <Input
+                        value={editorSubtitle}
+                        onChange={(e) => updateSlideContent("subtitle", e.target.value)}
+                        className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/20 text-slate-900 dark:text-white"
+                        placeholder="Add a subtitle (for title slide)"
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="text-slate-900 dark:text-white">Content</Label>
+                      <Textarea
+                        value={editorContent}
+                        onChange={(e) => updateSlideContent("content", e.target.value)}
+                        className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/20 text-slate-900 dark:text-white min-h-[100px]"
+                        placeholder="Add your slide content..."
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
             </motion.div>
           </div>
         </div>

@@ -508,122 +508,122 @@ const NotesHub = () => {
                       </div>
                     </motion.div>
                   ))
-                )}
-              </div>
+              )}
             </div>
-            
-            {/* Editor */}
-            <div className="lg:w-2/3">
-              {selectedNote ? (
-                <motion.div 
-                  className="space-y-4"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6 }}
-                >
-                  {/* Note Header */}
-                  <div className="glassmorphism rounded-xl p-4 flex items-center justify-between">
-                    <div>
-                      <h3 className="font-bold text-lg text-white">{selectedNote.title}</h3>
-                      <p className="text-sm text-slate-400">
-                        {selectedNote.category} • Last edited {formatDate(selectedNote.updatedAt)}
-                      </p>
-                      {safeArray(selectedNote?.tags).length > 0 && (
-                        <div className="flex space-x-2 mt-2">
-                          {safeArray(selectedNote?.tags).map((tag: string) => (
-                            <span 
-                              key={tag}
-                              className="px-3 py-1 rounded-full text-sm bg-blue-500/20 text-blue-400"
-                            >
-                              <Tag className="w-3 h-3 inline mr-1" />
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex space-x-2">
-                      {isEditing ? (
-                        <GlassmorphismButton 
-                          onClick={handleSaveNote}
-                          size="sm"
-                          className="bg-gradient-to-r from-green-500 to-blue-500"
-                          disabled={isNotesLoading}
-                        >
-                          <Save className="w-4 h-4 mr-2" />
-                          Save
-                        </GlassmorphismButton>
-                      ) : (
-                        <GlassmorphismButton 
-                          onClick={() => setIsEditing(true)}
-                          size="sm"
-                        >
-                          <Edit3 className="w-4 h-4 mr-2" />
-                          Edit
-                        </GlassmorphismButton>
-                      )}
-                    </div>
+          </div>
+          
+          {/* Editor */}
+          <div className="lg:w-2/3">
+            {selectedNote ? (
+              <motion.div 
+                className="space-y-4"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6 }}
+              >
+                {/* Note Header */}
+                <div className="glassmorphism rounded-xl p-4 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold text-lg text-white">{selectedNote.title}</h3>
+                    <p className="text-sm text-slate-400">
+                      {selectedNote.category} • Last edited {formatDate(selectedNote.updatedAt)}
+                    </p>
+                    {safeArray(selectedNote?.tags).length > 0 && (
+                      <div className="flex space-x-2 mt-2">
+                        {safeArray(selectedNote?.tags).map((tag: string) => (
+                          <span 
+                            key={tag}
+                            className="px-3 py-1 rounded-full text-sm bg-blue-500/20 text-blue-400"
+                          >
+                            <Tag className="w-3 h-3 inline mr-1" />
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  
-                  {/* Rich Text Editor */}
-                  {isEditing ? (
-                    <RichTextEditor
-                      content={selectedNote.content}
-                      onUpdate={handleUpdateNote}
-                      title={selectedNote.title}
+                  <div className="flex space-x-2">
+                    {isEditing ? (
+                      <GlassmorphismButton 
+                        onClick={handleSaveNote}
+                        size="sm"
+                        className="bg-gradient-to-r from-green-500 to-blue-500"
+                        disabled={isNotesLoading}
+                      >
+                        <Save className="w-4 h-4 mr-2" />
+                        Save
+                      </GlassmorphismButton>
+                    ) : (
+                      <GlassmorphismButton 
+                        onClick={() => setIsEditing(true)}
+                        size="sm"
+                      >
+                        <Edit3 className="w-4 h-4 mr-2" />
+                        Edit
+                      </GlassmorphismButton>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Rich Text Editor */}
+                {isEditing ? (
+                  <RichTextEditor
+                    content={selectedNote.content}
+                    onUpdate={handleUpdateNote}
+                    title={selectedNote.title}
+                  />
+                ) : (
+                  <motion.div 
+                    className="glassmorphism rounded-xl p-6 min-h-[400px]"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div 
+                      className="prose prose-slate dark:prose-invert max-w-none text-slate-900 dark:text-white"
+                      dangerouslySetInnerHTML={{ __html: selectedNote.content }}
                     />
-                  ) : (
-                    <motion.div 
-                      className="glassmorphism rounded-xl p-6 min-h-[400px]"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <div 
-                        className="prose prose-slate dark:prose-invert max-w-none text-slate-900 dark:text-white"
-                        dangerouslySetInnerHTML={{ __html: selectedNote.content }}
-                      />
-                    </motion.div>
-                  )}
-                </motion.div>
-              ) : (
-                <motion.div 
-                  className="space-y-6"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6 }}
-                >
-                  {/* Welcome Section */}
-                  <div className="glassmorphism rounded-xl p-6 text-center">
-                    <FileText className="w-16 h-16 mx-auto mb-4 text-blue-600 dark:text-blue-400" />
-                    <h3 className="text-xl font-semibold mb-2">Welcome to Notes Hub</h3>
-                    <p className="text-slate-600 dark:text-slate-400 mb-4">Organize your learning with smart note-taking and advanced search capabilities.</p>
-                    <GlassmorphismButton onClick={() => setShowNewNoteDialog(true)} disabled={isNotesLoading}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create Your First Note
-                    </GlassmorphismButton>
-                  </div>
+                  </motion.div>
+                )}
+              </motion.div>
+            ) : (
+              <motion.div 
+                className="space-y-6"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6 }}
+              >
+                {/* Welcome Section */}
+                <div className="glassmorphism rounded-xl p-6 text-center">
+                  <FileText className="w-16 h-16 mx-auto mb-4 text-blue-600 dark:text-blue-400" />
+                  <h3 className="text-xl font-semibold mb-2">Welcome to Notes Hub</h3>
+                  <p className="text-slate-600 dark:text-slate-400 mb-4">Organize your learning with smart note-taking and advanced search capabilities.</p>
+                  <GlassmorphismButton onClick={() => setShowNewNoteDialog(true)} disabled={isNotesLoading}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Your First Note
+                  </GlassmorphismButton>
+                </div>
 
-                  {/* Quick Start Templates */}
-                  <div className="glassmorphism rounded-xl p-6">
-                    <div className="flex items-center mb-6">
-                      <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mr-3">
-                        <FileText className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Quick Start Templates</h3>
-                        <p className="text-sm text-slate-600 dark:text-slate-400">Jump-start your note-taking with these professional templates</p>
-                      </div>
+                {/* Quick Start Templates */}
+                <div className="glassmorphism rounded-xl p-6">
+                  <div className="flex items-center mb-6">
+                    <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mr-3">
+                      <FileText className="w-5 h-5 text-white" />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {[
-                        { 
-                          title: "Study Guide Template", 
-                          category: "Study", 
-                          icon: "📚",
-                          color: "from-blue-500 to-cyan-500",
-                          description: "Comprehensive study guide with key concepts and practice problems",
-                          content: `<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Quick Start Templates</h3>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">Jump-start your note-taking with these professional templates</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { 
+                        title: "Study Guide Template", 
+                        category: "Study", 
+                        icon: "📚",
+                        color: "from-blue-500 to-cyan-500",
+                        description: "Comprehensive study guide with key concepts and practice problems",
+                        content: `<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 12px; margin-bottom: 1.5rem;">
   <h1 style="color: white; text-align: center; margin: 0; font-size: 2rem; font-weight: bold;">Study Guide: [Subject]</h1>
   <p style="color: #e2e8f0; text-align: center; margin: 0.5rem 0 0 0; font-size: 1.1rem;">[Course Name] - [Chapter/Unit]</p>
 </div>
@@ -660,14 +660,14 @@ const NotesHub = () => {
     <li>Question 2: [Self-assessment question]</li>
   </ul>
 </div>`
-                        },
-                        { 
-                          title: "Lecture Notes", 
-                          category: "Lecture", 
-                          icon: "🎓",
-                          color: "from-green-500 to-teal-500",
-                          description: "Structured format for capturing and organizing lecture content",
-                          content: `<div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 2rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                      },
+                      { 
+                        title: "Lecture Notes", 
+                        category: "Lecture", 
+                        icon: "🎓",
+                        color: "from-green-500 to-teal-500",
+                        description: "Structured format for capturing and organizing lecture content",
+                        content: `<div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 2rem; border-radius: 12px; margin-bottom: 1.5rem;">
   <h1 style="color: white; text-align: center; margin: 0; font-size: 2rem; font-weight: bold;">Lecture Notes</h1>
   <p style="color: #d1fae5; text-align: center; margin: 0.5rem 0 0 0; font-size: 1.1rem;">[Date] - [Course Name]</p>
 </div>
@@ -705,14 +705,14 @@ const NotesHub = () => {
     <li>Review [topic] for next class</li>
   </ul>
 </div>`
-                        },
-                        { 
-                          title: "Research Notes", 
-                          category: "Research", 
-                          icon: "🔬",
-                          color: "from-purple-500 to-indigo-500",
-                          description: "Systematic approach to documenting research findings",
-                          content: `<div style="background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); padding: 2rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                      },
+                      { 
+                        title: "Research Notes", 
+                        category: "Research", 
+                        icon: "🔬",
+                        color: "from-purple-500 to-indigo-500",
+                        description: "Systematic approach to documenting research findings",
+                        content: `<div style="background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); padding: 2rem; border-radius: 12px; margin-bottom: 1.5rem;">
   <h1 style="color: white; text-align: center; margin: 0; font-size: 2rem; font-weight: bold;">Research Notes</h1>
   <p style="color: #e0e7ff; text-align: center; margin: 0.5rem 0 0 0; font-size: 1.1rem;">[Topic] - [Date]</p>
 </div>
@@ -748,14 +748,14 @@ const NotesHub = () => {
   <h2 style="color: #0369a1; margin-top: 0;">🎓 Conclusions</h2>
   <p style="color: #334155; line-height: 1.6;">[Your conclusions and implications for future research or practical applications]</p>
 </div>`
-                        },
-                        { 
-                          title: "Meeting Notes", 
-                          category: "Meeting", 
-                          icon: "📝",
-                          color: "from-orange-500 to-red-500",
-                          description: "Professional meeting documentation with action items",
-                          content: `<div style="background: linear-gradient(135deg, #f97316 0%, #ef4444 100%); padding: 2rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                      },
+                      { 
+                        title: "Meeting Notes", 
+                        category: "Meeting", 
+                        icon: "📝",
+                        color: "from-orange-500 to-red-500",
+                        description: "Professional meeting documentation with action items",
+                        content: `<div style="background: linear-gradient(135deg, #f97316 0%, #ef4444 100%); padding: 2rem; border-radius: 12px; margin-bottom: 1.5rem;">
   <h1 style="color: white; text-align: center; margin: 0; font-size: 2rem; font-weight: bold;">Meeting Notes</h1>
   <p style="color: #fed7aa; text-align: center; margin: 0.5rem 0 0 0; font-size: 1.1rem;">[Meeting Title] - [Date]</p>
 </div>
@@ -804,168 +804,168 @@ const NotesHub = () => {
     <li><strong>Action 2:</strong> [Description] - <em>Assigned to: [Person]</em> - <strong>Due: [Date]</strong></li>
   </ul>
 </div>`
-                        }
-                      ].map((template, index) => (
-                        <motion.div
-                          key={index}
-                          className="group glassmorphism rounded-lg p-6 cursor-pointer hover:bg-white/10 dark:hover:bg-white/5 transition-all duration-300 border border-white/10 hover:border-white/20"
-                          whileHover={{ scale: 1.02, y: -2 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => {
-                            const newNote: Note = {
-                              id: `template-${Date.now()}`,
-                              title: template.title,
-                              content: template.content,
-                              tags: [template.category],
-                              category: template.category,
-                              createdAt: new Date().toISOString(),
-                              updatedAt: new Date().toISOString(),
-                              attachments: [], // Ensure attachments is present
-                            };
-                            setNotes(prev => [...prev, newNote]);
-                            setSelectedNote(newNote);
-                            setIsEditing(true);
-                          }}
-                        >
-                          <div className="flex items-start space-x-4">
-                            <div className={`w-12 h-12 bg-gradient-to-r ${template.color} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                              <span className="text-2xl">{template.icon}</span>
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-lg text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">{template.title}</h4>
-                              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">{template.description}</p>
-                              <div className="flex items-center mt-3">
-                                <span className={`px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${template.color} text-white shadow-sm`}>
-                                  {template.category}
-                                </span>
-                                <span className="ml-2 text-xs text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors duration-300">
-                                  Click to create →
-                                </span>
-                              </div>
+                      }
+                    ].map((template, index) => (
+                      <motion.div
+                        key={index}
+                        className="group glassmorphism rounded-lg p-6 cursor-pointer hover:bg-white/10 dark:hover:bg-white/5 transition-all duration-300 border border-white/10 hover:border-white/20"
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => {
+                          const newNote: Note = {
+                            id: `template-${Date.now()}`,
+                            title: template.title,
+                            content: template.content,
+                            tags: [template.category],
+                            category: template.category,
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString(),
+                            attachments: [], // Ensure attachments is present
+                          };
+                          setNotes(prev => [...prev, newNote]);
+                          setSelectedNote(newNote);
+                          setIsEditing(true);
+                        }}
+                      >
+                        <div className="flex items-start space-x-4">
+                          <div className={`w-12 h-12 bg-gradient-to-r ${template.color} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                            <span className="text-2xl">{template.icon}</span>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-lg text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">{template.title}</h4>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">{template.description}</p>
+                            <div className="flex items-center mt-3">
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${template.color} text-white shadow-sm`}>
+                                {template.category}
+                              </span>
+                              <span className="ml-2 text-xs text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors duration-300">
+                                Click to create →
+                              </span>
                             </div>
                           </div>
-                        </motion.div>
-                      ))}
-                    </div>
+                        </div>
+                      </motion.div>
+                    ))}
                   </div>
+                </div>
 
-                  {/* Study Tips */}
-                  <div className="glassmorphism rounded-xl p-6">
-                    <h3 className="text-lg font-semibold mb-4">Effective Note-Taking Tips</h3>
-                    <div className="space-y-3">
-                      {[
-                        {
-                          tip: "Use the Cornell Note-Taking System",
-                          description: "Divide your page into notes, cues, and summary sections for better organization."
-                        },
-                        {
-                          tip: "Create Visual Connections",
-                          description: "Use diagrams, charts, and mind maps to connect related concepts."
-                        },
-                        {
-                          tip: "Review and Revise Regularly",
-                          description: "Go back to your notes within 24 hours to reinforce learning and fill gaps."
-                        },
-                        {
-                          tip: "Use Active Voice and Keywords",
-                          description: "Write in your own words and highlight key terms for better retention."
-                        }
-                      ].map((item, index) => (
-                        <motion.div
-                          key={index}
-                          className="flex items-start space-x-3 p-3 bg-white dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700"
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.1, duration: 0.5 }}
-                        >
-                          <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <span className="text-white text-xs font-bold">{index + 1}</span>
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-slate-900 dark:text-blue-400 text-sm">{item.tip}</h4>
-                            <p className="text-slate-600 dark:text-slate-400 text-xs mt-1">{item.description}</p>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
+                {/* Study Tips */}
+                <div className="glassmorphism rounded-xl p-6">
+                  <h3 className="text-lg font-semibold mb-4">Effective Note-Taking Tips</h3>
+                  <div className="space-y-3">
+                    {[
+                      {
+                        tip: "Use the Cornell Note-Taking System",
+                        description: "Divide your page into notes, cues, and summary sections for better organization."
+                      },
+                      {
+                        tip: "Create Visual Connections",
+                        description: "Use diagrams, charts, and mind maps to connect related concepts."
+                      },
+                      {
+                        tip: "Review and Revise Regularly",
+                        description: "Go back to your notes within 24 hours to reinforce learning and fill gaps."
+                      },
+                      {
+                        tip: "Use Active Voice and Keywords",
+                        description: "Write in your own words and highlight key terms for better retention."
+                      }
+                    ].map((item, index) => (
+                      <motion.div
+                        key={index}
+                        className="flex items-start space-x-3 p-3 bg-white dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1, duration: 0.5 }}
+                      >
+                        <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="text-white text-xs font-bold">{index + 1}</span>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-slate-900 dark:text-blue-400 text-sm">{item.tip}</h4>
+                          <p className="text-slate-600 dark:text-slate-400 text-xs mt-1">{item.description}</p>
+                        </div>
+                      </motion.div>
+                    ))}
                   </div>
-                </motion.div>
-              )}
-            </div>
+                </div>
+              </motion.div>
+            )}
           </div>
-          
-          {/* New Note Dialog */}
-          <Dialog open={showNewNoteDialog} onOpenChange={setShowNewNoteDialog}>
-            <DialogContent className="bg-slate-900 border-white/20">
-              <DialogHeader>
-                <DialogTitle className="text-white">Create New Note</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-white">Title</Label>
-                  <Input
-                    value={newNoteTitle}
-                    onChange={(e) => setNewNoteTitle(e.target.value)}
-                    placeholder="Enter note title"
-                    className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400"
-                    disabled={isNotesLoading}
-                  />
-                </div>
+        </div>
 
-                <div className="space-y-2">
-                  <Label className="text-slate-700 dark:text-slate-300 font-medium">Category</Label>
-                  <div className="relative">
-                    <select
-                      value={newNoteCategory}
-                      onChange={(e) => setNewNoteCategory(e.target.value)}
-                      className="w-full p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white appearance-none cursor-pointer focus:border-blue-500 dark:focus:border-blue-400 focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors"
-                      disabled={isNotesLoading}
-                    >
-                      {categories.slice(1).map((category) => (
-                        <option key={category} value={category} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
-                          {category}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
-                      <svg className="w-4 h-4 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
+        {/* New Note Dialog */}
+        <Dialog open={showNewNoteDialog} onOpenChange={setShowNewNoteDialog}>
+          <DialogContent className="bg-slate-900 border-white/20">
+            <DialogHeader>
+              <DialogTitle className="text-white">Create New Note</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label className="text-white">Title</Label>
+                <Input
+                  value={newNoteTitle}
+                  onChange={(e) => setNewNoteTitle(e.target.value)}
+                  placeholder="Enter note title"
+                  className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400"
+                  disabled={isNotesLoading}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-slate-700 dark:text-slate-300 font-medium">Category</Label>
+                <div className="relative">
+                  <select
+                    value={newNoteCategory}
+                    onChange={(e) => setNewNoteCategory(e.target.value)}
+                    className="w-full p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white appearance-none cursor-pointer focus:border-blue-500 dark:focus:border-blue-400 focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors"
+                    disabled={isNotesLoading}
+                  >
+                    {categories.slice(1).map((category) => (
+                      <option key={category} value={category} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
+                    <svg className="w-4 h-4 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
                   </div>
-                </div>
-
-                <div>
-                  <Label className="text-white">Tags (comma separated)</Label>
-                  <Input
-                    value={newNoteTags}
-                    onChange={(e) => setNewNoteTags(e.target.value)}
-                    placeholder="e.g., calculus, derivatives, math"
-                    className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400"
-                    disabled={isNotesLoading}
-                  />
-                </div>
-
-                <div className="flex space-x-2">
-                  <Button
-                    onClick={() => setShowNewNoteDialog(false)}
-                    variant="outline"
-                    className="flex-1 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-400 dark:hover:border-slate-500"
-                    disabled={isNotesLoading}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleCreateNote}
-                    className="flex-1 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-                    disabled={isNotesLoading}
-                  >
-                    Create Note
-                  </Button>
                 </div>
               </div>
-            </DialogContent>
-          </Dialog>
+
+              <div>
+                <Label className="text-white">Tags (comma separated)</Label>
+                <Input
+                  value={newNoteTags}
+                  onChange={(e) => setNewNoteTags(e.target.value)}
+                  placeholder="e.g., calculus, derivatives, math"
+                  className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400"
+                  disabled={isNotesLoading}
+                />
+              </div>
+
+              <div className="flex space-x-2">
+                <Button
+                  onClick={() => setShowNewNoteDialog(false)}
+                  variant="outline"
+                  className="flex-1 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-400 dark:hover:border-slate-500"
+                  disabled={isNotesLoading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCreateNote}
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                  disabled={isNotesLoading}
+                >
+                  Create Note
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
         </div>
       </main>
     </NotesErrorBoundary>
