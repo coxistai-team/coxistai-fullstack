@@ -1,11 +1,12 @@
 import requests
 import json
 from typing import Optional
+import os
 
 class SmartDeepSeek:
     def __init__(self, api_key: str):
         self.api_key = api_key
-        self.endpoint = "https://openrouter.ai/api/v1/chat/completions"
+        self.endpoint = os.getenv("OPENROUTER_ENDPOINT", "https://openrouter.ai/api/v1/chat/completions")
         
         self.free_model = "deepseek/deepseek-r1-0528-qwen3-8b:free"
         self.paid_model = "deepseek/deepseek-chat"  
@@ -14,8 +15,8 @@ class SmartDeepSeek:
         self.base_headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://your-educational-app.com",  
-            "X-Title": "Educational Chatbot"  # Change this
+            "HTTP-Referer": os.getenv("HTTP_REFERER", "https://your-educational-app.com"),
+            "X-Title": os.getenv("X_TITLE", "Educational Chatbot")
         }
         
         self.complexity_threshold = 15  # Word count

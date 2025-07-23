@@ -357,7 +357,8 @@ const AIPresentations = () => {
     setIsGenerating(true)
 
     try {
-      const createResponse = await fetch("http://localhost:5002/create_presentation", {
+      const PPT_API_URL = import.meta.env.VITE_PPT_API_URL;
+      const createResponse = await fetch(`${PPT_API_URL}/create_presentation`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -384,7 +385,7 @@ const AIPresentations = () => {
       setPresentationId(newPresentationId)
       setPresentationTopic(createData.topic)
 
-      const getJsonResponse = await fetch(`http://localhost:5002/get_presentation_json/${newPresentationId}`, {
+      const getJsonResponse = await fetch(`${PPT_API_URL}/get_presentation_json/${newPresentationId}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -474,7 +475,8 @@ const AIPresentations = () => {
     setIsDownloading(true)
 
     try {
-      const response = await fetch("http://localhost:5002/export_ppt", {
+      const PPT_API_URL = import.meta.env.VITE_PPT_API_URL;
+      const response = await fetch(`${PPT_API_URL}/export_ppt`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -883,7 +885,8 @@ const AIPresentations = () => {
       return;
     }
     try {
-      const res = await fetch(`/api/presentations/${presentationId}/slides/${index}`, {
+      const PPT_API_URL = import.meta.env.VITE_PPT_API_URL;
+      const res = await fetch(`${PPT_API_URL}/presentations/${presentationId}/slides/${index}`, {
         method: 'DELETE',
         credentials: 'include',
       });

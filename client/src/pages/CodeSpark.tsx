@@ -24,6 +24,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const CodeSpark = () => {
   const getDefaultCode = (language: string) => {
     const defaultCodes: Record<string, string> = {
@@ -735,7 +737,7 @@ int main() {
     setExecutionTime(0);
     
     try {
-      const response = await fetch('/api/execute', {
+      const response = await fetch(`${API_URL}/api/execute`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

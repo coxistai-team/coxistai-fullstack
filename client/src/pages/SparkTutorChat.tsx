@@ -328,13 +328,13 @@ const SparkTutorChat = () => {
         if (messageContent.trim()) {
           formData.append("query", messageContent);
         }
-        response = await axios.post("http://localhost:3001/api/chat/file", formData, {
+        response = await axios.post(`${API_URL}/api/chat/file`, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
         });
       } else {
-        response = await axios.post("http://localhost:3001/api/chat/text", {
+        response = await axios.post(`${API_URL}/api/chat/text`, {
           message: messageContent,
         });
       }

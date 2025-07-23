@@ -24,7 +24,7 @@ from PIL import Image, ImageDraw
 
 class SimpleImageGenerator:
     def __init__(self):
-        self.api_key = "dUHpS4Tu7AcVoOMlOWnzodfM8THUVpThn9E593veWGU"
+        self.api_key = os.getenv("UNSPLASH_API_KEY")
         self.headers = {'Authorization': f'Client-ID {self.api_key}'}
         self.request_count = 0  
 
@@ -78,8 +78,10 @@ class SimpleImageGenerator:
         } for _ in range(num_slides)]
 
 
-def generate_ai_content(topic, num_slides, api_key):
+def generate_ai_content(topic, num_slides, api_key=None):
     """Generate presentation content using AI with improved error handling"""
+    if api_key is None:
+        api_key = os.getenv("OPENROUTER_API_KEY")
     prompt = f"""Create a PowerPoint presentation with exactly {num_slides} slides about "{topic}".
 
 Return ONLY a valid JSON array of slide objects. Each slide must have:
@@ -105,8 +107,8 @@ Make the content educational, specific, and valuable. Focus on {topic}."""
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://www.webstylepress.com",
-            "X-Title": "PowerPoint Generator"
+            "HTTP-Referer": os.getenv("HTTP_REFERER", "https://www.webstylepress.com"),
+            "X-Title": os.getenv("X_TITLE", "PowerPoint Generator")
         }
 
         payload = {
@@ -127,7 +129,7 @@ Make the content educational, specific, and valuable. Focus on {topic}."""
 
         print("\nGenerating AI content...")
         response = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
+            os.getenv("OPENROUTER_ENDPOINT", "https://openrouter.ai/api/v1/chat/completions"),
             headers=headers,
             json=payload,
             timeout=60
@@ -697,7 +699,7 @@ def main():
     
     args = parser.parse_args()
     
-    OPENROUTER_API_KEY = "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"
+    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
     
     try:
         print(f"\nGenerating presentation about '{args.topic}' with {args.slides} slides")

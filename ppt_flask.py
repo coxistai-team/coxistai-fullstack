@@ -25,7 +25,7 @@ from modules.pptfinal import generate_ai_content, create_powerpoint
 app = Flask(__name__)
 CORS(app, resources={
     r"/*": {
-        "origins": ["*"],
+        "origins": os.getenv("ALLOWED_ORIGINS", "*").split(","),
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True
@@ -46,7 +46,7 @@ os.makedirs(JSON_FOLDER, exist_ok=True)
 os.makedirs(UPLOADS_FOLDER, exist_ok=True)
 
 # Your API key for the AI content generation
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 # In-memory storage for presentations (in production, use a database)
 presentations_db = {}
