@@ -143,6 +143,7 @@ import CollegeRecommenderPreview from "@/pages/CollegeRecommenderPreview";
 import AIPresentationsPreview from "@/pages/AIPresentationsPreview";
 import SmartCalendarPreview from "@/pages/SmartCalendarPreview";
 import CodeSparkPreview from "@/pages/CodeSparkPreview";
+import PasswordGate from "@/components/PasswordGate";
 
 // Adding GA4 initialization
 import ReactGA from "react-ga4";
@@ -186,28 +187,30 @@ function App() {
   }, [location]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <AuthProvider>
-          <UserProvider>
-            <TooltipProvider>
-              <LoadingProvider>
-                <PageLoadingProvider>
-                  <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden flex flex-col">
-                    <AnimatedBackground />
-                    <Navigation />
-                    <div className="flex-1">
-                      <Router />
+    <PasswordGate>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <AuthProvider>
+            <UserProvider>
+              <TooltipProvider>
+                <LoadingProvider>
+                  <PageLoadingProvider>
+                    <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden flex flex-col">
+                      <AnimatedBackground />
+                      <Navigation />
+                      <div className="flex-1">
+                        <Router />
+                      </div>
+                      <Toaster />
                     </div>
-                    <Toaster />
-                  </div>
-                </PageLoadingProvider>
-              </LoadingProvider>
-            </TooltipProvider>
-          </UserProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+                  </PageLoadingProvider>
+                </LoadingProvider>
+              </TooltipProvider>
+            </UserProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </PasswordGate>
   );
 }
 
