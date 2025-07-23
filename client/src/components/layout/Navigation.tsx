@@ -7,6 +7,7 @@ import UserProfileDropdown from "@/components/ui/user-profile-dropdown";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePageLoading } from "@/contexts/PageLoadingContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import logo1x from "../../../assets/1x.png";
 
 const Navigation = () => {
   const [location, setLocation] = useLocation();
@@ -56,7 +57,14 @@ const Navigation = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-green-500 rounded-xl shadow-lg" />
+              <img 
+                src={logo1x} 
+                alt="Coexist AI Logo" 
+                className="w-20 h-20 rounded-xl shadow-lg object-cover" 
+                width={20} 
+                height={20} 
+                loading="eager"
+              />
               <div>
                 <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">Coexist AI</span>
                 <div className="text-xs text-slate-600 dark:text-slate-400">Learning Platform</div>

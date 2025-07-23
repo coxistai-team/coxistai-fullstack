@@ -13,6 +13,7 @@ import {
   Sparkles
 } from "lucide-react";
 import GlassmorphismButton from "@/components/ui/glassmorphism-button";
+import logo1x from "../../assets/1x.png";
 
 const Home = () => {
   const [, setLocation] = useLocation();
@@ -127,14 +128,25 @@ const Home = () => {
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
             </motion.div>
 
-            <motion.h1 
-              className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent"
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-            >
-              Coexist AI
-            </motion.h1>
+            {/* Logo and Title */}
+            <motion.div className="flex flex-col items-center justify-center mb-4">
+              <img 
+                src={logo1x} 
+                alt="Coexist AI Logo"
+                className="w-50 h-50 rounded-2xl shadow-lg object-cover mb-2" 
+                width={50} 
+                height={50} 
+                loading="eager"
+              />
+              <motion.h1 
+                className="text-5xl md:text-7xl font-bold mb-2 bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent"
+                initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+              >
+                Coexist AI
+              </motion.h1>
+            </motion.div>
             
             <motion.p 
               className="text-xl md:text-2xl text-slate-700 dark:text-slate-300 mb-4 leading-relaxed font-medium"
