@@ -134,6 +134,17 @@ export const community_group_members = pgTable('community_group_members', {
   joined_at: timestamp('joined_at').notNull().defaultNow(),
 });
 
+export const calendar_tasks = pgTable('calendar_tasks', {
+  id: serial('id').primaryKey(),
+  user_id: integer('user_id').notNull().references(() => users.id),
+  title: varchar('title', { length: 255 }).notNull(),
+  completed: boolean('completed').notNull().default(false),
+  date: text('date').notNull(), // ISO date string (yyyy-mm-dd)
+  priority: varchar('priority', { length: 16 }).notNull().default('medium'), // 'low' | 'medium' | 'high'
+  created_at: timestamp('created_at').notNull().defaultNow(),
+  updated_at: timestamp('updated_at').notNull().defaultNow(),
+});
+
 export const usersRelations = relations(users, ({ many }) => ({
   documents: many(documents),
   notes: many(notes),
@@ -198,6 +209,12 @@ export const insertPresentationSchema = createInsertSchema(presentations).pick({
   title: true,
   slides: true,
 });
+ 
+export const insertCalendarTaskSchema = createInsertSchema(calendar_tasks).pick({
+  title: true,
+  date: true,
+  priority: true,
+});
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type UpdateUserProfile = z.infer<typeof updateUserProfileSchema>;
@@ -222,3 +239,6 @@ export type CommunityGroup = typeof community_groups.$inferSelect;
 export type InsertCommunityGroup = typeof community_groups.$inferInsert;
 export type CommunityGroupMember = typeof community_group_members.$inferSelect;
 export type InsertCommunityGroupMember = typeof community_group_members.$inferInsert;
+
+export type CalendarTask = typeof calendar_tasks.$inferSelect;
+export type InsertCalendarTask = z.infer<typeof insertCalendarTaskSchema>;

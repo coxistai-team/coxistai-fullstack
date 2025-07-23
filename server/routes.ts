@@ -854,6 +854,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/calendar/tasks", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      if (!userId || isNaN(Number(userId))) {
+        return res.status(400).json({ error: "Invalid user id" });
+      }
+      const tasks = await storage.getCalendarTasks(Number(userId));
+      res.json(tasks);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch calendar tasks" });
+    }
+  });
+
+  app.post("/api/calendar/tasks", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const { title, date, priority } = req.body;
+      if (!title || !date || !priority) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      const created = await storage.createCalendarTask({ ...req.body, user_id: userId });
+      res.status(201).json(created);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create calendar task" });
+    }
+  });
+
+  app.put("/api/calendar/tasks/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const id = parseInt(req.params.id);
+      const task = await storage.getCalendarTask(id);
+      if (!task || task.user_id !== userId) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+      const updated = await storage.updateCalendarTask(id, req.body);
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update calendar task" });
+    }
+  });
+
+  app.delete("/api/calendar/tasks/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user.id;
+      const id = parseInt(req.params.id);
+      const task = await storage.getCalendarTask(id);
+      if (!task || task.user_id !== userId) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+      await storage.deleteCalendarTask(id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete calendar task" });
+    }
+  });
+
   app.get("/api/calendar/:id", requireAuth, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user.id;
@@ -1167,6 +1224,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedNote);
     } catch (error) {
       res.status(500).json({ error: "Failed to update note." });
+    }
+  });
+
+  // Add this route for deleting a note
+  app.delete("/api/notes/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user.id;
+      const noteId = parseInt(req.params.id);
+      const deleted = await storage.deleteNote(noteId, userId);
+      if (deleted) {
+        res.json({ success: true });
+      } else {
+        res.status(404).json({ error: "Note not found or not owned by user." });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete note." });
     }
   });
 

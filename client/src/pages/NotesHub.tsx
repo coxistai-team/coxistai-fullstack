@@ -51,7 +51,13 @@ const NotesHub = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState("All");
+  // Remove predefined categories for tags. Compute unique tags from notes, always include 'All'.
+  const getAllTags = (notes: Note[]) => {
+    const tagSet = new Set<string>();
+    notes.forEach(note => safeArray(note.tags).forEach(tag => tagSet.add(tag)));
+    return ["All", ...Array.from(tagSet).filter(Boolean)];
+  };
+  const [activeTag, setActiveTag] = useState("All");
   const [showNewNoteDialog, setShowNewNoteDialog] = useState(false);
   const [newNoteTitle, setNewNoteTitle] = useState("");
   const [newNoteTags, setNewNoteTags] = useState("");
@@ -59,6 +65,12 @@ const NotesHub = () => {
   const [isEditing, setIsEditing] = useState(false);
   // Add state for attachments
   const [attachments, setAttachments] = useState<string[]>([]);
+
+  // Add loading and disabled states for all API-triggering buttons
+  const [isCreating, setIsCreating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState<null | string>(null); // noteId or null
 
   const isAuthLoading = useAuthLoading();
   const [isNotesLoading, setIsNotesLoading] = useState(true);
@@ -100,7 +112,7 @@ const NotesHub = () => {
     const matchesSearch = note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          note.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          note.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesCategory = activeCategory === "All" || note.category === activeCategory;
+    const matchesCategory = activeTag === "All" || note.tags.some(tag => tag.toLowerCase() === activeTag.toLowerCase());
     return matchesSearch && matchesCategory;
   });
 
@@ -113,7 +125,7 @@ const NotesHub = () => {
       });
       return;
     }
-
+    setIsCreating(true);
     try {
       const response = await fetch('/api/notes', {
         method: 'POST',
@@ -162,6 +174,8 @@ const NotesHub = () => {
         description: "Could not create note on the server. Please try again later.",
         variant: "destructive",
       });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -229,6 +243,7 @@ const NotesHub = () => {
 
   const handleSaveNote = async () => {
     if (!selectedNote) return;
+    setIsSaving(true);
 
     if (isTemplateNote(selectedNote)) {
       // Save as new note (POST)
@@ -291,10 +306,13 @@ const NotesHub = () => {
         description: "Could not save note on the server. Please try again later.",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDeleteNote = async (noteId: string) => {
+    setIsDeleting(true);
     // If template note, just remove from state
     if (isTemplateNote({ id: noteId } as Note)) {
       setNotes(prev => prev.filter(note => note.id !== noteId));
@@ -331,6 +349,9 @@ const NotesHub = () => {
         description: "Could not delete note on the server. Please try again later.",
         variant: "destructive",
       });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(null);
     }
   };
 
@@ -356,6 +377,35 @@ const NotesHub = () => {
     updatedAt: note.updatedAt || new Date().toISOString(),
     attachments: safeArray(note.attachments),
   });
+
+  // In the template selection handler, immediately POST to /api/notes to create the note in the backend
+  const handleTemplateSelect = async (template: any) => {
+    setIsCreating(true);
+    try {
+      const response = await fetch('/api/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          title: template.title,
+          content: template.content,
+          tags: [template.category],
+          category: template.category,
+          attachments: [],
+        }),
+      });
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const newNote: Note = safeNote(await response.json());
+      setNotes(prev => [newNote, ...prev]);
+      setSelectedNote(newNote);
+      setIsEditing(true);
+      toast({ title: 'Note Created', description: 'Template note created and saved.' });
+    } catch (error) {
+      toast({ title: 'Failed to create note', description: 'Could not create note from template.', variant: 'destructive' });
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   if (isNotesLoading) {
     return (
@@ -406,9 +456,16 @@ const NotesHub = () => {
                     onClick={() => setShowNewNoteDialog(true)}
                     className="bg-gradient-to-r from-blue-500 to-green-500"
                     size="sm"
-                    disabled={isNotesLoading}
+                    disabled={isCreating || isNotesLoading}
                   >
-                    <Plus className="w-4 h-4 mr-2" />
+                    {isCreating ? (
+                      <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    ) : (
+                      <Plus className="w-4 h-4 mr-2" />
+                    )}
                     New Note
                   </GlassmorphismButton>
                 </div>
@@ -425,18 +482,18 @@ const NotesHub = () => {
                     />
                   </div>
                   <div className="flex gap-2 flex-wrap">
-                    {categories.map((category) => (
+                    {getAllTags(notes).map((tag) => (
                       <button
-                        key={category}
-                        onClick={() => setActiveCategory(category)}
+                        key={tag}
+                        onClick={() => setActiveTag(tag)}
                         className={`px-3 py-1 rounded-full text-sm transition-all duration-300 ${
-                          activeCategory === category 
+                          activeTag === tag 
                             ? 'glassmorphism-button' 
                             : 'glassmorphism hover:glassmorphism-button'
                         }`}
                         disabled={isNotesLoading}
                       >
-                        {category}
+                        {tag}
                       </button>
                     ))}
                   </div>
@@ -497,12 +554,19 @@ const NotesHub = () => {
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteNote(note.id);
+                              setShowDeleteDialog(note.id);
                             }}
                             className="h-8 w-8 p-0 text-red-400 hover:text-red-300"
-                            disabled={isNotesLoading}
+                            disabled={isDeleting || isNotesLoading}
                           >
-                            <Trash2 className="w-3 h-3" />
+                            {isDeleting ? (
+                              <svg className="animate-spin h-3 w-3 text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                            ) : (
+                              <Trash2 className="w-3 h-3" />
+                            )}
                           </Button>
                         </div>
                       </div>
@@ -548,9 +612,16 @@ const NotesHub = () => {
                         onClick={handleSaveNote}
                         size="sm"
                         className="bg-gradient-to-r from-green-500 to-blue-500"
-                        disabled={isNotesLoading}
+                        disabled={isSaving || isNotesLoading}
                       >
-                        <Save className="w-4 h-4 mr-2" />
+                        {isSaving ? (
+                          <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : (
+                          <Save className="w-4 h-4 mr-2" />
+                        )}
                         Save
                       </GlassmorphismButton>
                     ) : (
@@ -598,8 +669,15 @@ const NotesHub = () => {
                   <FileText className="w-16 h-16 mx-auto mb-4 text-blue-600 dark:text-blue-400" />
                   <h3 className="text-xl font-semibold mb-2">Welcome to Notes Hub</h3>
                   <p className="text-slate-600 dark:text-slate-400 mb-4">Organize your learning with smart note-taking and advanced search capabilities.</p>
-                  <GlassmorphismButton onClick={() => setShowNewNoteDialog(true)} disabled={isNotesLoading}>
-                    <Plus className="w-4 h-4 mr-2" />
+                  <GlassmorphismButton onClick={() => setShowNewNoteDialog(true)} disabled={isCreating || isNotesLoading}>
+                    {isCreating ? (
+                      <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    ) : (
+                      <Plus className="w-4 h-4 mr-2" />
+                    )}
                     Create Your First Note
                   </GlassmorphismButton>
                 </div>
@@ -811,21 +889,7 @@ const NotesHub = () => {
                         className="group glassmorphism rounded-lg p-6 cursor-pointer hover:bg-white/10 dark:hover:bg-white/5 transition-all duration-300 border border-white/10 hover:border-white/20"
                         whileHover={{ scale: 1.02, y: -2 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => {
-                          const newNote: Note = {
-                            id: `template-${Date.now()}`,
-                            title: template.title,
-                            content: template.content,
-                            tags: [template.category],
-                            category: template.category,
-                            createdAt: new Date().toISOString(),
-                            updatedAt: new Date().toISOString(),
-                            attachments: [], // Ensure attachments is present
-                          };
-                          setNotes(prev => [...prev, newNote]);
-                          setSelectedNote(newNote);
-                          setIsEditing(true);
-                        }}
+                        onClick={() => handleTemplateSelect(template)}
                       >
                         <div className="flex items-start space-x-4">
                           <div className={`w-12 h-12 bg-gradient-to-r ${template.color} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
@@ -908,7 +972,7 @@ const NotesHub = () => {
                   onChange={(e) => setNewNoteTitle(e.target.value)}
                   placeholder="Enter note title"
                   className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400"
-                  disabled={isNotesLoading}
+                  disabled={isCreating || isNotesLoading}
                 />
               </div>
 
@@ -919,7 +983,7 @@ const NotesHub = () => {
                     value={newNoteCategory}
                     onChange={(e) => setNewNoteCategory(e.target.value)}
                     className="w-full p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white appearance-none cursor-pointer focus:border-blue-500 dark:focus:border-blue-400 focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors"
-                    disabled={isNotesLoading}
+                    disabled={isCreating || isNotesLoading}
                   >
                     {categories.slice(1).map((category) => (
                       <option key={category} value={category} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
@@ -942,7 +1006,7 @@ const NotesHub = () => {
                   onChange={(e) => setNewNoteTags(e.target.value)}
                   placeholder="e.g., calculus, derivatives, math"
                   className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400"
-                  disabled={isNotesLoading}
+                  disabled={isCreating || isNotesLoading}
                 />
               </div>
 
@@ -951,17 +1015,41 @@ const NotesHub = () => {
                   onClick={() => setShowNewNoteDialog(false)}
                   variant="outline"
                   className="flex-1 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-400 dark:hover:border-slate-500"
-                  disabled={isNotesLoading}
+                  disabled={isCreating || isNotesLoading}
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleCreateNote}
                   className="flex-1 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-                  disabled={isNotesLoading}
+                  disabled={isCreating || isNotesLoading}
                 >
+                  {isCreating ? (
+                    <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : (
+                    <Plus className="w-4 h-4 mr-2" />
+                  )}
                   Create Note
                 </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={!!showDeleteDialog} onOpenChange={open => { if (!open) setShowDeleteDialog(null); }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Note</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p>Are you sure you want to delete this note? This action cannot be undone.</p>
+              <div className="flex space-x-2 justify-end">
+                <Button variant="outline" onClick={() => setShowDeleteDialog(null)} disabled={isDeleting}>Cancel</Button>
+                <Button onClick={() => handleDeleteNote(showDeleteDialog!)} className="bg-red-500 text-white" disabled={isDeleting}>{isDeleting ? "Deleting..." : "Delete"}</Button>
               </div>
             </div>
           </DialogContent>

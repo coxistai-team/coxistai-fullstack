@@ -1,4 +1,4 @@
-import { users, documents, presentations, calendar_events, community_posts, community_replies, community_likes, community_groups, community_group_members, type User, type InsertUser, type UpdateUserProfile, type Document, type InsertDocument, type Presentation, type InsertPresentation, type CalendarEvent, type InsertCalendarEvent, type CommunityPost, type InsertCommunityPost, type CommunityReply, type InsertCommunityReply, type CommunityLike, type InsertCommunityLike, type CommunityGroup, type InsertCommunityGroup, type CommunityGroupMember, type InsertCommunityGroupMember, notes } from "@shared/schema";
+import { users, documents, presentations, calendar_events, community_posts, community_replies, community_likes, community_groups, community_group_members, type User, type InsertUser, type UpdateUserProfile, type Document, type InsertDocument, type Presentation, type InsertPresentation, type CalendarEvent, type InsertCalendarEvent, type CommunityPost, type InsertCommunityPost, type CommunityReply, type InsertCommunityReply, type CommunityLike, type InsertCommunityLike, type CommunityGroup, type InsertCommunityGroup, type CommunityGroupMember, type InsertCommunityGroupMember, notes, calendar_tasks, type CalendarTask, type InsertCalendarTask } from "@shared/schema";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -67,6 +67,13 @@ export interface IStorage {
   getNote(noteId: number, userId: number): Promise<any | undefined>;
   updateNote(noteId: number, userId: number, updates: any): Promise<any>;
   deleteNote(noteId: number, userId: number): Promise<boolean>;
+
+  // Calendar task operations
+  getCalendarTasks(userId: number): Promise<CalendarTask[]>;
+  getCalendarTask(id: number): Promise<CalendarTask | undefined>;
+  createCalendarTask(data: InsertCalendarTask & { user_id: number }): Promise<CalendarTask>;
+  updateCalendarTask(id: number, updates: Partial<CalendarTask>): Promise<CalendarTask>;
+  deleteCalendarTask(id: number): Promise<boolean>;
 
   getTopUsers(sort: string, limit: number): Promise<User[]>;
 }
@@ -406,6 +413,27 @@ export class DatabaseStorage implements IStorage {
   async deleteNote(noteId: number, userId: number) {
     await db.delete(notes).where(and(eq(notes.id, noteId), eq(notes.user_id, userId)));
     return true;
+  }
+
+  // Calendar task operations
+  async getCalendarTasks(userId: number): Promise<CalendarTask[]> {
+    return await db.select().from(calendar_tasks).where(eq(calendar_tasks.user_id, userId));
+  }
+  async getCalendarTask(id: number): Promise<CalendarTask | undefined> {
+    const [task] = await db.select().from(calendar_tasks).where(eq(calendar_tasks.id, id));
+    return task || undefined;
+  }
+  async createCalendarTask(data: InsertCalendarTask & { user_id: number }): Promise<CalendarTask> {
+    const [created] = await db.insert(calendar_tasks).values(data).returning();
+    return created;
+  }
+  async updateCalendarTask(id: number, updates: Partial<CalendarTask>): Promise<CalendarTask> {
+    const [updated] = await db.update(calendar_tasks).set({ ...updates, updated_at: new Date() }).where(eq(calendar_tasks.id, id)).returning();
+    return updated;
+  }
+  async deleteCalendarTask(id: number): Promise<boolean> {
+    const result = await db.delete(calendar_tasks).where(eq(calendar_tasks.id, id));
+    return (result.rowCount || 0) > 0;
   }
 
   async getTopUsers(sort: string = "reputation", limit: number = 5) {

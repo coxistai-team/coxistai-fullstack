@@ -26,7 +26,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isSameDay, getYear, getMonth, startOfWeek, endOfWeek } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { UploadButton } from "@/lib/uploadthing";
 import { useAuthLoading } from "@/contexts/AuthContext";
 import { SkeletonLoader } from "@/components/ui/page-loader";
 import React, { Suspense } from "react";
@@ -113,7 +112,6 @@ const SmartCalendar = () => {
   });
 
   // Add state for event attachments
-  const [eventAttachments, setEventAttachments] = useState<string[]>([]);
   const [isSavingEvent, setIsSavingEvent] = useState(false);
 
   const isAuthLoading = useAuthLoading();
@@ -132,19 +130,19 @@ const SmartCalendar = () => {
       .finally(() => setIsEventsLoading(false));
   }, [isAuthLoading]);
 
-  // Save to localStorage
   useEffect(() => {
-    if (tasks.length > 0) {
-      localStorage.setItem('smart-calendar-tasks', JSON.stringify(tasks));
-    } else {
-      localStorage.removeItem('smart-calendar-tasks');
-    }
-  }, [tasks]);
-
-  // Clear any existing tasks on component mount to ensure fresh start
-  useEffect(() => {
-    localStorage.removeItem('smart-calendar-tasks');
-  }, []);
+    const fetchTasks = async () => {
+      try {
+        const res = await fetch("/api/calendar/tasks", { method: 'GET', credentials: "include" });
+        if (!res.ok) throw new Error("Failed to fetch tasks");
+        const data: Task[] = await res.json();
+        setTasks(data);
+      } catch (e: any) {
+        toast({ title: "Failed to load tasks", description: e.message, variant: "destructive" });
+      }
+    };
+    fetchTasks();
+  }, [toast]);
 
   // Refresh analytics data
   const refreshAnalytics = () => {
@@ -204,7 +202,6 @@ const SmartCalendar = () => {
       type: newEvent.type,
       color: eventColors[newEvent.type!],
       reminder: newEvent.reminder,
-      attachments: eventAttachments
     };
     try {
       let res, saved;
@@ -215,7 +212,6 @@ const SmartCalendar = () => {
           credentials: "include",
           body: JSON.stringify({
             ...eventData,
-            attachments: eventAttachments,
           })
         });
       } else {
@@ -225,7 +221,6 @@ const SmartCalendar = () => {
           credentials: "include",
           body: JSON.stringify({
             ...eventData,
-            attachments: eventAttachments,
           })
         });
       }
@@ -277,7 +272,6 @@ const SmartCalendar = () => {
       reminder: 15
     });
     setSelectedDate(null);
-    setEventAttachments([]);
   };
 
   // Open event dialog for specific date with optional event type preset
@@ -294,9 +288,7 @@ const SmartCalendar = () => {
         type: event.type,
         color: event.color,
         reminder: event.reminder,
-        attachments: event.attachments
       });
-      setEventAttachments(event.attachments || []);
       // Do not setSelectedDate to a string
     } else {
       const dateStr = date.toISOString().split('T')[0];
@@ -309,9 +301,7 @@ const SmartCalendar = () => {
         type: eventType || 'study',
         color: eventType ? eventColors[eventType] : '#3B82F6',
         reminder: 15,
-        attachments: []
       });
-      setEventAttachments([]);
       // Do not setSelectedDate to a string
     }
     setShowEventDialog(true);
@@ -347,23 +337,92 @@ const SmartCalendar = () => {
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
-  // Toggle task completion
-  const toggleTask = (taskId: string) => {
-    setTasks(prev => prev.map(t => 
-      t.id === taskId ? { ...t, completed: !t.completed } : t
-    ));
+  // --- Add edit and delete task functionality, edit dialog, and UI icons ---
+  // 1. Add state for editing a task
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editTaskData, setEditTaskData] = useState({ title: '', priority: 'medium' as 'low' | 'medium' | 'high' });
+
+  // 2. Edit task handler
+  const openEditTaskDialog = (task: Task) => {
+    setEditingTask(task);
+    setEditTaskData({ title: task.title, priority: task.priority });
+    setShowTaskDialog(false);
+  };
+
+  const saveEditTask = async () => {
+    if (!editingTask) return;
+    try {
+      const res = await fetch(`/api/calendar/tasks/${editingTask.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          title: editTaskData.title,
+          priority: editTaskData.priority,
+        })
+      });
+      if (!res.ok) throw new Error("Failed to update task");
+      const updatedTask = await res.json();
+      setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+      setEditingTask(null);
+      toast({ title: "Task Updated", description: `Task "${updatedTask.title}" updated.` });
+    } catch (e: any) {
+      toast({ title: "Update Failed", description: e.message, variant: "destructive" });
+    }
+  };
+
+  // 3. Delete task handler
+  const deleteTask = async (taskId: string) => {
+    if (!window.confirm("Are you sure you want to delete this task?")) return;
+    try {
+      const res = await fetch(`/api/calendar/tasks/${taskId}`, {
+        method: "DELETE",
+        credentials: "include"
+      });
+      if (!res.ok) throw new Error("Failed to delete task");
+      setTasks(prev => prev.filter(t => t.id !== taskId));
+      toast({ title: "Task Deleted", description: "Task has been removed." });
+    } catch (e: any) {
+      toast({ title: "Delete Failed", description: e.message, variant: "destructive" });
+    }
+  };
+
+  // 4. Fix toggle complete to use PUT
+  const toggleTask = async (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    try {
+      const res = await fetch(`/api/calendar/tasks/${taskId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ completed: !task.completed })
+      });
+      if (!res.ok) throw new Error("Failed to update task");
+      const updatedTask = await res.json();
+      setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+      toast({ title: "Task Updated", description: `Task "${updatedTask.title}" updated.` });
+    } catch (e: any) {
+      toast({ title: "Update Failed", description: e.message, variant: "destructive" });
+    }
   };
 
   // Add new task
-  const addTask = (title: string, date: Date, priority: 'low' | 'medium' | 'high' = 'medium') => {
-    const task: Task = {
-      id: Date.now().toString(),
-      title,
-      completed: false,
-      date,
-      priority
-    };
-    setTasks(prev => [...prev, task]);
+  const addTask = async (title: string, date: Date, priority: 'low' | 'medium' | 'high' = 'medium') => {
+    try {
+      const res = await fetch("/api/calendar/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ title, date: date.toISOString().split('T')[0], priority })
+      });
+      if (!res.ok) throw new Error("Failed to add task");
+      const newTask = await res.json();
+      setTasks(prev => [...prev, newTask]);
+      toast({ title: "Task Added", description: `Task "${newTask.title}" added.` });
+    } catch (e: any) {
+      toast({ title: "Add Failed", description: e.message, variant: "destructive" });
+    }
   };
 
   // Handle task dialog
@@ -372,10 +431,10 @@ const SmartCalendar = () => {
     setShowTaskDialog(true);
   };
 
-  const saveTask = () => {
+  const saveTask = async () => {
     if (!newTask.title.trim()) return;
     
-    addTask(newTask.title, new Date(), newTask.priority);
+    await addTask(newTask.title, new Date(), newTask.priority);
     setShowTaskDialog(false);
     setNewTask({ title: '', priority: 'medium' });
   };
@@ -594,7 +653,9 @@ const SmartCalendar = () => {
                         task.priority === 'high' ? 'bg-red-500' :
                         task.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
                       }`} />
-                      </motion.div>
+                      <Edit3 onClick={e => { e.stopPropagation(); openEditTaskDialog(task); }} className="w-4 h-4 text-slate-500 hover:text-blue-500 cursor-pointer" />
+                      <Trash2 onClick={e => { e.stopPropagation(); deleteTask(task.id); }} className="w-4 h-4 text-slate-500 hover:text-red-500 cursor-pointer" />
+                    </motion.div>
                     ))
                   )}
                 </div>
@@ -1159,55 +1220,6 @@ const SmartCalendar = () => {
                   </div>
                 </div>
 
-                {/* File Attachment Upload */}
-                <div className="mt-6">
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Attachments (optional)
-                  </label>
-                  <UploadButton
-                    endpoint="calendarEventAttachment"
-                    onClientUploadComplete={(res: Array<{ url: string }>) => {
-                      if (res && res[0]) {
-                        setEventAttachments((prev) => [...prev, res[0].url]);
-                      }
-                    }}
-                    onUploadError={(err: { message: string }) => {
-                      toast({
-                        title: "Upload Failed",
-                        description: err.message,
-                        variant: "destructive",
-                      });
-                    }}
-                    onUploadBegin={() => {
-                      toast({
-                        title: "Uploading...",
-                        description: "Your file is being uploaded.",
-                      });
-                    }}
-                    className="w-full"
-                    appearance={{
-                      button: 'w-full bg-muted hover:bg-muted/80 text-foreground',
-                      allowedContent: 'hidden',
-                    }}
-                    disabled={isAuthLoading}
-                  />
-                  {eventAttachments.length > 0 && (
-                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                      {eventAttachments.map((url, index) => (
-                        <div key={url} className="flex items-center bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white text-xs px-2 py-1 rounded-full">
-                          <span>{url.split('/').pop()?.split('.')[0] || 'File'}</span>
-                          <button
-                            onClick={() => setEventAttachments(prev => prev.filter(u => u !== url))}
-                            className="ml-1 text-red-400 hover:text-red-500"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
                 <div className="flex justify-between items-center pt-4">
                   <div className="flex space-x-2">
                     {editingEvent && (
@@ -1253,6 +1265,61 @@ const SmartCalendar = () => {
             </DialogContent>
           </Dialog>
         </div>
+
+        {/* Edit Task Dialog */}
+        <Dialog open={!!editingTask} onOpenChange={open => { if (!open) setEditingTask(null); }}>
+          <DialogContent className="max-w-md bg-white dark:bg-slate-900 border-slate-200 dark:border-white/20">
+            <DialogHeader>
+              <DialogTitle className="text-slate-900 dark:text-white">Edit Task</DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4 mt-6">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Task Title
+                </label>
+                <Input
+                  value={editTaskData.title}
+                  onChange={e => setEditTaskData({ ...editTaskData, title: e.target.value })}
+                  placeholder="Enter task title..."
+                  className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Priority
+                </label>
+                <Select 
+                  value={editTaskData.priority} 
+                  onValueChange={(value: 'low' | 'medium' | 'high') => setEditTaskData({ ...editTaskData, priority: value })}
+                >
+                  <SelectTrigger className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700">
+                    <SelectItem value="low">Low Priority</SelectItem>
+                    <SelectItem value="medium">Medium Priority</SelectItem>
+                    <SelectItem value="high">High Priority</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex justify-end space-x-3 pt-4">
+                <GlassmorphismButton variant="outline" onClick={() => setEditingTask(null)}>
+                  Cancel
+                </GlassmorphismButton>
+                <GlassmorphismButton 
+                  onClick={saveEditTask}
+                  disabled={!editTaskData.title.trim()}
+                  className="bg-gradient-to-r from-blue-500 to-green-500"
+                >
+                  Save
+                </GlassmorphismButton>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </CalendarErrorBoundary>
   );
