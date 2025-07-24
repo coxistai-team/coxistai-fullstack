@@ -1,10 +1,8 @@
 import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import tempfile
 from werkzeug.utils import secure_filename
 import logging
-import json
 from dotenv import load_dotenv
 
 from modules.image_ocr import extract_text_from_image
@@ -14,7 +12,7 @@ from modules.text_classifier import is_educational
 from modules.query import SmartDeepSeek
 from modules.tts import TextToSpeech
 
-# --- FIX: Moved persistent path setup here, after imports ---
+# --- CORRECT: Persistent path setup is done once, after imports ---
 PERSISTENT_STORAGE_PATH = os.getenv("RENDER_DISK_PATH", "persistent_data")
 os.makedirs(PERSISTENT_STORAGE_PATH, exist_ok=True)
 
@@ -30,14 +28,12 @@ CORS(app, resources={
 
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
-# --- FIX: Correctly set UPLOAD_FOLDER using the persistent path ---
+# --- CORRECT: Set UPLOAD_FOLDER using the persistent path ---
 app.config['UPLOAD_FOLDER'] = os.path.join(PERSISTENT_STORAGE_PATH, 'temp_uploads')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# --- FIX: Initialize the TTS engine with the persistent path ---
+# --- CORRECT: Initialize the TTS engine with the correct persistent path ---
 tts_engine = TextToSpeech(output_dir=app.config['UPLOAD_FOLDER'])
-
-# --- FIX: Removed the incorrect, out-of-place code block that was here ---
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -348,17 +344,11 @@ def extract_only():
         return jsonify({'error': 'Extraction failed'}), 500
     
     
-# Add this with your other endpoints
 @app.route('/api/tts', methods=['POST'])
 def text_to_speech():
-    """
-    Dedicated TTS endpoint
-    Expects JSON: {'text': 'text to speak', 'lang': 'en', 'play': True}
-    """
+    """Dedicated TTS endpoint"""
     try:
         data = request.get_json()
-        
-        # Validate input
         if not data or 'text' not in data:
             return jsonify({'error': 'Text is required'}), 400
             
@@ -367,9 +357,8 @@ def text_to_speech():
             return jsonify({'error': 'Text cannot be empty'}), 400
             
         lang = data.get('lang', 'en')
-        play = data.get('play', True)  # Default to playing immediately
+        play = data.get('play', True)
         
-        # Process TTS
         if play:
             success = tts_engine.text_to_speech(text, lang=lang)
             return jsonify({
@@ -399,13 +388,11 @@ def tts_cleanup():
         audio_path = data.get('audio_path')
         
         if audio_path:
-            # Clean specific file
             if os.path.exists(audio_path):
                 os.remove(audio_path)
                 return jsonify({'success': True, 'message': 'File removed'})
             return jsonify({'error': 'File not found'}), 404
         else:
-            # Clean all TTS files in directory
             tts_files = [f for f in os.listdir(tts_engine.output_dir) 
                         if f.startswith('tts_') and f.endswith('.mp3')]
             for file in tts_files:
