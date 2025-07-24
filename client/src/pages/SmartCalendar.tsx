@@ -117,11 +117,13 @@ const SmartCalendar = () => {
   const isAuthLoading = useAuthLoading();
   const [isEventsLoading, setIsEventsLoading] = useState(true);
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   // Fetch events from backend on mount
   useEffect(() => {
     if (isAuthLoading) return;
     setIsEventsLoading(true);
-    fetch("/api/calendar", { credentials: "include" })
+    fetch(`${API_URL}/api/calendar`, { credentials: "include" })
       .then(res => res.json())
       .then(data => {
         setEvents(data.map((e: any) => ({ ...e, date: typeof e.date === 'string' ? e.date : (new Date(e.date)).toISOString().split('T')[0] })));
@@ -133,7 +135,7 @@ const SmartCalendar = () => {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const res = await fetch("/api/calendar/tasks", { method: 'GET', credentials: "include" });
+        const res = await fetch(`${API_URL}/api/calendar/tasks`, { method: 'GET', credentials: "include" });
         if (!res.ok) throw new Error("Failed to fetch tasks");
         const data: Task[] = await res.json();
         setTasks(data);
@@ -206,7 +208,7 @@ const SmartCalendar = () => {
     try {
       let res, saved;
       if (editingEvent) {
-        res = await fetch(`/api/calendar/${editingEvent.id}`, {
+        res = await fetch(`${API_URL}/api/calendar/${editingEvent.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -215,7 +217,7 @@ const SmartCalendar = () => {
           })
         });
       } else {
-        res = await fetch("/api/calendar", {
+        res = await fetch(`${API_URL}/api/calendar`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -227,7 +229,7 @@ const SmartCalendar = () => {
       if (!res.ok) throw new Error("Failed to save event");
       saved = await res.json();
       // Refetch events
-      fetch("/api/calendar", { credentials: "include" })
+      fetch(`${API_URL}/api/calendar`, { credentials: "include" })
         .then(res => res.json())
         .then(data => setEvents(data.map((e: any) => ({ ...e, date: typeof e.date === 'string' ? e.date : (new Date(e.date)).toISOString().split('T')[0] }))));
       toast({ title: editingEvent ? "Event Updated" : "Event Created", description: `Event ${editingEvent ? "updated" : "created"} successfully.` });
@@ -242,13 +244,13 @@ const SmartCalendar = () => {
   // Delete event (persistent)
   const deleteEvent = async (eventId: string) => {
     try {
-      const res = await fetch(`/api/calendar/${eventId}`, {
+      const res = await fetch(`${API_URL}/api/calendar/${eventId}`, {
         method: "DELETE",
         credentials: "include"
       });
       if (!res.ok) throw new Error("Failed to delete event");
       // Refetch events
-      fetch("/api/calendar", { credentials: "include" })
+      fetch(`${API_URL}/api/calendar`, { credentials: "include" })
         .then(res => res.json())
         .then(data => setEvents(data.map((e: any) => ({ ...e, date: typeof e.date === 'string' ? e.date : (new Date(e.date)).toISOString().split('T')[0] }))));
       toast({ title: "Event Deleted", description: "Event has been removed." });
@@ -352,7 +354,7 @@ const SmartCalendar = () => {
   const saveEditTask = async () => {
     if (!editingTask) return;
     try {
-      const res = await fetch(`/api/calendar/tasks/${editingTask.id}`, {
+      const res = await fetch(`${API_URL}/api/calendar/tasks/${editingTask.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -375,7 +377,7 @@ const SmartCalendar = () => {
   const deleteTask = async (taskId: string) => {
     if (!window.confirm("Are you sure you want to delete this task?")) return;
     try {
-      const res = await fetch(`/api/calendar/tasks/${taskId}`, {
+      const res = await fetch(`${API_URL}/api/calendar/tasks/${taskId}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -392,7 +394,7 @@ const SmartCalendar = () => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
     try {
-      const res = await fetch(`/api/calendar/tasks/${taskId}`, {
+      const res = await fetch(`${API_URL}/api/calendar/tasks/${taskId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -410,7 +412,7 @@ const SmartCalendar = () => {
   // Add new task
   const addTask = async (title: string, date: Date, priority: 'low' | 'medium' | 'high' = 'medium') => {
     try {
-      const res = await fetch("/api/calendar/tasks", {
+      const res = await fetch(`${API_URL}/api/calendar/tasks`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

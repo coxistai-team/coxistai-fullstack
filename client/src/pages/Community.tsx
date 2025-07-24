@@ -199,7 +199,8 @@ export default function Community() {
   const fetchPosts = useCallback(async () => {
     setLoadingPosts(true);
     try {
-      const res = await axios.get("/api/community/posts");
+      const API_URL = import.meta.env.VITE_API_URL;
+      const res = await axios.get(`${API_URL}/api/community/posts`);
       const userId = user?.id || "current_user";
       const normalized = res.data.map((post: any) => {
         const likesArr = Array.isArray(post.likes) ? post.likes : [];
@@ -231,7 +232,8 @@ export default function Community() {
     }
     setPostActionLoading("new");
     try {
-      await axios.post("/api/community/posts", {
+      const API_URL = import.meta.env.VITE_API_URL;
+      await axios.post(`${API_URL}/api/community/posts`, {
         title: newPost.title,
         content: newPost.content,
         category: newPost.category,
@@ -253,7 +255,8 @@ export default function Community() {
     setPostActionLoading(postId);
     try {
       const post = posts.find((p) => p.id === postId);
-      await axios.put(`/api/community/posts/${postId}`, {
+      const API_URL = import.meta.env.VITE_API_URL;
+      await axios.put(`${API_URL}/api/community/posts/${postId}`, {
         title: newTitle,
         content: newContent,
         category: post?.category,
@@ -273,7 +276,8 @@ export default function Community() {
   const handleDeletePost = async (postId: string) => {
     setPostActionLoading(postId);
     try {
-      await axios.delete(`/api/community/posts/${postId}`);
+      const API_URL = import.meta.env.VITE_API_URL;
+      await axios.delete(`${API_URL}/api/community/posts/${postId}`);
       toast({ title: "Post deleted", description: "Your post has been deleted successfully" });
       fetchPosts();
     } catch (err) {
@@ -287,7 +291,8 @@ export default function Community() {
   const handleLikePost = async (postId: string) => {
     setLikeLoading(postId);
     try {
-      await axios.post(`/api/community/posts/${postId}/like`);
+      const API_URL = import.meta.env.VITE_API_URL;
+      await axios.post(`${API_URL}/api/community/posts/${postId}/like`);
       fetchPosts();
     } catch (err) {
       toast({ title: "Error", description: "Failed to like/unlike post", variant: "destructive" });
@@ -301,7 +306,8 @@ export default function Community() {
     if (!newComment.trim()) return;
     setCommentActionLoading(postId);
     try {
-      await axios.post(`/api/community/posts/${postId}/replies`, { content: newComment });
+      const API_URL = import.meta.env.VITE_API_URL;
+      await axios.post(`${API_URL}/api/community/posts/${postId}/replies`, { content: newComment });
       setNewComment("");
       toast({ title: "Comment added", description: "Your comment has been posted successfully" });
       fetchPosts();
@@ -316,7 +322,8 @@ export default function Community() {
   const handleDeleteComment = async (commentId: string) => {
     setDeleteCommentLoading(commentId);
     try {
-      await axios.delete(`/api/community/replies/${commentId}`);
+      const API_URL = import.meta.env.VITE_API_URL;
+      await axios.delete(`${API_URL}/api/community/replies/${commentId}`);
       toast({ title: "Comment deleted", description: "Your comment has been deleted successfully" });
       fetchPosts();
     } catch (err) {
@@ -682,7 +689,8 @@ export default function Community() {
                                                   onClick={async () => {
                                                     setDeletePostLoading(post.id);
                                                     try {
-                                                      await axios.delete(`/api/community/posts/${post.id}`);
+                                                      const API_URL = import.meta.env.VITE_API_URL;
+                                                      await axios.delete(`${API_URL}/api/community/posts/${post.id}`);
                                                       toast({ title: "Post deleted", description: "Your post and all associated comments and likes have been deleted." });
                                                       setDeletePostDialog(null);
                                                       fetchPosts();
@@ -803,7 +811,8 @@ export default function Community() {
                                                           onClick={async () => {
                                                             setDeleteCommentLoading(comment.id);
                                                             try {
-                                                              await axios.delete(`/api/community/replies/${comment.id}`);
+                                                              const API_URL = import.meta.env.VITE_API_URL;
+                                                              await axios.delete(`${API_URL}/api/community/replies/${comment.id}`);
                                                               toast({ title: "Comment deleted", description: "Your comment has been deleted successfully" });
                                                               setDeleteCommentDialog(null);
                                                               fetchPosts();

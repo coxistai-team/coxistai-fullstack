@@ -75,13 +75,15 @@ const NotesHub = () => {
   const isAuthLoading = useAuthLoading();
   const [isNotesLoading, setIsNotesLoading] = useState(true);
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   // Load notes from localStorage on component mount
   useEffect(() => {
     if (isAuthLoading) return;
     setIsNotesLoading(true);
     const fetchNotes = async () => {
       try {
-        const response = await fetch('/api/notes');
+        const response = await fetch(`${API_URL}/api/notes`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -127,7 +129,7 @@ const NotesHub = () => {
     }
     setIsCreating(true);
     try {
-      const response = await fetch('/api/notes', {
+      const response = await fetch(`${API_URL}/api/notes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -187,7 +189,7 @@ const NotesHub = () => {
     // If template note, save as new note first
     if (isTemplateNote(selectedNote)) {
       try {
-        const response = await fetch('/api/notes', {
+        const response = await fetch(`${API_URL}/api/notes`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -209,7 +211,7 @@ const NotesHub = () => {
     }
 
     try {
-      const response = await fetch(`/api/notes/${selectedNote.id}`, {
+      const response = await fetch(`${API_URL}/api/notes/${selectedNote.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -248,7 +250,7 @@ const NotesHub = () => {
     if (isTemplateNote(selectedNote)) {
       // Save as new note (POST)
       try {
-        const response = await fetch('/api/notes', {
+        const response = await fetch(`${API_URL}/api/notes`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -271,7 +273,7 @@ const NotesHub = () => {
     }
 
     try {
-      const response = await fetch(`/api/notes/${selectedNote.id}`, {
+      const response = await fetch(`${API_URL}/api/notes/${selectedNote.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -324,7 +326,7 @@ const NotesHub = () => {
       return;
     }
     try {
-      const response = await fetch(`/api/notes/${noteId}`, {
+      const response = await fetch(`${API_URL}/api/notes/${noteId}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -382,7 +384,7 @@ const NotesHub = () => {
   const handleTemplateSelect = async (template: any) => {
     setIsCreating(true);
     try {
-      const response = await fetch('/api/notes', {
+      const response = await fetch(`${API_URL}/api/notes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

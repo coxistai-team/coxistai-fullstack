@@ -723,7 +723,7 @@ const AIPresentations = () => {
     const fetchPresentations = async () => {
       setIsLoadingPresentations(true);
       try {
-        const res = await fetch('/api/presentations', { credentials: 'include' });
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/presentations`, { credentials: 'include' });
         if (!res.ok) throw new Error('Failed to fetch presentations');
         const data = await res.json();
         setSavedPresentations(data);
@@ -751,7 +751,7 @@ const AIPresentations = () => {
   const loadPresentation = async (id: string) => {
     setIsLoadingSlides(true);
     try {
-      const res = await fetch(`/api/presentations/${id}`, { credentials: 'include' });
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/presentations/${id}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch presentation');
       const data = await res.json();
       setSlides(data.json_data.slides);
@@ -769,7 +769,7 @@ const AIPresentations = () => {
   const savePresentation = async (id: string, topic: string, json_data: any) => {
     setIsSaving(true);
     try {
-      const res = await fetch('/api/presentations', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/presentations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -790,7 +790,7 @@ const AIPresentations = () => {
   const updatePresentation = async (id: string, topic: string, json_data: any) => {
     setIsSaving(true);
     try {
-      const res = await fetch(`/api/presentations/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/presentations/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -819,7 +819,7 @@ const AIPresentations = () => {
   const deletePresentation = async (id: string) => {
     setIsLoadingPresentations(true);
     try {
-      const res = await fetch(`/api/presentations/${id}`, { method: 'DELETE', credentials: 'include' });
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/presentations/${id}`, { method: 'DELETE', credentials: 'include' });
       if (!res.ok) throw new Error('Failed to delete presentation');
       setSavedPresentations(prev => prev.filter(p => p.id !== id));
       if (presentationId === id) {
