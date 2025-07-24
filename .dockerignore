@@ -1,0 +1,38 @@
+#.dockerignore
+
+# Ignore Node.js and frontend artifacts
+node_modules
+client/
+server/
+dist/
+build/
+package.json
+package-lock.json
+drizzle.config.ts
+postcss.config.js
+tailwind.config.ts
+tsconfig.json
+vercel.json
+
+# Ignore Git and local editor configurations
+.git
+.gitignore
+.DS_Store
+.vscode/
+.idea/
+
+# Ignore Python virtual environments and caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+ENV/
+
+# Ignore local environment files and other sensitive data
+.env*
+*.log
+*.db
+*.sqlite3
