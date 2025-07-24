@@ -1,0 +1,8 @@
+{
+  "name": "frontend-client",
+  "private": true,
+  "scripts": {
+    "build": "vite build",
+    "postinstall": "cd .. && npm install"
+  }
+} 
