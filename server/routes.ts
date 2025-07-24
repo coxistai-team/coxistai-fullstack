@@ -17,6 +17,7 @@ import { z } from "zod";
 // @ts-ignore // If you see a type error, run: npm install resend
 import { Resend } from 'resend';
 import cookie from "cookie";
+import cors from "cors";
 
 // Extend Express Request type to include 'user'
 declare global {
@@ -78,7 +79,7 @@ const sendPasswordResetEmail = async (email: string, token: string) => {
   try {
     const resetUrl = `${FRONTEND_URL}/reset-password?token=${token}`;
     const html = `<p>Hello,</p><p>You requested a password reset for your account. Click the link below to reset your password:</p><p><a href='${resetUrl}'>Reset Password</a></p><p>If you did not request this, you can safely ignore this email.</p>`;
-    await resend.emails.send({
+    await resend?.emails.send({
       from: `Support <${RESEND_FROM_EMAIL}>`,
       to: [email],
       subject: 'Reset your password',
@@ -133,8 +134,27 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 
 // --- AUTH ENDPOINTS ---
 export async function registerAuthRoutes(app: Express) {
+  // Add specific CORS options for auth routes
+  const authCorsOptions = {
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()) || [];
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.log(`Auth route: Origin ${origin} not allowed by CORS`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+  };
+
   // Signup
-  app.post("/api/auth/signup", async (req: Request, res: Response) => {
+  app.options('/api/auth/signup', cors(authCorsOptions));
+  app.post("/api/auth/signup", cors(authCorsOptions), async (req: Request, res: Response) => {
     try {
       const parse = signupSchema.safeParse(req.body);
       if (!parse.success) {
@@ -152,8 +172,10 @@ export async function registerAuthRoutes(app: Express) {
       res.status(500).json({ error: "Signup failed. Please try again later." });
     }
   });
+
   // Login
-  app.post("/api/auth/login", async (req: Request, res: Response) => {
+  app.options('/api/auth/login', cors(authCorsOptions));
+  app.post("/api/auth/login", cors(authCorsOptions), async (req: Request, res: Response) => {
     try {
       const parse = loginSchema.safeParse(req.body);
       if (!parse.success) {
@@ -170,16 +192,20 @@ export async function registerAuthRoutes(app: Express) {
       res.status(500).json({ error: "Login failed. Please try again later." });
     }
   });
+
   // Logout
-  app.post("/api/auth/logout", requireAuth, (req: Request, res: Response) => {
+  app.options('/api/auth/logout', cors(authCorsOptions));
+  app.post("/api/auth/logout", cors(authCorsOptions), requireAuth, (req: Request, res: Response) => {
     try {
       res.json({ success: true });
     } catch {
       res.status(500).json({ error: "Logout failed. Please try again later." });
     }
   });
+
   // Forgot Password
-  app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
+  app.options('/api/auth/forgot-password', cors(authCorsOptions));
+  app.post("/api/auth/forgot-password", cors(authCorsOptions), async (req: Request, res: Response) => {
     try {
       const parse = forgotPasswordSchema.safeParse(req.body);
       if (!parse.success) {
@@ -188,18 +214,18 @@ export async function registerAuthRoutes(app: Express) {
       const { email } = parse.data;
       const user = await storage.getUserByEmail(email);
       if (user) {
-        // Generate a JWT reset token (expires in 1 hour)
         const token = signJwt({ id: user.id, email }, { expiresIn: '1h' });
         await sendPasswordResetEmail(email, token);
       }
-      // Always return generic message
       res.json({ message: "If an account with that email exists, a reset link has been sent." });
     } catch {
       res.status(500).json({ error: "Failed to process reset request. Please try again later." });
     }
   });
+
   // Reset Password
-  app.post("/api/auth/reset-password", async (req: Request, res: Response) => {
+  app.options('/api/auth/reset-password', cors(authCorsOptions));
+  app.post("/api/auth/reset-password", cors(authCorsOptions), async (req: Request, res: Response) => {
     try {
       const parse = resetPasswordSchema.safeParse(req.body);
       if (!parse.success) {
@@ -217,8 +243,10 @@ export async function registerAuthRoutes(app: Express) {
       res.status(500).json({ error: "Failed to reset password. Please try again later." });
     }
   });
+
   // Me
-  app.get("/api/auth/me", requireAuth, async (req: Request, res: Response) => {
+  app.options('/api/auth/me', cors(authCorsOptions));
+  app.get("/api/auth/me", cors(authCorsOptions), requireAuth, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user.id;
       const user = await storage.getUser(userId);
@@ -808,7 +836,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = req.params.id;
       const presentation = await storage.getPresentationById(id, userId);
       if (!presentation) return res.status(404).json({ error: 'Presentation not found or not owned by user.' });
-      const success = await storage.deletePresentation(id);
+      const success = await storage.deletePresentation(Number(id));
       if (!success) return res.status(404).json({ error: 'Presentation not found.' });
       // Cleanup files
       await cleanupPresentationFiles(presentation);

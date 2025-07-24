@@ -25,12 +25,26 @@ const getAllowedOrigins = (): string[] => {
 const allowedOrigins = getAllowedOrigins();
 console.log("Configured CORS origins:", allowedOrigins);
 
+// Add CORS preflight handler
+app.options('*', cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log(`Preflight: Origin ${origin} not allowed by CORS`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  maxAge: 86400 // 24 hours
+}));
+
+// Main CORS middleware
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.log(`Origin ${origin} not allowed by CORS`);
@@ -38,14 +52,34 @@ app.use(cors({
     }
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
+
+// Add headers middleware for additional security and CORS headers
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  next();
+});
 
 // Add a route to check CORS configuration
 app.get('/api/cors-check', (req: Request, res: Response) => {
   res.json({
     status: 'ok',
     configured_origins: allowedOrigins,
-    request_origin: req.headers.origin
+    request_origin: req.headers.origin,
+    cors_headers: {
+      'access-control-allow-origin': res.getHeader('Access-Control-Allow-Origin'),
+      'access-control-allow-credentials': res.getHeader('Access-Control-Allow-Credentials'),
+      'access-control-allow-methods': res.getHeader('Access-Control-Allow-Methods'),
+      'access-control-allow-headers': res.getHeader('Access-Control-Allow-Headers')
+    }
   });
 });
 
