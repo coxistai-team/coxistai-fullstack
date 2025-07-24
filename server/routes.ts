@@ -147,8 +147,7 @@ export async function registerAuthRoutes(app: Express) {
       const user = await storage.createUser({ username, password: hashed });
       await storage.updateUserProfile(user.id, { email });
       const token = signJwt({ id: user.id, username });
-      res.setHeader("Set-Cookie", `token=${token}; HttpOnly; Path=/; Max-Age=604800; SameSite=None; Secure`);
-      res.status(201).json({ success: true });
+      res.status(201).json({ success: true, token });
     } catch {
       res.status(500).json({ error: "Signup failed. Please try again later." });
     }
@@ -166,8 +165,7 @@ export async function registerAuthRoutes(app: Express) {
       const valid = await comparePassword(password, user.password);
       if (!valid) return res.status(401).json({ error: "Incorrect credentials." });
       const token = signJwt({ id: user.id, username });
-      res.setHeader("Set-Cookie", `token=${token}; HttpOnly; Path=/; Max-Age=604800; SameSite=None; Secure`);
-      res.json({ success: true });
+      res.json({ success: true, token });
     } catch {
       res.status(500).json({ error: "Login failed. Please try again later." });
     }
@@ -175,7 +173,6 @@ export async function registerAuthRoutes(app: Express) {
   // Logout
   app.post("/api/auth/logout", requireAuth, (req: Request, res: Response) => {
     try {
-      res.setHeader("Set-Cookie", `token=; HttpOnly; Path=/; Max-Age=0; SameSite=Strict${process.env.NODE_ENV === "production" ? "; Secure" : ""}`);
       res.json({ success: true });
     } catch {
       res.status(500).json({ error: "Logout failed. Please try again later." });
