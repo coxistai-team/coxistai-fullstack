@@ -334,10 +334,13 @@ const SparkTutorChat = () => {
           headers: {
             "Content-Type": "multipart/form-data",
           },
+          withCredentials: true,
         });
       } else {
         response = await axios.post(`${API_URL}/api/chat/text`, {
           message: messageContent,
+        }, {
+          withCredentials: true,
         });
       }
 
