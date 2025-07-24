@@ -1,3 +1,7 @@
+# Use a persistent disk path from an environment variable, with a local fallback
+PERSISTENT_STORAGE_PATH = os.getenv("RENDER_DISK_PATH", "persistent_data")
+os.makedirs(PERSISTENT_STORAGE_PATH, exist_ok=True)
+
 from flask import Flask, request, jsonify, send_file, render_template_string
 import os
 import uuid
@@ -33,13 +37,14 @@ CORS(app, resources={
 })
 
 # Configuration
-UPLOAD_FOLDER = 'generated_ppts'
-PRESENTATIONS_FOLDER = 'presentations'
-JSON_FOLDER = 'presentation_json'
-UPLOADS_FOLDER = 'uploads'
+UPLOAD_FOLDER = os.path.join(PERSISTENT_STORAGE_PATH, 'generated_ppts')
+PRESENTATIONS_FOLDER = os.path.join(PERSISTENT_STORAGE_PATH, 'presentations')
+JSON_FOLDER = os.path.join(PERSISTENT_STORAGE_PATH, 'presentation_json')
+UPLOADS_FOLDER = os.path.join(PERSISTENT_STORAGE_PATH, 'uploads')
 ALLOWED_EXTENSIONS = {'pptx'}
 
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(PRESENTATIONS_FOLDER, exist_ok=True)
 os.makedirs(JSON_FOLDER, exist_ok=True)

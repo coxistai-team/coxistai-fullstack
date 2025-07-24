@@ -1,6 +1,6 @@
+import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import os
 import tempfile
 from werkzeug.utils import secure_filename
 import logging
@@ -14,6 +14,9 @@ from modules.text_classifier import is_educational
 from modules.query import SmartDeepSeek
 from modules.tts import TextToSpeech
 
+# --- FIX: Moved persistent path setup here, after imports ---
+PERSISTENT_STORAGE_PATH = os.getenv("RENDER_DISK_PATH", "persistent_data")
+os.makedirs(PERSISTENT_STORAGE_PATH, exist_ok=True)
 
 app = Flask(__name__)
 CORS(app, resources={
@@ -24,12 +27,17 @@ CORS(app, resources={
         "supports_credentials": True
     }
 })
+
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
-app.config['UPLOAD_FOLDER'] = 'temp_uploads'
 
+# --- FIX: Correctly set UPLOAD_FOLDER using the persistent path ---
+app.config['UPLOAD_FOLDER'] = os.path.join(PERSISTENT_STORAGE_PATH, 'temp_uploads')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-tts_engine = TextToSpeech(output_dir='temp_uploads')
 
+# --- FIX: Initialize the TTS engine with the persistent path ---
+tts_engine = TextToSpeech(output_dir=app.config['UPLOAD_FOLDER'])
+
+# --- FIX: Removed the incorrect, out-of-place code block that was here ---
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
