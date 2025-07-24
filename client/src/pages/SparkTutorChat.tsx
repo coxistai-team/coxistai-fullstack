@@ -25,7 +25,11 @@ import { useLoading } from "@/contexts/LoadingContext";
 import { MiniLoader } from "@/components/ui/page-loader";
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_CHATBOT_API_URL;
+const API_URL = import.meta.env.VITE_API_URL;
+const CHATBOT_API_URL = import.meta.env.VITE_CHATBOT_API_URL || 'https://python-ml-chatbot.onrender.com';
+
+// Add this for debugging
+console.log('Chatbot API URL:', CHATBOT_API_URL);
 
 const formatMessage = (content: string): string => {
   return content
@@ -331,14 +335,15 @@ const SparkTutorChat = () => {
         if (messageContent.trim()) {
           formData.append("query", messageContent);
         }
-        response = await axios.post(`${API_URL}/api/chat/file`, formData, {
+        response = await axios.post(`${CHATBOT_API_URL}/api/chat/file`, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
             ...(token ? { Authorization: `Bearer ${token}` } : {})
           }
         });
       } else {
-        response = await axios.post(`${API_URL}/api/chat/text`, {
+        console.log('Making request to:', `${CHATBOT_API_URL}/api/chat/text`); // Debug log
+        response = await axios.post(`${CHATBOT_API_URL}/api/chat/text`, {
           message: messageContent,
         }, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
@@ -355,6 +360,7 @@ const SparkTutorChat = () => {
       setMessages((prev) => [...prev, aiResponse]);
     } catch (error) {
       console.error("Error calling API:", error);
+      console.error("Request URL:", `${CHATBOT_API_URL}/api/chat/text`); // Debug log
       setMessages((prev) => prev.filter((msg) => msg.id !== "typing"));
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
