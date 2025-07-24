@@ -25,6 +25,8 @@ import { useLoading } from "@/contexts/LoadingContext";
 import { MiniLoader } from "@/components/ui/page-loader";
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const formatMessage = (content: string): string => {
   return content
     .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-blue-300">$1</strong>')

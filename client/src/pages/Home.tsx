@@ -128,28 +128,17 @@ const Home = () => {
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
             </motion.div>
 
-            {/* Logo and Title */}
-            <motion.div className="flex flex-col items-center justify-center mb-4">
-              <img 
-                src={logo1x} 
-                alt="Coexist AI Logo"
-                className="w-50 h-50 rounded-2xl shadow-lg object-cover mb-2" 
-                width={50} 
-                height={50} 
-                loading="eager"
-              />
-              <motion.h1 
-                className="text-5xl md:text-7xl font-bold mb-2 bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent"
-                initial={{ scale: 0.9 }}
-                animate={{ scale: 1 }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
-              >
-                Coexist AI
-              </motion.h1>
-            </motion.div>
+            <motion.h1 
+              className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-300 to-orange-300 bg-clip-text text-transparent"
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            >
+              Coexist AI
+            </motion.h1>
             
             <motion.p 
-              className="text-xl md:text-2xl text-slate-700 dark:text-slate-300 mb-4 leading-relaxed font-medium"
+              className="text-xl md:text-2xl text-white/90 dark:text-white/95 mb-4 leading-relaxed font-medium"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.8 }}
@@ -158,7 +147,7 @@ const Home = () => {
             </motion.p>
             
             <motion.p 
-              className="text-lg md:text-xl text-slate-600 dark:text-slate-400 mb-8 leading-relaxed max-w-3xl mx-auto"
+              className="text-lg md:text-xl text-white/80 dark:text-white/85 mb-8 leading-relaxed max-w-3xl mx-auto"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4, duration: 0.8 }}
@@ -175,18 +164,18 @@ const Home = () => {
               transition={{ delay: 0.5, duration: 0.8 }}
             >
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-400">50K+</div>
-                <div className="text-sm text-slate-600 dark:text-slate-400">Active Students</div>
+                <div className="text-2xl font-bold text-blue-300">50K+</div>
+                <div className="text-sm text-white/70">Active Students</div>
               </div>
-              <div className="w-px h-8 bg-slate-300 dark:bg-slate-600"></div>
+              <div className="w-px h-8 bg-white/30"></div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-400">98%</div>
-                <div className="text-sm text-slate-600 dark:text-slate-400">Success Rate</div>
+                <div className="text-2xl font-bold text-orange-300">98%</div>
+                <div className="text-sm text-white/70">Success Rate</div>
               </div>
-              <div className="w-px h-8 bg-slate-300 dark:bg-slate-600"></div>
+              <div className="w-px h-8 bg-white/30"></div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-400">24/7</div>
-                <div className="text-sm text-slate-600 dark:text-slate-400">AI Support</div>
+                <div className="text-2xl font-bold text-purple-300">24/7</div>
+                <div className="text-sm text-white/70">AI Support</div>
               </div>
             </motion.div>
 
@@ -219,16 +208,16 @@ const Home = () => {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8, duration: 0.8 }}
             >
-              <div className="flex items-center space-x-2 text-slate-600 dark:text-slate-400">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <div className="flex items-center space-x-2 text-white/75">
+                <div className="w-2 h-2 bg-blue-300 rounded-full"></div>
                 <span>Voice & Image Recognition</span>
               </div>
-              <div className="flex items-center space-x-2 text-slate-600 dark:text-slate-400">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <div className="flex items-center space-x-2 text-white/75">
+                <div className="w-2 h-2 bg-orange-300 rounded-full"></div>
                 <span>Real-time Collaboration</span>
               </div>
-              <div className="flex items-center space-x-2 text-slate-600 dark:text-slate-400">
-                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+              <div className="flex items-center space-x-2 text-white/75">
+                <div className="w-2 h-2 bg-purple-300 rounded-full"></div>
                 <span>Smart Study Planning</span>
               </div>
             </motion.div>
@@ -257,8 +246,8 @@ const Home = () => {
       <section className="py-20 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16 scroll-reveal">
-            <h2 className="text-4xl font-bold mb-4 text-slate-900 dark:text-white">Experience AI-Powered Learning</h2>
-            <p className="text-slate-600 dark:text-slate-400 text-lg">Discover how our intelligent tools transform your educational journey</p>
+            <h2 className="text-4xl font-bold mb-4 text-white/95">Experience AI-Powered Learning</h2>
+            <p className="text-white/75 text-lg">Discover how our intelligent tools transform your educational journey</p>
           </div>
           
           {/* SparkTutor Chat Preview */}

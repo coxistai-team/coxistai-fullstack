@@ -1,117 +1,125 @@
-import requests
-import json
-from typing import Optional
 import os
+from typing import Optional
+from openai import OpenAI
+from datetime import datetime
 
 class SmartDeepSeek:
-    def __init__(self, api_key: str):
-        self.api_key = api_key
-        self.endpoint = os.getenv("OPENROUTER_ENDPOINT", "https://openrouter.ai/api/v1/chat/completions")
-        
-        self.free_model = "deepseek/deepseek-r1-0528-qwen3-8b:free"
-        self.paid_model = "deepseek/deepseek-chat"  
-        self.reason_model = "deepseek/deepseek-reason" 
-        
-        self.base_headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-            "HTTP-Referer": os.getenv("HTTP_REFERER", "https://your-educational-app.com"),
-            "X-Title": os.getenv("X_TITLE", "Educational Chatbot")
-        }
-        
+    """
+    A class to interact with the OpenAI API, which intelligently selects
+    a model based on query complexity or user dissatisfaction.
+    """
+    def __init__(self, api_key: Optional[str] = None):
+        """Initializes the OpenAI client and sets up model tiers."""
+        # Load API key from argument or environment variable
+        if api_key is None:
+            api_key = os.getenv("OPENROUTER_API_KEY")
+        if not api_key:
+            raise ValueError("OPENROUTER_API_KEY environment variable is not set. Please add it to your .env file.")
+        self.client = OpenAI(api_key=api_key)
+
+        # Model tiers
+        self.free_model = "gpt-3.5-turbo"
+        self.paid_model = "gpt-4o"
+        self.reason_model = "gpt-4-turbo"
+
+        # Application-specific logic for model switching
         self.complexity_threshold = 15  # Word count
         self.dissatisfaction_triggers = [
-            "not satisfied", "explain better", 
+            "not satisfied", "explain better",
             "more detail", "incomplete answer"
         ]
 
     def needs_paid_model(self, question: str, previous_response: str = "") -> bool:
-        """Determine if question requires paid model"""
+        """Determines if a question requires a more advanced model."""
         question_lower = question.lower()
-        
-        if any(trigger in previous_response.lower() 
-               for trigger in self.dissatisfaction_triggers):
+
+        # Trigger if the user is dissatisfied with a previous response
+        if any(trigger in previous_response.lower() for trigger in self.dissatisfaction_triggers):
             return True
-            
+
+        # Trigger for long, complex questions
         if len(question.split()) > self.complexity_threshold:
             return True
-            
+
+        # Trigger for questions that ask for detailed analysis
         technical_terms = [
-            "explain in detail", "step-by-step", 
+            "explain in detail", "step-by-step",
             "prove that", "compare and contrast"
         ]
         if any(term in question_lower for term in technical_terms):
             return True
-            
+
         return False
 
     def query_model(self, model: str, question: str) -> Optional[str]:
-        """Generic model query with optimized prompts"""
+        """Queries the specified model using the OpenAI client with custom prompts."""
         prompts = {
             self.free_model: f"Provide a helpful response to: {question}",
-            self.paid_model: f"""As an expert, analyze this in depth:
-{question}
-Include examples and practical applications""",
-            self.reason_model: f"""Perform rigorous step-by-step analysis:
-1. Problem: {question}
-2. Key components
-3. Logical relationships
-4. Final synthesized answer"""
+            self.paid_model: f"As an expert, analyze this in depth:\n{question}\nInclude examples and practical applications.",
+            self.reason_model: f"Perform rigorous step-by-step analysis:\n1. Problem: {question}\n2. Key components\n3. Logical relationships\n4. Final synthesized answer"
         }
-        
-        payload = {
-            "model": model,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": prompts[model]
-                }
-            ],
-            "temperature": 0.5
-        }
-        
+
+        # Use the specific prompt or the original question as a fallback
+        prompt_content = prompts.get(model, question)
+
         try:
-            response = requests.post(
-                self.endpoint,
-                headers=self.base_headers,
-                data=json.dumps(payload)
+            # Use the OpenAI client to create a chat completion
+            response = self.client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "user", "content": prompt_content}
+                ],
+                temperature=0.5
             )
-            response.raise_for_status()  
-            return response.json()["choices"][0]["message"]["content"]
+            return response.choices[0].message.content
         except Exception as e:
-            print(f"API Error: {str(e)}")
-            if hasattr(e, 'response') and e.response:
-                print(f"Response content: {e.response.text}")
+            print(f"API Error for model '{model}': {e}")
             return None
 
     def get_response(self, question: str, previous_response: str = "") -> str:
-        """Smart response generator"""
+        """Determines the best model and gets a response."""
+        model_to_use = self.free_model
         if self.needs_paid_model(question, previous_response):
-            response = self.query_model(self.paid_model, question)
-            if not response:
-                response = self.query_model(self.reason_model, question)
+            print("--> Complex query detected. Using paid model.")
+            model_to_use = self.paid_model
         else:
-            response = self.query_model(self.free_model, question)
-            
+            print("--> Simple query detected. Using free model.")
+
+        response = self.query_model(model_to_use, question)
+
+        # Fallback to the reason_model if the paid_model fails
+        if model_to_use == self.paid_model and not response:
+            print("--> Fallback: Trying the reason_model...")
+            response = self.query_model(self.reason_model, question)
+
         return response or "I couldn't generate a response for this question."
 
-# Example usage
+
+# --- Example Usage ---
 if __name__ == "__main__":
-    # Initialize with your OpenRouter API key
-    assistant = SmartDeepSeek("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")
+    # Best practice: Load the API key from an environment variable
+    API_KEY = os.getenv("OPENROUTER_API_KEY")
 
-    # # First interaction (simple question)
-    # q1 = "What is photosynthesis?"
-    # response = assistant.get_response(q1)
-    # print(f"Q: {q1}\nA: {response}\n")
+    if not API_KEY:
+        print("Error: Please set your OPENROUTER_API_KEY in the environment variables.")
+    else:
+        assistant = SmartDeepSeek(api_key=API_KEY)
 
-    # # Follow-up showing dissatisfaction
-    # q2 = "I need more detail about the light-dependent reactions"
-    # response = assistant.get_response(q2, previous_response=response)
-    # print(f"Q: {q2}\nA: {response}\n")
+        # --- Test Case 1: Simple Question ---
+        print("\n--- Query 1: Simple Question ---")
+        q1 = "Who is the current Chief Minister of Telangana?"
+        response1 = assistant.get_response(q1)
+        print(f"Q: {q1}\nA: {response1}")
 
-    # Complex question
-    q3 = "who is cm of telangana"
-    response = assistant.get_response(q3)
-    print(f"Q: {q3}\nA: {response}")
-    
+        # --- Test Case 2: Complex Question triggering the paid model ---
+        print("\n--- Query 2: Complex Question ---")
+        q2 = "Explain in detail the key differences between nuclear fission and fusion."
+        response2 = assistant.get_response(q2)
+        print(f"Q: {q2}\nA: {response2}")
+
+        # --- Test Case 3: Dissatisfaction triggering the paid model ---
+        print("\n--- Query 3: Follow-up with Dissatisfaction ---")
+        previous_simple_response = "Photosynthesis is how plants make food."
+        q3 = "That's an incomplete answer, I need more detail about the two main stages."
+        response3 = assistant.get_response(q3, previous_response=previous_simple_response)
+        print(f"Q: {q3}\nA: {response3}")

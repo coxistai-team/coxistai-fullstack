@@ -15,3 +15,5 @@ openai-whisper
 python-pptx
 reportlab
 python-dotenv
+flask
+openai
