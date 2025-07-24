@@ -1,508 +1,335 @@
 import os
+import logging
+from typing import List, Dict, Any
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
-import logging
 from dotenv import load_dotenv
+import multiprocessing
 
+# Import only needed modules
 from modules.image_ocr import extract_text_from_image
 from modules.pdf_parser import extract_text_from_file
 from modules.text_classifier import is_educational
-from modules.query import SmartDeepSeek
+from modules.query import assistant
+from utils.prompts import improve_question_prompt
+from utils.file_handlers import extract_text_from_file_input, cleanup_temp_files, ensure_dir_exists
 
-# --- CORRECT: Persistent path setup is done once, after imports ---
-PERSISTENT_STORAGE_PATH = os.getenv("RENDER_DISK_PATH", "persistent_data")
-os.makedirs(PERSISTENT_STORAGE_PATH, exist_ok=True)
-
-# After imports
-import multiprocessing
-
-# Configuration for Gunicorn
-workers = multiprocessing.cpu_count()
-if workers > 1:
-    workers = workers - 1  # Leave one core free
-workers = min(workers, 3)  # Cap at 3 workers for 2GB RAM
-
-# Initialize Flask app with timeout config
-app = Flask(__name__)
-app.config['TIMEOUT'] = 30  # 30 seconds timeout
-
-# Debug log for configuration
-print(f"Configured workers: {workers}")
-print(f"Configured timeout: {app.config['TIMEOUT']} seconds")
-
-# After imports, before app initialization
-def get_allowed_origins():
-    origins = os.getenv("ALLOWED_ORIGINS", "*")
-    if origins == "*":
-        return ["*"]
-    return [origin.strip() for origin in origins.split(",") if origin.strip()]
-
-# Simple CORS setup without cookies
-CORS(app, resources={
-    r"/*": {
-        "origins": allowed_origins,
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"],
-        "max_age": 86400  # Cache preflight requests for 24 hours
-    }
-})
-
-# Add CORS headers to all responses
-@app.after_request
-def after_request(response):
-    origin = request.headers.get('Origin')
-    if origin and origin in allowed_origins:
-        response.headers['Access-Control-Allow-Origin'] = origin
-    elif '*' in allowed_origins:
-        response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-    return response
-
-# Add an OPTIONS handler for all routes
-@app.route('/', methods=['OPTIONS'])
-@app.route('/<path:path>', methods=['OPTIONS'])
-def options_handler(path=''):
-    return '', 204  # No content needed for OPTIONS response
-
-# Add a CORS test endpoint
-@app.route('/api/cors-test', methods=['GET', 'POST'])
-def cors_test():
-    return jsonify({
-        'status': 'ok',
-        'message': 'CORS is working',
-        'origin': request.headers.get('Origin'),
-        'method': request.method,
-        'headers': dict(request.headers)
-    })
-
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
-app.config['UPLOAD_FOLDER'] = 'temp_uploads'
-
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
-
-logging.basicConfig(level=logging.INFO)
+# Configure logging with proper format
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 logger = logging.getLogger(__name__)
 
-load_dotenv()
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-if not OPENROUTER_API_KEY:
-    raise RuntimeError("OPENROUTER_API_KEY not set in environment variables.")
+class Config:
+    """Application configuration"""
+    def __init__(self):
+        load_dotenv()
+        
+        # API Keys and Security
+        self.openai_key = os.getenv("OPENROUTER_API_KEY")
+        if not self.openai_key:
+            raise RuntimeError("OPENROUTER_API_KEY not set in environment variables.")
+        
+        # CORS Configuration
+        self.allowed_origins = self._get_allowed_origins()
+        
+        # Server Configuration - Optimized for Render Hobby Plan (2GB RAM, 1 CPU)
+        self.workers = 2  # 2 workers for 2GB RAM on Hobby plan
+        self.timeout = 30
+        self.max_content_length = 8 * 1024 * 1024  # 8MB limit for Hobby plan
+        
+        # Storage Configuration for Render Disk
+        self.persistent_storage = "/opt/render/project/src/data"  # Render's default mount path
+        self.temp_storage = "/tmp"  # Use system temp for temporary files
+        self.upload_folder = os.path.join(self.temp_storage, 'temp_uploads')
+        
+        # Create directories with proper permissions
+        for directory in [self.persistent_storage, self.upload_folder]:
+            ensure_dir_exists(directory, mode=0o755)
+        
+        # Schedule periodic cleanup
+        self._schedule_cleanup()
+        
+        # File configurations
+        self.allowed_extensions = {
+            'image': {'png', 'jpg', 'jpeg'},  # Reduced to common formats
+            'document': {'pdf'},  # Limited to PDF only for memory efficiency
+        }
+        
+        logger.info(f"Configured workers: {self.workers}")
+        logger.info(f"Configured timeout: {self.timeout} seconds")
+        logger.info(f"Configured CORS origins: {self.allowed_origins}")
+        logger.info(f"Storage path: {self.persistent_storage}")
 
-assistant = SmartDeepSeek(OPENROUTER_API_KEY)
+    def _schedule_cleanup(self) -> None:
+        """Schedule periodic cleanup of temp files"""
+        import threading
+        import time
 
-ALLOWED_EXTENSIONS = {
-    'image': {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff'},
-    'document': {'pdf', 'docx'},
-    'audio': {'mp3', 'wav', 'm4a'}
-}
+        def cleanup_worker():
+            while True:
+                try:
+                    cleanup_temp_files(self.upload_folder)
+                    time.sleep(3600)  # Run every hour
+                except Exception as e:
+                    logger.error(f"Error in cleanup worker: {str(e)}")
+                    time.sleep(60)  # Wait a minute before retrying
 
-def allowed_file(filename, file_type):
-    """Check if the file extension is allowed for the given type"""
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS.get(file_type, set())
+        # Start cleanup thread
+        cleanup_thread = threading.Thread(target=cleanup_worker, daemon=True)
+        cleanup_thread.start()
+        logger.info("Started temp file cleanup worker")
 
+    def _get_allowed_origins(self) -> List[str]:
+        """Get allowed origins from environment"""
+        origins = os.getenv("ALLOWED_ORIGINS", "*")
+        if origins == "*":
+            return ["*"]
+        return [origin.strip() for origin in origins.split(",") if origin.strip()]
 
-def improve_question_prompt(text):
-    """Enhance the text with better prompting for clean, well-formatted responses"""
-    if not text or not isinstance(text, str):
-        return "Please provide more information to help you better."
+    def _calculate_workers(self) -> int:
+        """Calculate optimal number of workers for Hobby plan"""
+        return 2  # Fixed at 2 workers for 2GB RAM
+
+def create_app(config: Config) -> Flask:
+    """Application factory pattern"""
+    app = Flask(__name__)
     
-    text_lower = text.lower()
+    # Apply configuration
+    app.config['MAX_CONTENT_LENGTH'] = config.max_content_length
+    app.config['UPLOAD_FOLDER'] = config.upload_folder
+    app.config['TIMEOUT'] = config.timeout
     
-    base_format = """Please provide a clean, well-structured response following these guidelines:
-- Use bold text for important terms and key points
-- Organize information with bullet points or numbered lists when appropriate
-- No extra spaces or line breaks between sections
-- Direct answers without repeating the question
-- No special symbols or unnecessary formatting
-- Clear and concise explanations
-- Professional and readable format
-
-"""
-    
-    if any(word in text_lower for word in ['what is', 'define', 'definition']):
-        return f"""{base_format}Provide a comprehensive definition for: {text}
-
-Include:
-1. Clear, concise definition
-2. Key characteristics or properties
-3. Examples if applicable
-4. Context or background information"""
-        
-    elif any(word in text_lower for word in ['explain', 'how does', 'why does', 'how to']):
-        return f"""{base_format}Explain in detail: {text}
-
-Include:
-1. Step-by-step explanation
-2. Key concepts involved
-3. Examples to illustrate the concept
-4. Practical applications if relevant"""
-        
-    elif any(word in text_lower for word in ['compare', 'difference', 'vs', 'versus']):
-        return f"""{base_format}Compare and contrast: {text}
-
-Include:
-1. Key similarities
-2. Main differences
-3. Advantages and disadvantages of each
-4. When to use which option"""
-        
-    elif any(word in text_lower for word in ['solve', 'calculate', 'find', 'determine']):
-        return f"""{base_format}Solve and explain: {text}
-
-Include:
-1. Step-by-step solution process
-2. Clear mathematical steps if applicable
-3. Explanation of methods used
-4. Final answer clearly highlighted"""
-        
-    elif any(word in text_lower for word in ['analyze', 'analysis', 'examine']):
-        return f"""{base_format}Analyze: {text}
-
-Include:
-1. Overview of the topic
-2. Key points of analysis
-3. Evidence or supporting details
-4. Conclusions or implications"""
-        
-    elif any(word in text_lower for word in ['who is', 'who was', 'chief minister', 'president', 'minister']):
-        return f"""{base_format}Provide information about: {text}
-
-Include:
-1. Name and current position
-2. Party affiliation
-3. Key background information
-4. Recent achievements or notable facts
-5. Timeline if relevant"""
-        
-    else:
-        return f"""{base_format}Provide a detailed response about: {text}
-
-Include relevant examples, context, and well-structured information."""
-def extract_text_from_file_input(file_path, file_type):
-    """Extract text from different file types using your modules"""
-    try:
-        if file_type == 'image':
-            text = extract_text_from_image(file_path)
-            return text, True if text and text.strip() else False
-        elif file_type == 'document':
-            text, success = extract_text_from_file(file_path)
-            return text, success
-        
-        else:
-            return None, False
-    except Exception as e:
-        logger.error(f"Error extracting text from {file_type}: {str(e)}")
-        return None, False
-# @app.route("/")
-# def hello():
-#     return "Hello, Flask is working!"
-@app.route('/')
-def index():
-    """API info endpoint"""
-    return jsonify({
-        'message': 'SparkTutor API is running',
-        'endpoints': {
-            'POST /api/chat/text': 'Process text questions',
-            'POST /api/chat/file': 'Process file uploads',
-            'POST /api/classify': 'Test text classification',
-            'POST /api/extract': 'Extract text only from files'
+    # Configure CORS
+    CORS(app, resources={
+        r"/*": {
+            "origins": config.allowed_origins,
+            "methods": ["GET", "POST", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+            "max_age": 86400  # Cache preflight requests for 24 hours
         }
     })
+    
+    # CORS headers middleware
+    @app.after_request
+    def after_request(response):
+        origin = request.headers.get('Origin')
+        if origin and origin in config.allowed_origins:
+            response.headers['Access-Control-Allow-Origin'] = origin
+        elif '*' in config.allowed_origins:
+            response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        return response
 
-# Add timeout handling to the chat endpoint
-@app.route('/api/chat/text', methods=['POST'])
-def chat_text():
-    """Process text input from frontend"""
-    try:
-        data = request.get_json()
-        
-        if not data or 'message' not in data:
-            return jsonify({'error': 'Message is required'}), 400
-        
-        message = data['message'].strip()
-        if not message:
-            return jsonify({'error': 'Message cannot be empty'}), 400
-        
-        if not is_educational(message):
-            return jsonify({
-                'success': True,
-                'ai_response': "I specialize in educational content. Please ask about academic subjects like math, science, history, or other learning topics.",
-                'is_educational': False,
-                'type': 'text_input'
-            })
-        
-        enhanced_question = improve_question_prompt(message)
-        
-        try:
-            # Set a timeout for the OpenAI API call
-            from functools import partial
-            import signal
-            
-            def timeout_handler(signum, frame):
-                raise TimeoutError("Request timed out")
-            
-            # Set the signal handler and a 25-second timeout
-            signal.signal(signal.SIGALRM, timeout_handler)
-            signal.alarm(25)  # 25 seconds timeout for API call
-            
-            try:
-                response = assistant.get_response(enhanced_question)
-                signal.alarm(0)  # Disable the alarm
-            except TimeoutError:
-                return jsonify({
-                    'success': False,
-                    'error': 'Request timed out. Please try again.',
-                    'type': 'timeout_error'
-                }), 504
-            finally:
-                signal.alarm(0)  # Ensure the alarm is disabled
-            
-            return jsonify({
-                'success': True,
-                'ai_response': response,
-                'is_educational': True,
-                'type': 'text_input'
-            })
-        except Exception as ai_error:
-            logger.error(f"AI response error: {str(ai_error)}")
-            return jsonify({
-                'success': False,
-                'error': 'Failed to generate response. Please try again.',
-                'type': 'ai_error'
-            }), 500
-        
-    except Exception as e:
-        logger.error(f"Error in chat_text: {str(e)}")
-        return jsonify({'error': 'Failed to process message'}), 500
+    def allowed_file(filename: str, file_type: str) -> bool:
+        """Check if file extension is allowed"""
+        return '.' in filename and filename.rsplit('.', 1)[1].lower() in config.allowed_extensions.get(file_type, set())
 
-@app.route('/api/chat/file', methods=['POST'])
-def chat_file():
-    """Process file upload from frontend"""
-    try:
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file provided'}), 400
-            
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
-        
-        filename = secure_filename(file.filename)
-        file_type = None
-        
-        for ftype, extensions in ALLOWED_EXTENSIONS.items():
-            if allowed_file(filename, ftype):
-                file_type = ftype
-                break
-        
-        if not file_type:
-            return jsonify({'error': 'Unsupported file type'}), 400
-        
-        temp_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(temp_path)
-        
+    @app.route('/api/health')
+    def health_check():
+        """Health check endpoint"""
+        return jsonify({
+            'status': 'healthy',
+            'supported_files': {k: list(v) for k, v in config.allowed_extensions.items()}
+        })
+
+    @app.route('/api/chat/text', methods=['POST'])
+    def chat_text():
+        """Process text input from frontend"""
         try:
-            extracted_text, success = extract_text_from_file_input(temp_path, file_type)
+            data = request.get_json()
             
-            if not success or not extracted_text:
-                return jsonify({
-                    'success': False,
-                    'error': f'Failed to extract text from {file_type} file.',
-                    'type': 'extraction_error'
-                }), 400
+            if not data or 'message' not in data:
+                return jsonify({'error': 'Message is required'}), 400
             
-            if not is_educational(extracted_text):
+            message = data['message'].strip()
+            if not message:
+                return jsonify({'error': 'Message cannot be empty'}), 400
+            
+            if not is_educational(message):
                 return jsonify({
                     'success': True,
-                    'ai_response': "This content doesn't appear to be educational. I can help with textbooks, research papers, and other academic materials.",
-                    'extracted_text': extracted_text[:500] + '...' if len(extracted_text) > 500 else extracted_text,
+                    'ai_response': "I specialize in educational content. Please ask about academic subjects like math, science, history, or other learning topics.",
                     'is_educational': False,
-                    'type': 'file_input'
+                    'type': 'text_input'
                 })
             
-            enhanced_question = improve_question_prompt(extracted_text)
+            enhanced_question = improve_question_prompt(message)
             
             try:
-                response = assistant.get_response(enhanced_question)
+                # Set a timeout for the OpenAI API call
+                from functools import partial
+                import signal
+                
+                def timeout_handler(signum, frame):
+                    raise TimeoutError("Request timed out")
+                
+                # Set the signal handler and a 25-second timeout
+                signal.signal(signal.SIGALRM, timeout_handler)
+                signal.alarm(25)
+                
+                try:
+                    response = assistant.get_response(enhanced_question)
+                    signal.alarm(0)  # Disable the alarm
+                except TimeoutError:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Request timed out. Please try again.',
+                        'type': 'timeout_error'
+                    }), 504
+                finally:
+                    signal.alarm(0)  # Ensure the alarm is disabled
+                
                 return jsonify({
                     'success': True,
                     'ai_response': response,
-                    'extracted_text': extracted_text[:1000] + '...' if len(extracted_text) > 1000 else extracted_text,
                     'is_educational': True,
-                    'type': 'file_input'
+                    'type': 'text_input'
                 })
             except Exception as ai_error:
                 logger.error(f"AI response error: {str(ai_error)}")
                 return jsonify({
                     'success': False,
-                    'error': 'Failed to generate response.',
+                    'error': 'Failed to generate response. Please try again.',
                     'type': 'ai_error'
                 }), 500
-        finally:
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
-                
-    except Exception as e:
-        logger.error(f"Error processing file: {str(e)}")
-        return jsonify({'error': 'Failed to process file'}), 500
-
-@app.route('/api/classify', methods=['POST'])
-def classify_text():
-    """Test text classification"""
-    try:
-        data = request.get_json()
-        if not data or 'text' not in data:
-            return jsonify({'error': 'Text is required'}), 400
-        
-        text = data['text']
-        return jsonify({
-            'text': text[:200] + '...' if len(text) > 200 else text,
-            'is_educational': is_educational(text)
-        })
-    except Exception as e:
-        logger.error(f"Classification error: {str(e)}")
-        return jsonify({'error': 'Classification failed'}), 500
-
-@app.route('/api/extract', methods=['POST'])
-def extract_only():
-    """Extract text from files without processing"""
-    try:
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file provided'}), 400
             
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
-        
-        filename = secure_filename(file.filename)
-        file_type = None
-        
-        for ftype, extensions in ALLOWED_EXTENSIONS.items():
-            if allowed_file(filename, ftype):
-                file_type = ftype
-                break
-        
-        if not file_type:
-            return jsonify({'error': 'Unsupported file type'}), 400
-        
-        temp_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(temp_path)
-        
+        except Exception as e:
+            logger.error(f"Error in chat_text: {str(e)}")
+            return jsonify({'error': 'Failed to process message'}), 500
+
+    @app.route('/api/chat/file', methods=['POST'])
+    def chat_file():
+        """Process file upload from frontend"""
         try:
-            extracted_text, success = extract_text_from_file_input(temp_path, file_type)
+            if 'file' not in request.files:
+                return jsonify({'error': 'No file provided'}), 400
+                
+            file = request.files['file']
+            if file.filename == '':
+                return jsonify({'error': 'No file selected'}), 400
             
-            if success and extracted_text:
+            filename = secure_filename(file.filename)
+            file_type = None
+            
+            # Check file type
+            for ftype, extensions in config.allowed_extensions.items():
+                if allowed_file(filename, ftype):
+                    file_type = ftype
+                    break
+            
+            if not file_type:
                 return jsonify({
-                    'success': True,
-                    'extracted_text': extracted_text,
-                    'is_educational': is_educational(extracted_text),
-                    'file_type': file_type
-                })
-            else:
-                return jsonify({
-                    'success': False,
-                    'error': 'Failed to extract text'
+                    'error': f'Unsupported file type. Allowed types: {config.allowed_extensions}'
                 }), 400
-        finally:
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
-    except Exception as e:
-        logger.error(f"Extraction error: {str(e)}")
-        return jsonify({'error': 'Extraction failed'}), 500
-    
-    
-# Add this with your other endpoints
-# @app.route('/api/tts', methods=['POST'])
-# def text_to_speech():
-#     """
-#     Dedicated TTS endpoint
-#     Expects JSON: {'text': 'text to speak', 'lang': 'en', 'play': True}
-#     """
-#     try:
-#         data = request.get_json()
-        
-#         # Validate input
-#         if not data or 'text' not in data:
-#             return jsonify({'error': 'Text is required'}), 400
             
-#         text = data['text'].strip()
-#         if not text:
-#             return jsonify({'error': 'Text cannot be empty'}), 400
+            # Check file size before saving
+            file.seek(0, os.SEEK_END)
+            size = file.tell()
+            if size > config.max_content_length:
+                return jsonify({
+                    'error': f'File too large. Maximum size is {config.max_content_length / (1024 * 1024)}MB'
+                }), 413
+            file.seek(0)
             
-#         lang = data.get('lang', 'en')
-#         play = data.get('play', True)  # Default to playing immediately
-        
-#         # Process TTS
-#         if play:
-#             success = tts_engine.text_to_speech(text, lang=lang)
-#             return jsonify({
-#                 'success': success,
-#                 'message': 'Audio played successfully' if success else 'Failed to play audio'
-#             })
-#         else:
-#             audio_path = tts_engine.text_to_speech(text, lang=lang, play=False)
-#             if audio_path:
-#                 return jsonify({
-#                     'success': True,
-#                     'audio_path': audio_path,
-#                     'message': 'Audio generated successfully'
-#                 })
-#             return jsonify({'success': False, 'error': 'Failed to generate audio'}), 500
-            
-#     except Exception as e:
-#         logger.error(f"TTS endpoint error: {str(e)}")
-#         return jsonify({'error': 'Failed to process TTS request'}), 500
-    
-    
-# @app.route('/api/tts/cleanup', methods=['POST'])
-# def tts_cleanup():
-#     """Clean up TTS audio files"""
-#     try:
-#         data = request.get_json()
-#         audio_path = data.get('audio_path')
-        
-#         if audio_path:
-#             # Clean specific file
-#             if os.path.exists(audio_path):
-#                 os.remove(audio_path)
-#                 return jsonify({'success': True, 'message': 'File removed'})
-#             return jsonify({'error': 'File not found'}), 404
-#         else:
-#             # Clean all TTS files in directory
-#             tts_files = [f for f in os.listdir(tts_engine.output_dir) 
-#                         if f.startswith('tts_') and f.endswith('.mp3')]
-#             for file in tts_files:
-#                 os.remove(os.path.join(tts_engine.output_dir, file))
-#             return jsonify({
-#                 'success': True,
-#                 'message': f'Removed {len(tts_files)} audio files'
-#             })
-#     except Exception as e:
-#         logger.error(f"TTS cleanup error: {str(e)}")
-#         return jsonify({'error': 'Cleanup failed'}), 500
+            temp_path = os.path.join(config.upload_folder, filename)
+            try:
+                file.save(temp_path)
+                
+                # Process file
+                extracted_text, success = extract_text_from_file_input(temp_path, file_type)
+                
+                if not success or not extracted_text:
+                    return jsonify({
+                        'success': False,
+                        'error': f'Failed to extract text from {file_type} file.',
+                        'type': 'extraction_error'
+                    }), 400
+                
+                if not is_educational(extracted_text):
+                    return jsonify({
+                        'success': True,
+                        'ai_response': "This content doesn't appear to be educational. I can help with textbooks, research papers, and other academic materials.",
+                        'extracted_text': extracted_text[:500] + '...' if len(extracted_text) > 500 else extracted_text,
+                        'is_educational': False,
+                        'type': 'file_input'
+                    })
+                
+                enhanced_question = improve_question_prompt(extracted_text)
+                
+                try:
+                    # Set timeout for API call
+                    from functools import partial
+                    import signal
+                    
+                    def timeout_handler(signum, frame):
+                        raise TimeoutError("Request timed out")
+                    
+                    signal.signal(signal.SIGALRM, timeout_handler)
+                    signal.alarm(25)
+                    
+                    try:
+                        response = assistant.get_response(enhanced_question)
+                        signal.alarm(0)
+                    except TimeoutError:
+                        return jsonify({
+                            'success': False,
+                            'error': 'Request timed out. Please try again.',
+                            'type': 'timeout_error'
+                        }), 504
+                    finally:
+                        signal.alarm(0)
+                    
+                    return jsonify({
+                        'success': True,
+                        'ai_response': response,
+                        'extracted_text': extracted_text[:1000] + '...' if len(extracted_text) > 1000 else extracted_text,
+                        'is_educational': True,
+                        'type': 'file_input'
+                    })
+                except Exception as ai_error:
+                    logger.error(f"AI response error: {str(ai_error)}")
+                    return jsonify({
+                        'success': False,
+                        'error': 'Failed to generate response.',
+                        'type': 'ai_error'
+                    }), 500
+            finally:
+                # Clean up temp file
+                if os.path.exists(temp_path):
+                    try:
+                        os.remove(temp_path)
+                    except Exception as e:
+                        logger.error(f"Failed to remove temp file {temp_path}: {str(e)}")
+                    
+        except Exception as e:
+            logger.error(f"Error processing file: {str(e)}")
+            return jsonify({'error': 'Failed to process file'}), 500
 
-@app.route('/api/health', methods=['GET'])
-def health_check():
-    """Health check endpoint"""
-    return jsonify({
-        'status': 'healthy',
-        'supported_files': ALLOWED_EXTENSIONS
-    })
+    @app.errorhandler(413)
+    def too_large(e):
+        return jsonify({'error': 'File too large. Maximum size is 16MB.'}), 413
 
-@app.errorhandler(413)
-def too_large(e):
-    return jsonify({'error': 'File too large. Maximum size is 16MB.'}), 413
+    @app.errorhandler(404)
+    def not_found(e):
+        return jsonify({'error': 'Endpoint not found'}), 404
 
-@app.errorhandler(404)
-def not_found(e):
-    return jsonify({'error': 'Endpoint not found'}), 404
+    @app.errorhandler(500)
+    def internal_error(e):
+        logger.error(f"Internal server error: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
 
-@app.errorhandler(500)
-def internal_error(e):
-    return jsonify({'error': 'Internal server error'}), 500
+    return app
+
+# Create configuration
+config = Config()
+
+# Create application
+app = create_app(config)
 
 if __name__ == '__main__':
     # For local development
@@ -526,12 +353,21 @@ else:
     
     options = {
         'bind': '0.0.0.0:10000',
-        'workers': workers,
-        'timeout': 30,
+        'workers': config.workers,
+        'timeout': config.timeout,
         'worker_class': 'sync',
-        'worker_connections': 1000,
+        'worker_connections': 100,  # Reduced for Hobby plan
         'keepalive': 2,
-        'max_requests': 1000,
-        'max_requests_jitter': 100,
-        'preload_app': True
+        'max_requests': 500,  # Reduced for memory management
+        'max_requests_jitter': 50,
+        'preload_app': True,
+        'accesslog': '-',  # Log to stdout
+        'errorlog': '-',   # Log to stderr
+        'loglevel': 'info',
+        'capture_output': True,
+        'enable_stdio_inheritance': True,
+        # Worker configurations
+        'worker_tmp_dir': '/dev/shm',  # Use RAM for temp files
+        'post_worker_init': 'post_worker_init',  # Initialize worker
+        'worker_exit': 'worker_exit',  # Cleanup on worker exit
     }

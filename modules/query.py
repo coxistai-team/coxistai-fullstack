@@ -3,15 +3,22 @@ from typing import Optional
 from openai import OpenAI
 from datetime import datetime
 import httpx
+from functools import lru_cache
 
 class SmartDeepSeek:
-    """
-    A class to interact with the OpenAI API, which intelligently selects
-    a model based on query complexity or user dissatisfaction.
-    """
+    _instance = None
+    _is_initialized = False
+
+    def __new__(cls, api_key: Optional[str] = None):
+        if cls._instance is None:
+            cls._instance = super(SmartDeepSeek, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self, api_key: Optional[str] = None):
-        """Initializes the OpenAI client and sets up model tiers."""
-        # Load API key from argument or environment variable
+        # Skip initialization if already done
+        if self._is_initialized:
+            return
+
         if api_key is None:
             api_key = os.getenv("OPENROUTER_API_KEY")
         if not api_key:
@@ -46,12 +53,50 @@ class SmartDeepSeek:
             }
         }
 
-        # Application-specific logic for model switching
-        self.complexity_threshold = 15  # Word count
+        self.complexity_threshold = 15
         self.dissatisfaction_triggers = [
             "not satisfied", "explain better",
             "more detail", "incomplete answer"
         ]
+
+        # Mark as initialized
+        self._is_initialized = True
+        print("SmartDeepSeek instance initialized")
+
+    @lru_cache(maxsize=100)
+    def get_cached_response(self, question: str, model_name: str) -> Optional[str]:
+        """Cache responses for identical questions using the same model"""
+        try:
+            response = self.client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "user", "content": question}
+                ],
+                temperature=0.5,
+                max_tokens=500,
+                timeout=self.models.get(model_name, self.models['free']['name'])['timeout']
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            print(f"API Error for model '{model_name}': {e}")
+            return None
+
+    def query_model(self, model: str, question: str) -> Optional[str]:
+        """Queries the specified model with improved error handling and timeouts."""
+        prompts = {
+            self.models['free']['name']: f"Provide a helpful response to: {question}",
+            self.models['paid']['name']: f"As an expert, analyze this in depth:\n{question}\nInclude examples and practical applications.",
+            self.models['reason']['name']: f"Perform rigorous step-by-step analysis:\n1. Problem: {question}\n2. Key components\n3. Logical relationships\n4. Final synthesized answer"
+        }
+
+        prompt_content = prompts.get(model, question)
+        
+        try:
+            # Try to get cached response first
+            return self.get_cached_response(prompt_content, model)
+        except Exception as e:
+            print(f"Cache miss or error for model '{model}': {e}")
+            return None
 
     def needs_paid_model(self, question: str, previous_response: str = "") -> bool:
         """Determines if a question requires a more advanced model."""
@@ -75,31 +120,6 @@ class SmartDeepSeek:
 
         return False
 
-    def query_model(self, model: str, question: str) -> Optional[str]:
-        """Queries the specified model with improved error handling and timeouts."""
-        prompts = {
-            self.models['free']['name']: f"Provide a helpful response to: {question}",
-            self.models['paid']['name']: f"As an expert, analyze this in depth:\n{question}\nInclude examples and practical applications.",
-            self.models['reason']['name']: f"Perform rigorous step-by-step analysis:\n1. Problem: {question}\n2. Key components\n3. Logical relationships\n4. Final synthesized answer"
-        }
-
-        prompt_content = prompts.get(model, question)
-
-        try:
-            response = self.client.chat.completions.create(
-                model=model,
-                messages=[
-                    {"role": "user", "content": prompt_content}
-                ],
-                temperature=0.5,
-                max_tokens=500,  # Limit response length
-                timeout=self.models.get(model, self.models['free'])['timeout']
-            )
-            return response.choices[0].message.content
-        except Exception as e:
-            print(f"API Error for model '{model}': {e}")
-            return None
-
     def get_response(self, question: str, previous_response: str = "") -> str:
         """Get response with improved error handling."""
         try:
@@ -121,6 +141,10 @@ class SmartDeepSeek:
             print(f"Error in get_response: {e}")
             return "I encountered an error while processing your request. Please try again."
 
+# Create a global instance that will be reused
+assistant = SmartDeepSeek()
+print("Global SmartDeepSeek instance created")
+
 
 # --- Example Usage ---
 if __name__ == "__main__":
@@ -130,7 +154,8 @@ if __name__ == "__main__":
     if not API_KEY:
         print("Error: Please set your OPENROUTER_API_KEY in the environment variables.")
     else:
-        assistant = SmartDeepSeek(api_key=API_KEY)
+        # The global assistant instance is now directly accessible
+        # assistant = SmartDeepSeek(api_key=API_KEY) # This line is no longer needed
 
         # --- Test Case 1: Simple Question ---
         print("\n--- Query 1: Simple Question ---")
