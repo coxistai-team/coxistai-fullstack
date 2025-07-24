@@ -1,7 +1,6 @@
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { serveStatic, log } from "./vite";
 import dotenv from "dotenv";
 import cors from "cors";
 
@@ -42,7 +41,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
         logLine = logLine.slice(0, 79) + "…";
       }
 
-      log(logLine);
+      console.log(logLine);
     }
   });
 
@@ -59,17 +58,10 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     throw err;
   });
 
-  if (app.get("env") === "development") {
-    const { setupVite } = await import("./vite");
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
-
   const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
   const host = process.env.NODE_ENV === "production" ? "0.0.0.0" : "localhost";
 
   server.listen({ port, host }, () => {
-    log(`Server running at http://${host}:${port}`);
+    console.log(`Server running at http://${host}:${port}`);
   });
 })();
