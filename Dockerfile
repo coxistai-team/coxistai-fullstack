@@ -1,65 +1,42 @@
-# Dockerfile
+# Stage 1: Use the official Python 3.12 slim image based on Debian Bookworm
+FROM python:3.12-slim-bookworm
 
-# --- Stage 1: Build Stage ---
-# This stage installs all dependencies, including build tools,
-# and pre-downloads the machine learning models.
-FROM python:3.9-slim-buster AS builder
+# Set environment variables for a non-interactive and optimized build
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=off \
+    PIP_DISABLE_PIP_VERSION_CHECK=on \
+    PIP_DEFAULT_TIMEOUT=100
 
-# Set environment variables for non-interactive build
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# Set the working directory inside the container
+WORKDIR /app
 
-# Install critical system-level dependencies identified in the analysis.
-# These are required by the Python packages but are not installed by pip.
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install essential system-level dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
     tesseract-ocr \
     poppler-utils \
     ffmpeg \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    && apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-# Create a non-root user for enhanced security
-WORKDIR /app
+# Copy only the requirements file first to leverage Docker's layer caching
 COPY requirements.txt .
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# --- Pre-download and cache ML models ---
-# This crucial step "bakes" the models into the image, ensuring fast cold starts
-# and preventing runtime downloads.
-COPY modules/ modules/
-RUN python -c "from modules.text_classifier import classifier; from modules.voice_input import model"
+# Copy the application code into the container
+COPY app.py .
+COPY modules/ ./modules/
 
-
-# --- Stage 2: Final Runtime Stage ---
-# This stage creates a lean, secure image for production.
-FROM python:3.9-slim-buster AS final
-
-# Install only the necessary RUNTIME system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    tesseract-ocr \
-    poppler-utils \
-    ffmpeg \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Create a non-root user and set permissions
+# Create a non-root user for security and switch to it
 RUN useradd --create-home appuser
-WORKDIR /home/appuser/app
 USER appuser
 
-# Copy installed Python packages from the builder stage
-COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
+# Expose the port the app will run on (Render uses this)
+EXPOSE 10000
 
-# Copy the cached ML models from the builder stage
-COPY --from=builder /root/.cache /home/appuser/.cache
-
-# Copy the application code
-COPY app.py.
-COPY modules/ modules/
-
-# Expose the port the application will run on
-EXPOSE 5001
-
-# Use Gunicorn as a production-ready WSGI server instead of the Flask dev server
-# It is more robust, secure, and performant for handling concurrent requests.
-CMD ["gunicorn", "--bind", "0.0.0.0:5001", "--workers", "2", "--threads", "4", "--timeout", "120", "app:app"]
+# Use Gunicorn as a production-grade WSGI server
+CMD ["gunicorn", "--bind", "0.0.0.0:10000", "--workers=4", "app:app"]
