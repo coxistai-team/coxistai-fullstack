@@ -7,10 +7,8 @@ from dotenv import load_dotenv
 
 from modules.image_ocr import extract_text_from_image
 from modules.pdf_parser import extract_text_from_file
-from modules.voice_input import transcribe_audio
 from modules.text_classifier import is_educational
 from modules.query import SmartDeepSeek
-from modules.tts import TextToSpeech
 
 # --- CORRECT: Persistent path setup is done once, after imports ---
 PERSISTENT_STORAGE_PATH = os.getenv("RENDER_DISK_PATH", "persistent_data")
@@ -29,33 +27,50 @@ app = Flask(__name__)
 allowed_origins = get_allowed_origins()
 print("Configured CORS origins:", allowed_origins)
 
+# Simple CORS setup without cookies
 CORS(app, resources={
     r"/*": {
         "origins": allowed_origins,
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
-        "supports_credentials": True
+        "max_age": 86400  # Cache preflight requests for 24 hours
     }
 })
 
-# Add a route to check CORS configuration
-@app.route('/api/cors-check', methods=['GET'])
-def cors_check():
-    """Check CORS configuration"""
+# Add CORS headers to all responses
+@app.after_request
+def after_request(response):
+    origin = request.headers.get('Origin')
+    if origin and origin in allowed_origins:
+        response.headers['Access-Control-Allow-Origin'] = origin
+    elif '*' in allowed_origins:
+        response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    return response
+
+# Add an OPTIONS handler for all routes
+@app.route('/', methods=['OPTIONS'])
+@app.route('/<path:path>', methods=['OPTIONS'])
+def options_handler(path=''):
+    return '', 204  # No content needed for OPTIONS response
+
+# Add a CORS test endpoint
+@app.route('/api/cors-test', methods=['GET', 'POST'])
+def cors_test():
     return jsonify({
         'status': 'ok',
-        'configured_origins': allowed_origins,
-        'request_origin': request.headers.get('Origin')
+        'message': 'CORS is working',
+        'origin': request.headers.get('Origin'),
+        'method': request.method,
+        'headers': dict(request.headers)
     })
 
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['UPLOAD_FOLDER'] = 'temp_uploads'
 
-# --- CORRECT: Set UPLOAD_FOLDER using the persistent path ---
-app.config['UPLOAD_FOLDER'] = os.path.join(PERSISTENT_STORAGE_PATH, 'temp_uploads')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# --- CORRECT: Initialize the TTS engine with the correct persistent path ---
-tts_engine = TextToSpeech(output_dir=app.config['UPLOAD_FOLDER'])
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -165,16 +180,15 @@ def extract_text_from_file_input(file_path, file_type):
         elif file_type == 'document':
             text, success = extract_text_from_file(file_path)
             return text, success
-        elif file_type == 'audio':
-            result = transcribe_audio(file_path)
-            transcription = result.get('transcription', '')
-            return transcription, True if transcription and transcription.strip() else False
+        
         else:
             return None, False
     except Exception as e:
         logger.error(f"Error extracting text from {file_type}: {str(e)}")
         return None, False
-
+# @app.route("/")
+# def hello():
+#     return "Hello, Flask is working!"
 @app.route('/')
 def index():
     """API info endpoint"""
@@ -366,73 +380,82 @@ def extract_only():
         return jsonify({'error': 'Extraction failed'}), 500
     
     
-@app.route('/api/tts', methods=['POST'])
-def text_to_speech():
-    """Dedicated TTS endpoint"""
-    try:
-        data = request.get_json()
-        if not data or 'text' not in data:
-            return jsonify({'error': 'Text is required'}), 400
-            
-        text = data['text'].strip()
-        if not text:
-            return jsonify({'error': 'Text cannot be empty'}), 400
-            
-        lang = data.get('lang', 'en')
-        play = data.get('play', True)
+# Add this with your other endpoints
+# @app.route('/api/tts', methods=['POST'])
+# def text_to_speech():
+#     """
+#     Dedicated TTS endpoint
+#     Expects JSON: {'text': 'text to speak', 'lang': 'en', 'play': True}
+#     """
+#     try:
+#         data = request.get_json()
         
-        if play:
-            success = tts_engine.text_to_speech(text, lang=lang)
-            return jsonify({
-                'success': success,
-                'message': 'Audio played successfully' if success else 'Failed to play audio'
-            })
-        else:
-            audio_path = tts_engine.text_to_speech(text, lang=lang, play=False)
-            if audio_path:
-                return jsonify({
-                    'success': True,
-                    'audio_path': audio_path,
-                    'message': 'Audio generated successfully'
-                })
-            return jsonify({'success': False, 'error': 'Failed to generate audio'}), 500
+#         # Validate input
+#         if not data or 'text' not in data:
+#             return jsonify({'error': 'Text is required'}), 400
             
-    except Exception as e:
-        logger.error(f"TTS endpoint error: {str(e)}")
-        return jsonify({'error': 'Failed to process TTS request'}), 500
+#         text = data['text'].strip()
+#         if not text:
+#             return jsonify({'error': 'Text cannot be empty'}), 400
+            
+#         lang = data.get('lang', 'en')
+#         play = data.get('play', True)  # Default to playing immediately
+        
+#         # Process TTS
+#         if play:
+#             success = tts_engine.text_to_speech(text, lang=lang)
+#             return jsonify({
+#                 'success': success,
+#                 'message': 'Audio played successfully' if success else 'Failed to play audio'
+#             })
+#         else:
+#             audio_path = tts_engine.text_to_speech(text, lang=lang, play=False)
+#             if audio_path:
+#                 return jsonify({
+#                     'success': True,
+#                     'audio_path': audio_path,
+#                     'message': 'Audio generated successfully'
+#                 })
+#             return jsonify({'success': False, 'error': 'Failed to generate audio'}), 500
+            
+#     except Exception as e:
+#         logger.error(f"TTS endpoint error: {str(e)}")
+#         return jsonify({'error': 'Failed to process TTS request'}), 500
     
     
-@app.route('/api/tts/cleanup', methods=['POST'])
-def tts_cleanup():
-    """Clean up TTS audio files"""
-    try:
-        data = request.get_json()
-        audio_path = data.get('audio_path')
+# @app.route('/api/tts/cleanup', methods=['POST'])
+# def tts_cleanup():
+#     """Clean up TTS audio files"""
+#     try:
+#         data = request.get_json()
+#         audio_path = data.get('audio_path')
         
-        if audio_path:
-            if os.path.exists(audio_path):
-                os.remove(audio_path)
-                return jsonify({'success': True, 'message': 'File removed'})
-            return jsonify({'error': 'File not found'}), 404
-        else:
-            tts_files = [f for f in os.listdir(tts_engine.output_dir) 
-                        if f.startswith('tts_') and f.endswith('.mp3')]
-            for file in tts_files:
-                os.remove(os.path.join(tts_engine.output_dir, file))
-            return jsonify({
-                'success': True,
-                'message': f'Removed {len(tts_files)} audio files'
-            })
-    except Exception as e:
-        logger.error(f"TTS cleanup error: {str(e)}")
-        return jsonify({'error': 'Cleanup failed'}), 500
+#         if audio_path:
+#             # Clean specific file
+#             if os.path.exists(audio_path):
+#                 os.remove(audio_path)
+#                 return jsonify({'success': True, 'message': 'File removed'})
+#             return jsonify({'error': 'File not found'}), 404
+#         else:
+#             # Clean all TTS files in directory
+#             tts_files = [f for f in os.listdir(tts_engine.output_dir) 
+#                         if f.startswith('tts_') and f.endswith('.mp3')]
+#             for file in tts_files:
+#                 os.remove(os.path.join(tts_engine.output_dir, file))
+#             return jsonify({
+#                 'success': True,
+#                 'message': f'Removed {len(tts_files)} audio files'
+#             })
+#     except Exception as e:
+#         logger.error(f"TTS cleanup error: {str(e)}")
+#         return jsonify({'error': 'Cleanup failed'}), 500
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
     return jsonify({
         'status': 'healthy',
-        'supported_files': {k: list(v) for k, v in ALLOWED_EXTENSIONS.items()}
+        'supported_files': ALLOWED_EXTENSIONS
     })
 
 @app.errorhandler(413)
@@ -448,4 +471,4 @@ def internal_error(e):
     return jsonify({'error': 'Internal server error'}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    app.run(debug=True, host='0.0.0.0', port=3001)

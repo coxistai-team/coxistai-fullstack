@@ -329,25 +329,25 @@ const SparkTutorChat = () => {
     try {
       let response;
       const token = localStorage.getItem('authToken');
+      const config = {
+        headers: {
+          'Content-Type': file ? 'multipart/form-data' : 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      };
+
       if (file) {
         const formData = new FormData();
         formData.append("file", file.file);
         if (messageContent.trim()) {
           formData.append("query", messageContent);
         }
-        response = await axios.post(`${CHATBOT_API_URL}/api/chat/file`, formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
-          }
-        });
+        response = await axios.post(`${CHATBOT_API_URL}/api/chat/file`, formData, config);
       } else {
-        console.log('Making request to:', `${CHATBOT_API_URL}/api/chat/text`); // Debug log
+        console.log('Making request to:', `${CHATBOT_API_URL}/api/chat/text`);
         response = await axios.post(`${CHATBOT_API_URL}/api/chat/text`, {
           message: messageContent,
-        }, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
-        });
+        }, config);
       }
 
       setMessages((prev) => prev.filter((msg) => msg.id !== "typing"));
@@ -360,7 +360,7 @@ const SparkTutorChat = () => {
       setMessages((prev) => [...prev, aiResponse]);
     } catch (error) {
       console.error("Error calling API:", error);
-      console.error("Request URL:", `${CHATBOT_API_URL}/api/chat/text`); // Debug log
+      console.error("Request URL:", `${CHATBOT_API_URL}/api/chat/text`);
       setMessages((prev) => prev.filter((msg) => msg.id !== "typing"));
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
