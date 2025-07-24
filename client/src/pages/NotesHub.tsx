@@ -83,7 +83,10 @@ const NotesHub = () => {
     setIsNotesLoading(true);
     const fetchNotes = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/notes`);
+        const response = await fetch(`${API_URL}/api/notes`, {
+        method: 'GET',
+        credentials: 'include',
+      });
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
