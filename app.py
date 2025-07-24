@@ -16,15 +16,37 @@ from modules.tts import TextToSpeech
 PERSISTENT_STORAGE_PATH = os.getenv("RENDER_DISK_PATH", "persistent_data")
 os.makedirs(PERSISTENT_STORAGE_PATH, exist_ok=True)
 
+# After imports, before app initialization
+def get_allowed_origins():
+    origins = os.getenv("ALLOWED_ORIGINS", "*")
+    if origins == "*":
+        return ["*"]
+    return [origin.strip() for origin in origins.split(",") if origin.strip()]
+
 app = Flask(__name__)
+
+# Debug log for origins
+allowed_origins = get_allowed_origins()
+print("Configured CORS origins:", allowed_origins)
+
 CORS(app, resources={
     r"/*": {
-        "origins": os.getenv("ALLOWED_ORIGINS", "*").split(","),
+        "origins": allowed_origins,
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True
     }
 })
+
+# Add a route to check CORS configuration
+@app.route('/api/cors-check', methods=['GET'])
+def cors_check():
+    """Check CORS configuration"""
+    return jsonify({
+        'status': 'ok',
+        'configured_origins': allowed_origins,
+        'request_origin': request.headers.get('Origin')
+    })
 
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
@@ -410,7 +432,7 @@ def health_check():
     """Health check endpoint"""
     return jsonify({
         'status': 'healthy',
-        'supported_files': ALLOWED_EXTENSIONS
+        'supported_files': {k: list(v) for k, v in ALLOWED_EXTENSIONS.items()}
     })
 
 @app.errorhandler(413)

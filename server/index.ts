@@ -8,16 +8,46 @@ dotenv.config(); // Load .env variables
 
 const app = express();
 
-const FRONTEND_URLS = [
-  "https://www.coxistai.com",
-  "http://localhost:5000",
-  "http://localhost:5173"
-];
+// Function to get allowed origins from environment variable
+const getAllowedOrigins = (): string[] => {
+  const originsFromEnv = process.env.ALLOWED_ORIGINS;
+  if (!originsFromEnv) {
+    // Default origins if not set
+    return [
+      "https://www.coxistai.com",
+      "http://localhost:5000",
+      "http://localhost:5173"
+    ];
+  }
+  return originsFromEnv.split(",").map(origin => origin.trim()).filter(origin => origin);
+};
+
+const allowedOrigins = getAllowedOrigins();
+console.log("Configured CORS origins:", allowedOrigins);
 
 app.use(cors({
-  origin: FRONTEND_URLS,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log(`Origin ${origin} not allowed by CORS`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
+
+// Add a route to check CORS configuration
+app.get('/api/cors-check', (req: Request, res: Response) => {
+  res.json({
+    status: 'ok',
+    configured_origins: allowedOrigins,
+    request_origin: req.headers.origin
+  });
+});
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: false, limit: "50mb" }));
