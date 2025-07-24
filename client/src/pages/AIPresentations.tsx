@@ -723,7 +723,8 @@ const AIPresentations = () => {
     const fetchPresentations = async () => {
       setIsLoadingPresentations(true);
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/presentations`, { credentials: 'include' });
+        const token = localStorage.getItem('authToken');
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/presentations`, { headers: { Authorization: `Bearer ${token}` } });
         if (!res.ok) throw new Error('Failed to fetch presentations');
         const data = await res.json();
         setSavedPresentations(data);
@@ -751,7 +752,8 @@ const AIPresentations = () => {
   const loadPresentation = async (id: string) => {
     setIsLoadingSlides(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/presentations/${id}`, { credentials: 'include' });
+      const token = localStorage.getItem('authToken');
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/presentations/${id}`, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error('Failed to fetch presentation');
       const data = await res.json();
       setSlides(data.json_data.slides);
@@ -769,10 +771,10 @@ const AIPresentations = () => {
   const savePresentation = async (id: string, topic: string, json_data: any) => {
     setIsSaving(true);
     try {
+      const token = localStorage.getItem('authToken');
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/presentations`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ id, topic, json_data })
       });
       if (!res.ok) throw new Error('Failed to save presentation');
@@ -790,10 +792,10 @@ const AIPresentations = () => {
   const updatePresentation = async (id: string, topic: string, json_data: any) => {
     setIsSaving(true);
     try {
+      const token = localStorage.getItem('authToken');
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/presentations/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ topic, json_data })
       });
       if (!res.ok) throw new Error('Failed to update presentation');
@@ -819,7 +821,8 @@ const AIPresentations = () => {
   const deletePresentation = async (id: string) => {
     setIsLoadingPresentations(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/presentations/${id}`, { method: 'DELETE', credentials: 'include' });
+      const token = localStorage.getItem('authToken');
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/presentations/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error('Failed to delete presentation');
       setSavedPresentations(prev => prev.filter(p => p.id !== id));
       if (presentationId === id) {
@@ -886,9 +889,10 @@ const AIPresentations = () => {
     }
     try {
       const PPT_API_URL = import.meta.env.VITE_PPT_API_URL;
+      const token = localStorage.getItem('authToken');
       const res = await fetch(`${PPT_API_URL}/presentations/${presentationId}/slides/${index}`, {
         method: 'DELETE',
-        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error('Failed to delete slide');
       const updated = await res.json();

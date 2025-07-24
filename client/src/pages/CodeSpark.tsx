@@ -747,7 +747,6 @@ int main() {
           language: selectedLanguage,
           input: userInput
         }),
-        credentials: 'include',
       });
 
       const result = await response.json();

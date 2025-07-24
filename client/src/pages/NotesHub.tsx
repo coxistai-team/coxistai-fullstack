@@ -83,9 +83,10 @@ const NotesHub = () => {
     setIsNotesLoading(true);
     const fetchNotes = async () => {
       try {
+        const token = localStorage.getItem('authToken');
         const response = await fetch(`${API_URL}/api/notes`, {
         method: 'GET',
-        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` },
       });
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -132,12 +133,13 @@ const NotesHub = () => {
     }
     setIsCreating(true);
     try {
+      const token = localStorage.getItem('authToken');
       const response = await fetch(`${API_URL}/api/notes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
-        credentials: 'include',
         body: JSON.stringify({
           title: newNoteTitle,
           content: `<h1>${newNoteTitle}</h1><p>Start writing your notes here...</p>`,
@@ -192,10 +194,10 @@ const NotesHub = () => {
     // If template note, save as new note first
     if (isTemplateNote(selectedNote)) {
       try {
+        const token = localStorage.getItem('authToken');
         const response = await fetch(`${API_URL}/api/notes`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({
             ...selectedNote,
             content,
@@ -214,12 +216,13 @@ const NotesHub = () => {
     }
 
     try {
+      const token = localStorage.getItem('authToken');
       const response = await fetch(`${API_URL}/api/notes/${selectedNote.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
-        credentials: 'include',
         body: JSON.stringify({
           ...selectedNote,
           content,
@@ -253,10 +256,10 @@ const NotesHub = () => {
     if (isTemplateNote(selectedNote)) {
       // Save as new note (POST)
       try {
+        const token = localStorage.getItem('authToken');
         const response = await fetch(`${API_URL}/api/notes`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({
             ...selectedNote,
             // Optionally, remove the template id so backend generates a real id
@@ -276,12 +279,13 @@ const NotesHub = () => {
     }
 
     try {
+      const token = localStorage.getItem('authToken');
       const response = await fetch(`${API_URL}/api/notes/${selectedNote.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
-        credentials: 'include',
         body: JSON.stringify({
           ...selectedNote,
           content: selectedNote.content, // Ensure content is not overwritten by RichTextEditor
@@ -329,9 +333,10 @@ const NotesHub = () => {
       return;
     }
     try {
+      const token = localStorage.getItem('authToken');
       const response = await fetch(`${API_URL}/api/notes/${noteId}`, {
         method: 'DELETE',
-        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!response.ok) {
@@ -387,10 +392,10 @@ const NotesHub = () => {
   const handleTemplateSelect = async (template: any) => {
     setIsCreating(true);
     try {
+      const token = localStorage.getItem('authToken');
       const response = await fetch(`${API_URL}/api/notes`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           title: template.title,
           content: template.content,

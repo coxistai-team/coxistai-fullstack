@@ -42,7 +42,6 @@ const ResetPassword = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, password }),
-        credentials: 'include',
       });
       if (res.ok) {
         setSuccess(true);

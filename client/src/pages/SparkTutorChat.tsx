@@ -324,6 +324,7 @@ const SparkTutorChat = () => {
   const sendToAPI = async (messageContent: string, file: AttachedFile | null) => {
     try {
       let response;
+      const token = localStorage.getItem('authToken');
       if (file) {
         const formData = new FormData();
         formData.append("file", file.file);
@@ -333,14 +334,14 @@ const SparkTutorChat = () => {
         response = await axios.post(`${API_URL}/api/chat/file`, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
-          },
-          withCredentials: true,
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          }
         });
       } else {
         response = await axios.post(`${API_URL}/api/chat/text`, {
           message: messageContent,
         }, {
-          withCredentials: true,
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
       }
 

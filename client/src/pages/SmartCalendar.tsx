@@ -123,7 +123,8 @@ const SmartCalendar = () => {
   useEffect(() => {
     if (isAuthLoading) return;
     setIsEventsLoading(true);
-    fetch(`${API_URL}/api/calendar`, { credentials: "include" })
+    const token = localStorage.getItem('authToken');
+    fetch(`${API_URL}/api/calendar`, { headers: { Authorization: `Bearer ${token}` } })
       .then(res => res.json())
       .then(data => {
         setEvents(data.map((e: any) => ({ ...e, date: typeof e.date === 'string' ? e.date : (new Date(e.date)).toISOString().split('T')[0] })));
@@ -135,7 +136,8 @@ const SmartCalendar = () => {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/calendar/tasks`, { method: 'GET', credentials: "include" });
+        const token = localStorage.getItem('authToken');
+        const res = await fetch(`${API_URL}/api/calendar/tasks`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } });
         if (!res.ok) throw new Error("Failed to fetch tasks");
         const data: Task[] = await res.json();
         setTasks(data);
@@ -207,11 +209,11 @@ const SmartCalendar = () => {
     };
     try {
       let res, saved;
+      const token = localStorage.getItem('authToken');
       if (editingEvent) {
         res = await fetch(`${API_URL}/api/calendar/${editingEvent.id}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({
             ...eventData,
           })
@@ -219,8 +221,7 @@ const SmartCalendar = () => {
       } else {
         res = await fetch(`${API_URL}/api/calendar`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({
             ...eventData,
           })
@@ -228,8 +229,7 @@ const SmartCalendar = () => {
       }
       if (!res.ok) throw new Error("Failed to save event");
       saved = await res.json();
-      // Refetch events
-      fetch(`${API_URL}/api/calendar`, { credentials: "include" })
+      fetch(`${API_URL}/api/calendar`, { headers: { Authorization: `Bearer ${token}` } })
         .then(res => res.json())
         .then(data => setEvents(data.map((e: any) => ({ ...e, date: typeof e.date === 'string' ? e.date : (new Date(e.date)).toISOString().split('T')[0] }))));
       toast({ title: editingEvent ? "Event Updated" : "Event Created", description: `Event ${editingEvent ? "updated" : "created"} successfully.` });
@@ -244,13 +244,13 @@ const SmartCalendar = () => {
   // Delete event (persistent)
   const deleteEvent = async (eventId: string) => {
     try {
+      const token = localStorage.getItem('authToken');
       const res = await fetch(`${API_URL}/api/calendar/${eventId}`, {
         method: "DELETE",
-        credentials: "include"
+        headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) throw new Error("Failed to delete event");
-      // Refetch events
-      fetch(`${API_URL}/api/calendar`, { credentials: "include" })
+      fetch(`${API_URL}/api/calendar`, { headers: { Authorization: `Bearer ${token}` } })
         .then(res => res.json())
         .then(data => setEvents(data.map((e: any) => ({ ...e, date: typeof e.date === 'string' ? e.date : (new Date(e.date)).toISOString().split('T')[0] }))));
       toast({ title: "Event Deleted", description: "Event has been removed." });
@@ -354,10 +354,10 @@ const SmartCalendar = () => {
   const saveEditTask = async () => {
     if (!editingTask) return;
     try {
+      const token = localStorage.getItem('authToken');
       const res = await fetch(`${API_URL}/api/calendar/tasks/${editingTask.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           title: editTaskData.title,
           priority: editTaskData.priority,
@@ -377,9 +377,10 @@ const SmartCalendar = () => {
   const deleteTask = async (taskId: string) => {
     if (!window.confirm("Are you sure you want to delete this task?")) return;
     try {
+      const token = localStorage.getItem('authToken');
       const res = await fetch(`${API_URL}/api/calendar/tasks/${taskId}`, {
         method: "DELETE",
-        credentials: "include"
+        headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) throw new Error("Failed to delete task");
       setTasks(prev => prev.filter(t => t.id !== taskId));
@@ -394,10 +395,10 @@ const SmartCalendar = () => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
     try {
+      const token = localStorage.getItem('authToken');
       const res = await fetch(`${API_URL}/api/calendar/tasks/${taskId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ completed: !task.completed })
       });
       if (!res.ok) throw new Error("Failed to update task");
@@ -412,10 +413,10 @@ const SmartCalendar = () => {
   // Add new task
   const addTask = async (title: string, date: Date, priority: 'low' | 'medium' | 'high' = 'medium') => {
     try {
+      const token = localStorage.getItem('authToken');
       const res = await fetch(`${API_URL}/api/calendar/tasks`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ title, date: date.toISOString().split('T')[0], priority })
       });
       if (!res.ok) throw new Error("Failed to add task");

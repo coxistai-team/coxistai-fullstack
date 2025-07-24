@@ -200,7 +200,8 @@ export default function Community() {
     setLoadingPosts(true);
     try {
       const API_URL = import.meta.env.VITE_API_URL;
-      const res = await axios.get(`${API_URL}/api/community/posts`, { withCredentials: true });
+      const token = localStorage.getItem('authToken');
+      const res = await axios.get(`${API_URL}/api/community/posts`, { headers: { Authorization: `Bearer ${token}` } });
       const userId = user?.id || "current_user";
       const normalized = res.data.map((post: any) => {
         const likesArr = Array.isArray(post.likes) ? post.likes : [];
@@ -233,12 +234,13 @@ export default function Community() {
     setPostActionLoading("new");
     try {
       const API_URL = import.meta.env.VITE_API_URL;
+      const token = localStorage.getItem('authToken');
       await axios.post(`${API_URL}/api/community/posts`, {
         title: newPost.title,
         content: newPost.content,
         category: newPost.category,
         tags: newPost.tags.split(",").map((t) => t.trim()).filter(Boolean),
-      }, { withCredentials: true });
+      }, { headers: { Authorization: `Bearer ${token}` } });
       setNewPost({ title: "", content: "", category: "", tags: "" });
       setShowNewPostDialog(false);
       toast({ title: "Post created", description: "Your post has been published successfully" });
@@ -256,12 +258,13 @@ export default function Community() {
     try {
       const post = posts.find((p) => p.id === postId);
       const API_URL = import.meta.env.VITE_API_URL;
+      const token = localStorage.getItem('authToken');
       await axios.put(`${API_URL}/api/community/posts/${postId}`, {
         title: newTitle,
         content: newContent,
         category: post?.category,
         tags: post?.tags,
-      }, { withCredentials: true });
+      }, { headers: { Authorization: `Bearer ${token}` } });
       setEditingPost(null);
       toast({ title: "Post updated", description: "Your post has been updated successfully" });
       fetchPosts();
@@ -277,7 +280,8 @@ export default function Community() {
     setPostActionLoading(postId);
     try {
       const API_URL = import.meta.env.VITE_API_URL;
-      await axios.delete(`${API_URL}/api/community/posts/${postId}`, { withCredentials: true });
+      const token = localStorage.getItem('authToken');
+      await axios.delete(`${API_URL}/api/community/posts/${postId}`, { headers: { Authorization: `Bearer ${token}` } });
       toast({ title: "Post deleted", description: "Your post has been deleted successfully" });
       fetchPosts();
     } catch (err) {
@@ -292,7 +296,8 @@ export default function Community() {
     setLikeLoading(postId);
     try {
       const API_URL = import.meta.env.VITE_API_URL;
-      await axios.post(`${API_URL}/api/community/posts/${postId}/like`, {}, { withCredentials: true });
+      const token = localStorage.getItem('authToken');
+      await axios.post(`${API_URL}/api/community/posts/${postId}/like`, {}, { headers: { Authorization: `Bearer ${token}` } });
       fetchPosts();
     } catch (err) {
       toast({ title: "Error", description: "Failed to like/unlike post", variant: "destructive" });
@@ -307,7 +312,8 @@ export default function Community() {
     setCommentActionLoading(postId);
     try {
       const API_URL = import.meta.env.VITE_API_URL;
-      await axios.post(`${API_URL}/api/community/posts/${postId}/replies`, { content: newComment }, { withCredentials: true });
+      const token = localStorage.getItem('authToken');
+      await axios.post(`${API_URL}/api/community/posts/${postId}/replies`, { content: newComment }, { headers: { Authorization: `Bearer ${token}` } });
       setNewComment("");
       toast({ title: "Comment added", description: "Your comment has been posted successfully" });
       fetchPosts();
@@ -323,7 +329,8 @@ export default function Community() {
     setDeleteCommentLoading(commentId);
     try {
       const API_URL = import.meta.env.VITE_API_URL;
-      await axios.delete(`${API_URL}/api/community/replies/${commentId}`, { withCredentials: true });
+      const token = localStorage.getItem('authToken');
+      await axios.delete(`${API_URL}/api/community/replies/${commentId}`, { headers: { Authorization: `Bearer ${token}` } });
       toast({ title: "Comment deleted", description: "Your comment has been deleted successfully" });
       fetchPosts();
     } catch (err) {
@@ -690,7 +697,8 @@ export default function Community() {
                                                     setDeletePostLoading(post.id);
                                                     try {
                                                       const API_URL = import.meta.env.VITE_API_URL;
-                                                      await axios.delete(`${API_URL}/api/community/posts/${post.id}`, { withCredentials: true });
+                                                      const token = localStorage.getItem('authToken');
+                                                      await axios.delete(`${API_URL}/api/community/posts/${post.id}`, { headers: { Authorization: `Bearer ${token}` } });
                                                       toast({ title: "Post deleted", description: "Your post and all associated comments and likes have been deleted." });
                                                       setDeletePostDialog(null);
                                                       fetchPosts();
@@ -812,7 +820,8 @@ export default function Community() {
                                                             setDeleteCommentLoading(comment.id);
                                                             try {
                                                               const API_URL = import.meta.env.VITE_API_URL;
-                                                              await axios.delete(`${API_URL}/api/community/replies/${comment.id}`, { withCredentials: true });
+                                                              const token = localStorage.getItem('authToken');
+                                                              await axios.delete(`${API_URL}/api/community/replies/${comment.id}`, { headers: { Authorization: `Bearer ${token}` } });
                                                               toast({ title: "Comment deleted", description: "Your comment has been deleted successfully" });
                                                               setDeleteCommentDialog(null);
                                                               fetchPosts();
