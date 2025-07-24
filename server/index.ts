@@ -8,10 +8,14 @@ dotenv.config(); // Load .env variables
 
 const app = express();
 
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+const FRONTEND_URLS = [
+  "https://www.coxistai.com",
+  "http://localhost:5000",
+  "http://localhost:5173"
+];
 
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: FRONTEND_URLS,
   credentials: true,
 }));
 
