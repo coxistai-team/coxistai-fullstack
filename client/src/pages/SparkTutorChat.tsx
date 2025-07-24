@@ -25,7 +25,7 @@ import { useLoading } from "@/contexts/LoadingContext";
 import { MiniLoader } from "@/components/ui/page-loader";
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_CHATBOT_API_URL;
 
 const formatMessage = (content: string): string => {
   return content
