@@ -26,7 +26,7 @@ import { MiniLoader } from "@/components/ui/page-loader";
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL;
-const CHATBOT_API_URL = import.meta.env.VITE_CHATBOT_API_URL || 'https://python-ml-chatbot.onrender.com';
+const CHATBOT_API_URL = import.meta.env.VITE_CHATBOT_API_URL;
 
 // Add this for debugging
 console.log('Chatbot API URL:', CHATBOT_API_URL);
