@@ -16,6 +16,7 @@ import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 // @ts-ignore // If you see a type error, run: npm install resend
 import { Resend } from 'resend';
+import cookie from "cookie";
 
 // Extend Express Request type to include 'user'
 declare global {
@@ -114,7 +115,7 @@ function getTokenFromRequest(req: Request) {
     return authHeader.split(" ")[1];
   }
   if (req.headers.cookie) {
-    const cookies = Object.fromEntries(req.headers.cookie.split(';').map(c => c.trim().split('=')));
+    const cookies = cookie.parse(req.headers.cookie);
     if (cookies.token) return cookies.token;
   }
   return null;
