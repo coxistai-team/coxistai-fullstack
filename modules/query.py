@@ -2,6 +2,7 @@ import os
 from typing import Optional
 from openai import OpenAI
 from datetime import datetime
+import httpx
 
 class SmartDeepSeek:
     """
@@ -15,12 +16,35 @@ class SmartDeepSeek:
             api_key = os.getenv("OPENROUTER_API_KEY")
         if not api_key:
             raise ValueError("OPENROUTER_API_KEY environment variable is not set. Please add it to your .env file.")
-        self.client = OpenAI(api_key=api_key)
+        
+        # Configure OpenAI client with timeout and limits
+        self.client = OpenAI(
+            api_key=api_key,
+            http_client=httpx.Client(
+                timeout=20.0,  # 20 seconds timeout
+                limits=httpx.Limits(
+                    max_keepalive_connections=5,
+                    max_connections=10,
+                    keepalive_expiry=5
+                )
+            )
+        )
 
-        # Model tiers
-        self.free_model = "gpt-3.5-turbo"
-        self.paid_model = "gpt-4o"
-        self.reason_model = "gpt-4-turbo"
+        # Model tiers with timeouts
+        self.models = {
+            'free': {
+                'name': "gpt-3.5-turbo",
+                'timeout': 15
+            },
+            'paid': {
+                'name': "gpt-4o",
+                'timeout': 20
+            },
+            'reason': {
+                'name': "gpt-4-turbo",
+                'timeout': 20
+            }
+        }
 
         # Application-specific logic for model switching
         self.complexity_threshold = 15  # Word count
@@ -52,24 +76,24 @@ class SmartDeepSeek:
         return False
 
     def query_model(self, model: str, question: str) -> Optional[str]:
-        """Queries the specified model using the OpenAI client with custom prompts."""
+        """Queries the specified model with improved error handling and timeouts."""
         prompts = {
-            self.free_model: f"Provide a helpful response to: {question}",
-            self.paid_model: f"As an expert, analyze this in depth:\n{question}\nInclude examples and practical applications.",
-            self.reason_model: f"Perform rigorous step-by-step analysis:\n1. Problem: {question}\n2. Key components\n3. Logical relationships\n4. Final synthesized answer"
+            self.models['free']['name']: f"Provide a helpful response to: {question}",
+            self.models['paid']['name']: f"As an expert, analyze this in depth:\n{question}\nInclude examples and practical applications.",
+            self.models['reason']['name']: f"Perform rigorous step-by-step analysis:\n1. Problem: {question}\n2. Key components\n3. Logical relationships\n4. Final synthesized answer"
         }
 
-        # Use the specific prompt or the original question as a fallback
         prompt_content = prompts.get(model, question)
 
         try:
-            # Use the OpenAI client to create a chat completion
             response = self.client.chat.completions.create(
                 model=model,
                 messages=[
                     {"role": "user", "content": prompt_content}
                 ],
-                temperature=0.5
+                temperature=0.5,
+                max_tokens=500,  # Limit response length
+                timeout=self.models.get(model, self.models['free'])['timeout']
             )
             return response.choices[0].message.content
         except Exception as e:
@@ -77,22 +101,25 @@ class SmartDeepSeek:
             return None
 
     def get_response(self, question: str, previous_response: str = "") -> str:
-        """Determines the best model and gets a response."""
-        model_to_use = self.free_model
-        if self.needs_paid_model(question, previous_response):
-            print("--> Complex query detected. Using paid model.")
-            model_to_use = self.paid_model
-        else:
-            print("--> Simple query detected. Using free model.")
+        """Get response with improved error handling."""
+        try:
+            model_key = 'free'
+            if self.needs_paid_model(question, previous_response):
+                print("--> Complex query detected. Using paid model.")
+                model_key = 'paid'
+            else:
+                print("--> Simple query detected. Using free model.")
 
-        response = self.query_model(model_to_use, question)
+            response = self.query_model(self.models[model_key]['name'], question)
 
-        # Fallback to the reason_model if the paid_model fails
-        if model_to_use == self.paid_model and not response:
-            print("--> Fallback: Trying the reason_model...")
-            response = self.query_model(self.reason_model, question)
+            if not response and model_key == 'paid':
+                print("--> Fallback: Trying the reason_model...")
+                response = self.query_model(self.models['reason']['name'], question)
 
-        return response or "I couldn't generate a response for this question."
+            return response or "I couldn't generate a response for this question."
+        except Exception as e:
+            print(f"Error in get_response: {e}")
+            return "I encountered an error while processing your request. Please try again."
 
 
 # --- Example Usage ---

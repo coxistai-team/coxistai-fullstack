@@ -14,18 +14,29 @@ from modules.query import SmartDeepSeek
 PERSISTENT_STORAGE_PATH = os.getenv("RENDER_DISK_PATH", "persistent_data")
 os.makedirs(PERSISTENT_STORAGE_PATH, exist_ok=True)
 
+# After imports
+import multiprocessing
+
+# Configuration for Gunicorn
+workers = multiprocessing.cpu_count()
+if workers > 1:
+    workers = workers - 1  # Leave one core free
+workers = min(workers, 3)  # Cap at 3 workers for 2GB RAM
+
+# Initialize Flask app with timeout config
+app = Flask(__name__)
+app.config['TIMEOUT'] = 30  # 30 seconds timeout
+
+# Debug log for configuration
+print(f"Configured workers: {workers}")
+print(f"Configured timeout: {app.config['TIMEOUT']} seconds")
+
 # After imports, before app initialization
 def get_allowed_origins():
     origins = os.getenv("ALLOWED_ORIGINS", "*")
     if origins == "*":
         return ["*"]
     return [origin.strip() for origin in origins.split(",") if origin.strip()]
-
-app = Flask(__name__)
-
-# Debug log for origins
-allowed_origins = get_allowed_origins()
-print("Configured CORS origins:", allowed_origins)
 
 # Simple CORS setup without cookies
 CORS(app, resources={
@@ -202,6 +213,7 @@ def index():
         }
     })
 
+# Add timeout handling to the chat endpoint
 @app.route('/api/chat/text', methods=['POST'])
 def chat_text():
     """Process text input from frontend"""
@@ -226,7 +238,29 @@ def chat_text():
         enhanced_question = improve_question_prompt(message)
         
         try:
-            response = assistant.get_response(enhanced_question)
+            # Set a timeout for the OpenAI API call
+            from functools import partial
+            import signal
+            
+            def timeout_handler(signum, frame):
+                raise TimeoutError("Request timed out")
+            
+            # Set the signal handler and a 25-second timeout
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(25)  # 25 seconds timeout for API call
+            
+            try:
+                response = assistant.get_response(enhanced_question)
+                signal.alarm(0)  # Disable the alarm
+            except TimeoutError:
+                return jsonify({
+                    'success': False,
+                    'error': 'Request timed out. Please try again.',
+                    'type': 'timeout_error'
+                }), 504
+            finally:
+                signal.alarm(0)  # Ensure the alarm is disabled
+            
             return jsonify({
                 'success': True,
                 'ai_response': response,
@@ -471,4 +505,33 @@ def internal_error(e):
     return jsonify({'error': 'Internal server error'}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=3001)
+    # For local development
+    app.run(debug=True, host='0.0.0.0', port=5001)
+else:
+    # For production with Gunicorn
+    import gunicorn.app.base
+    
+    class StandaloneApplication(gunicorn.app.base.BaseApplication):
+        def __init__(self, app, options=None):
+            self.options = options or {}
+            self.application = app
+            super().__init__()
+        
+        def load_config(self):
+            for key, value in self.options.items():
+                self.cfg.set(key.lower(), value)
+        
+        def load(self):
+            return self.application
+    
+    options = {
+        'bind': '0.0.0.0:10000',
+        'workers': workers,
+        'timeout': 30,
+        'worker_class': 'sync',
+        'worker_connections': 1000,
+        'keepalive': 2,
+        'max_requests': 1000,
+        'max_requests_jitter': 100,
+        'preload_app': True
+    }
