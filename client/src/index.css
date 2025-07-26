@@ -4,54 +4,7 @@
 @tailwind utilities;
 
 :root {
-  /* Light mode variables - adjusted for gradient theme */
-  --background: 0 0% 100%;
-  /* #ffffff */
-  --foreground: 222 84% 5%;
-  /* #0f172a - dark text for light background */
-  --card: 0 0% 100%;
-  /* #ffffff */
-  --card-foreground: 222 84% 5%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222 84% 5%;
-  --primary: 218 94% 59%;
-  /* #3a86ff */
-  --primary-foreground: 0 0% 100%;
-  --secondary: 210 40% 98%;
-  /* #f8fafc */
-  --secondary-foreground: 222 84% 5%;
-  --muted: 210 40% 96%;
-  /* #f1f5f9 */
-  --muted-foreground: 215 16% 47%;
-  /* #64748b */
-  --accent: 23 93% 74%;
-  /* #ec8f4f - updated to match the orange theme */
-  --accent-foreground: 0 0% 100%;
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 214 32% 91%;
-  /* #e2e8f0 */
-  --input: 214 32% 91%;
-  --ring: 218 94% 59%;
-  --radius: 0.75rem;
-
-  /* Custom colors for gradient theme */
-  --primary-bg: 0 0% 100%;
-  /* #ffffff */
-  --card-bg: 0 0% 100%;
-  /* #ffffff */
-  --accent-blue: 218 94% 59%;
-  /* #3a86ff */
-  --accent-orange: 23 93% 74%;
-  /* #ec8f4f */
-  --text-primary: 222 84% 5%;
-  /* #0f172a - dark text for light background */
-  --text-secondary: 215 16% 47%;
-  /* #64748b - medium dark for secondary text */
-}
-
-.dark {
-  /* Dark mode variables - optimized for gradient theme */
+  /* Dark theme variables - optimized for gradient theme */
   --background: 220 13% 9%;
   /* #0f1419 - darker blue-black */
   --foreground: 0 0% 98%;
@@ -122,46 +75,8 @@
   background-color: rgba(148, 163, 184, 0.5);
 }
 
-/* Light Mode Specific Styles - Custom dark navy cards */
-.light .glassmorphism {
-  background: rgba(14, 22, 41, 0.92);
-  /* #0E1629 with high opacity */
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(70, 90, 120, 0.3);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), 0 2px 8px rgba(14, 22, 41, 0.15);
-}
-
-.light .glassmorphism-strong {
-  background: rgba(14, 22, 41, 0.96);
-  /* #0E1629 with very high opacity */
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(70, 90, 120, 0.4);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(14, 22, 41, 0.2);
-}
-
-.light .glassmorphism-button {
-  background: rgba(14, 22, 41, 0.85);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(70, 90, 120, 0.3);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-}
-
-.light .nav-link {
-  color: hsl(var(--foreground));
-}
-
-.light .nav-link:hover {
-  background: rgba(0, 0, 0, 0.08);
-  color: hsl(var(--primary));
-}
-
-.light .nav-link.active {
-  background: rgba(59, 130, 246, 0.1);
-  color: hsl(var(--primary));
-}
-
 /* Dark Mode Specific Styles - Custom dark navy cards */
-.dark .glassmorphism {
+.glassmorphism {
   background: rgba(14, 22, 41, 0.9);
   /* #0E1629 with high opacity */
   backdrop-filter: blur(15px);
@@ -169,7 +84,7 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(14, 22, 41, 0.2);
 }
 
-.dark .glassmorphism-strong {
+.glassmorphism-strong {
   background: rgba(14, 22, 41, 0.95);
   /* #0E1629 with very high opacity */
   backdrop-filter: blur(25px);
@@ -177,23 +92,23 @@
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(14, 22, 41, 0.3);
 }
 
-.dark .glassmorphism-button {
+.glassmorphism-button {
   background: rgba(14, 22, 41, 0.8);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(70, 90, 120, 0.3);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
-.dark .nav-link {
+.nav-link {
   color: white;
 }
 
-.dark .nav-link:hover {
+.nav-link:hover {
   background: rgba(255, 255, 255, 0.1);
   color: hsl(var(--primary));
 }
 
-.dark .nav-link.active {
+.nav-link.active {
   background: rgba(59, 130, 246, 0.2);
   color: hsl(var(--primary));
 }
@@ -332,28 +247,6 @@
   line-height: 1.4;
 }
 
-.dark {
-  --background: 240 10% 6%;
-  --foreground: 0 0% 100%;
-  --card: 240 10% 13%;
-  --card-foreground: 0 0% 100%;
-  --popover: 240 10% 13%;
-  --popover-foreground: 0 0% 100%;
-  --primary: 218 94% 59%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 240 10% 13%;
-  --secondary-foreground: 0 0% 100%;
-  --muted: 240 10% 13%;
-  --muted-foreground: 210 11% 71%;
-  --accent: 165 94% 43%;
-  --accent-foreground: 0 0% 100%;
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 240 3% 15%;
-  --input: 240 3% 15%;
-  --ring: 218 94% 59%;
-}
-
 @layer base {
   * {
     border-color: hsl(var(--border));
@@ -369,13 +262,6 @@
 
 @layer components {
   .glassmorphism {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 0, 0, 0.15);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  }
-
-  .dark .glassmorphism {
     background: rgba(33, 34, 58, 0.7);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -383,13 +269,6 @@
   }
 
   .glassmorphism-strong {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(15px);
-    border: 1px solid rgba(0, 0, 0, 0.15);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-  }
-
-  .dark .glassmorphism-strong {
     background: rgba(33, 34, 58, 0.9);
     backdrop-filter: blur(15px);
     border: 1px solid rgba(255, 255, 255, 0.15);

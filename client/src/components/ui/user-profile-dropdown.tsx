@@ -189,7 +189,6 @@ export default function UserProfileDropdown({ className = "" }: UserProfileDropd
               <Separator className="bg-white/10" />
 
               {/* User Details */}
-              {/*
               <div className="p-4">
                 <div className="text-sm font-medium text-white mb-2">Account Details</div>
                 <div className="space-y-2">
@@ -201,15 +200,10 @@ export default function UserProfileDropdown({ className = "" }: UserProfileDropd
                     <span className="text-slate-400">Location</span>
                     <span className="text-white">{user.location || 'Not set'}</span>
                   </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-slate-400">Theme</span>
-                    <span className="text-white capitalize">{user.theme || 'dark'}</span>
-                  </div>
                 </div>
               </div>
 
               <Separator className="bg-white/10" />
-              */}
 
               {/* Menu Items */}
               <div className="p-2">

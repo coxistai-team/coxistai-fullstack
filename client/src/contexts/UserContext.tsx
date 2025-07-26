@@ -16,7 +16,6 @@ interface LocalUser {
   dateOfBirth?: string;
   occupation?: string;
   company?: string;
-  theme: string;
   emailNotifications: boolean;
   pushNotifications: boolean;
   marketingEmails: boolean;
@@ -37,7 +36,6 @@ interface UpdateUserProfile {
   dateOfBirth?: string;
   occupation?: string;
   company?: string;
-  theme?: string;
   emailNotifications?: boolean;
   pushNotifications?: boolean;
   marketingEmails?: boolean;
@@ -82,7 +80,6 @@ const defaultUser: LocalUser = {
   dateOfBirth: '1995-06-15',
   occupation: 'Software Engineer',
   company: 'Tech Innovations Inc.',
-  theme: 'dark',
   emailNotifications: true,
   pushNotifications: true,
   marketingEmails: false,

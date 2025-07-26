@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ChevronDown, Sun, Moon } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import { NAVIGATION_ITEMS } from "@/lib/constants";
 import UserProfileDropdown from "@/components/ui/user-profile-dropdown";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePageLoading } from "@/contexts/PageLoadingContext";
-import { useTheme } from "@/contexts/ThemeContext";
 import logo1x from "../../../assets/1x.png";
 
 const Navigation = () => {
@@ -15,7 +14,6 @@ const Navigation = () => {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
   const { showPageLoader, hidePageLoader } = usePageLoading();
-  const { theme, toggleTheme } = useTheme();
 
   const isActive = (path: string) => location === path;
   const isDropdownActive = (dropdown: readonly any[]) => dropdown.some(item => location === item.path);
@@ -98,24 +96,24 @@ const Navigation = () => {
                         {activeDropdown === item.id && (
                           <motion.div
                             className="absolute top-full left-0 mt-2 w-80 glassmorphism-strong rounded-xl border border-slate-200/20 dark:border-white/10 shadow-2xl overflow-hidden"
-                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.2 }}
                           >
                             <div className="p-2">
                               {item.dropdown.map((dropdownItem) => (
                                 <motion.button
                                   key={dropdownItem.id}
-                                  className={`w-full text-left p-4 rounded-lg transition-all duration-200 hover:bg-slate-100/50 dark:hover:bg-white/10 ${
-                                    isActive(dropdownItem.path) ? 'bg-blue-500/20 border border-blue-500/30' : ''
+                                  className={`w-full text-left p-4 rounded-lg transition-all duration-200 ${
+                                    isActive(dropdownItem.path) ? 'bg-blue-500/20 text-blue-400' : 'text-slate-900 dark:text-white hover:bg-slate-100/50 dark:hover:bg-white/10'
                                   }`}
                                   onClick={() => handleNavigation(dropdownItem.path)}
                                   whileHover={{ scale: 1.02 }}
                                   whileTap={{ scale: 0.98 }}
                                 >
-                                  <div className="font-semibold text-slate-900 dark:text-white">{dropdownItem.label}</div>
-                                  <div className="text-sm text-slate-600 dark:text-slate-400 mt-1">{dropdownItem.description}</div>
+                                  <div className="font-medium">{dropdownItem.label}</div>
+                                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{dropdownItem.description}</div>
                                 </motion.button>
                               ))}
                             </div>
@@ -138,22 +136,8 @@ const Navigation = () => {
                 </div>
               ))}
               
-              {/* Theme Toggle & Auth Section */}
+              {/* Auth Section */}
               <div className="ml-4 flex items-center space-x-3">
-                <motion.button
-                  onClick={toggleTheme}
-                  className="p-3 rounded-xl glassmorphism hover:bg-white/10 dark:hover:bg-white/10 transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-                >
-                  {theme === 'dark' ? (
-                    <Sun className="w-5 h-5 text-yellow-400" />
-                  ) : (
-                    <Moon className="w-5 h-5 text-slate-600" />
-                  )}
-                </motion.button>
-                
                 {isAuthenticated ? (
                   <UserProfileDropdown />
                 ) : (
@@ -262,26 +246,6 @@ const Navigation = () => {
                     </div>
                   ))}
                   <div className="mt-4 space-y-4">
-                    {/* Theme Toggle in Mobile Menu */}
-                    <div className="border-t border-slate-200/30 dark:border-white/10 pt-4">
-                      <button
-                        onClick={toggleTheme}
-                        className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-slate-900 dark:text-white hover:bg-slate-100/50 dark:hover:bg-white/10 transition-colors"
-                      >
-                        <span className="font-medium">Theme</span>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm text-slate-600 dark:text-slate-400">
-                            {theme === 'dark' ? 'Dark' : 'Light'}
-                          </span>
-                          {theme === 'dark' ? (
-                            <Sun className="w-5 h-5 text-yellow-400" />
-                          ) : (
-                            <Moon className="w-5 h-5 text-slate-600" />
-                          )}
-                        </div>
-                      </button>
-                    </div>
-                    
                     {isAuthenticated ? (
                       <div className="border-t border-slate-200/30 dark:border-white/10 pt-4">
                         <UserProfileDropdown className="w-full" />
