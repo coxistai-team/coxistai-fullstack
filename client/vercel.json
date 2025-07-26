@@ -1,5 +1,12 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
-  ]
+    {
+      "source": "/api/:path*",
+      "destination": "${VITE_API_URL}/api/:path*"
+    }
+  ],
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "regions": ["iad1"]
 } 
