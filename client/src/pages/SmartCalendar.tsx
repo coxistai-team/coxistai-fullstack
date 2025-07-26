@@ -16,7 +16,18 @@ import {
   ExternalLink,
   MapPin,
   Bell,
-  X
+  X,
+  Zap,
+  Brain,
+  Target,
+  Lightbulb,
+  CheckCircle,
+  AlertCircle,
+  Activity,
+  BarChart3,
+  Users2,
+  Award,
+  Star
 } from "lucide-react";
 import { analytics } from "@/utils/analytics";
 import GlassmorphismButton from "@/components/ui/glassmorphism-button";
@@ -29,6 +40,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuthLoading } from "@/contexts/AuthContext";
 import { SkeletonLoader } from "@/components/ui/page-loader";
 import React, { Suspense } from "react";
+import ParticleField from "@/components/effects/ParticleField";
 
 interface CalendarEvent {
   id: string;
@@ -513,20 +525,35 @@ const SmartCalendar = () => {
 
   if (isEventsLoading) {
     return (
-      <main className="relative z-10 pt-20">
+      <main className="relative z-10 pt-20 bg-black text-white overflow-hidden">
+        {/* Particle Field Background */}
+        <ParticleField />
+        
+        {/* Creative Background Elements */}
+        <div className="fixed inset-0 pointer-events-none z-0">
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl floating-element"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl floating-element"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-green-500/10 rounded-full blur-2xl floating-element"></div>
+          
+          {/* Creative Shapes */}
+          <div className="absolute top-20 right-20 w-32 h-32 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-xl creative-shape"></div>
+          <div className="absolute bottom-20 left-20 w-24 h-24 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full blur-lg creative-shape"></div>
+          <div className="absolute top-1/3 right-1/3 w-16 h-16 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-full blur-md creative-shape"></div>
+        </div>
+        
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <SkeletonLoader className="mb-6 w-1/2 h-10" lines={1} />
+          <div className="mb-6 w-1/2 h-10 bg-gray-800 rounded animate-pulse"></div>
           <div className="grid grid-cols-7 gap-2 mb-8">
             {[...Array(7)].map((_, i) => (
-              <SkeletonLoader key={i} className="h-8 rounded" lines={1} />
+              <div key={i} className="h-8 rounded bg-gray-800 animate-pulse"></div>
             ))}
             {[...Array(35)].map((_, i) => (
-              <SkeletonLoader key={i} className="h-20 rounded-lg" lines={1} />
+              <div key={i} className="h-20 rounded-lg bg-gray-800 animate-pulse"></div>
             ))}
           </div>
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
-              <SkeletonLoader key={i} className="h-16 rounded-xl" lines={2} />
+              <div key={i} className="h-16 rounded-xl bg-gray-800 animate-pulse"></div>
             ))}
           </div>
         </div>
@@ -536,23 +563,40 @@ const SmartCalendar = () => {
 
   return (
     <CalendarErrorBoundary>
-      <main className="relative z-10 pt-20">
+      <main className="relative z-10 pt-20 bg-black text-white overflow-hidden">
+        {/* Particle Field Background */}
+        <ParticleField />
+        
+        {/* Creative Background Elements */}
+        <div className="fixed inset-0 pointer-events-none z-0">
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl floating-element"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl floating-element"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-green-500/10 rounded-full blur-2xl floating-element"></div>
+          
+          {/* Creative Shapes */}
+          <div className="absolute top-20 right-20 w-32 h-32 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-xl creative-shape"></div>
+          <div className="absolute bottom-20 left-20 w-24 h-24 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full blur-lg creative-shape"></div>
+          <div className="absolute top-1/3 right-1/3 w-16 h-16 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-full blur-md creative-shape"></div>
+        </div>
+
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="text-center mb-8">
             <motion.h1 
-              className="text-4xl font-bold mb-4"
+              className="text-4xl font-bold mb-4 text-white flex items-center justify-center"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
+              <CalendarIcon className="w-8 h-8 mr-3 text-blue-400" />
               Smart Calendar
             </motion.h1>
             <motion.p 
-              className="text-slate-400"
+              className="text-gray-400 flex items-center justify-center"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.6 }}
             >
+              <Sparkles className="w-4 h-4 mr-2 text-green-400" />
               Intelligent scheduling with AI-powered suggestions
             </motion.p>
           </div>
@@ -562,12 +606,15 @@ const SmartCalendar = () => {
             <div className="lg:col-span-1 space-y-6">
               {/* Quick Actions */}
               <motion.div 
-                className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700"
+                className="glassmorphism-enhanced rounded-xl p-6"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6 }}
               >
-                <h2 className="text-xl font-bold mb-4 text-slate-900 dark:text-white">Quick Actions</h2>
+                <h2 className="text-xl font-bold mb-4 text-white flex items-center">
+                  <Zap className="w-5 h-5 mr-2 text-blue-400" />
+                  Quick Actions
+                </h2>
                 <div className="space-y-3">
                   <GlassmorphismButton
                     onClick={() => openEventDialog(selectedDate || new Date())}

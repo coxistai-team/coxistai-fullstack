@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import GlassmorphismButton from "@/components/ui/glassmorphism-button";
 import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";
+import ParticleField from "@/components/effects/ParticleField";
 
 const loginSchema = z.object({
   username: z.string().min(3, "Username is required").max(32),
@@ -66,6 +67,9 @@ const Login = () => {
 
   return (
     <main className="relative min-h-screen bg-black text-white flex items-center justify-center px-4 py-8 overflow-hidden">
+      {/* Particle Field Background */}
+      <ParticleField />
+      
       {/* Animated Background */}
       <div className="absolute inset-0">
         <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl animate-pulse"></div>

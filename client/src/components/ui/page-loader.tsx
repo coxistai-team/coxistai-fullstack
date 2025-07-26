@@ -38,7 +38,7 @@ const PageLoader: React.FC<PageLoaderProps> = ({ fullScreen }) => {
             stroke="currentColor"
             strokeWidth="4"
             fill="none"
-            className="text-slate-200 dark:text-slate-700"
+            className="text-gray-700"
           />
           <motion.circle
             cx="36"
@@ -59,14 +59,14 @@ const PageLoader: React.FC<PageLoaderProps> = ({ fullScreen }) => {
         
         {/* Simple percentage in center */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-lg font-semibold text-slate-600 dark:text-slate-300">
+          <span className="text-lg font-semibold text-gray-300">
             {Math.round(progress)}%
           </span>
         </div>
       </div>
 
       {/* Minimal loading text */}
-      <span className="text-slate-600 dark:text-slate-400 text-lg font-medium">
+      <span className="text-gray-400 text-lg font-medium">
         Loading...
       </span>
     </div>
@@ -74,7 +74,7 @@ const PageLoader: React.FC<PageLoaderProps> = ({ fullScreen }) => {
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm">
         {loader}
       </div>
     );
@@ -100,7 +100,7 @@ export const MiniLoader = ({
   return (
     <div className={`relative ${sizeClasses[size]} ${className}`}>
       <motion.div
-        className="absolute inset-0 border-2 border-slate-200 dark:border-slate-700 border-t-emerald-500 rounded-full"
+        className="absolute inset-0 border-2 border-gray-700 border-t-emerald-500 rounded-full"
         animate={{ rotate: 360 }}
         transition={{
           duration: 1,
@@ -126,7 +126,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
       {Array.from({ length: lines }).map((_, i) => (
         <motion.div
           key={i}
-          className="h-4 bg-slate-100 dark:bg-slate-800 rounded-md overflow-hidden"
+          className="h-4 bg-gray-800 rounded-md overflow-hidden"
           animate={{ opacity: [0.6, 0.8, 0.6] }}
           transition={{
             duration: 1.8,

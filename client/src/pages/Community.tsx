@@ -3,7 +3,8 @@ import { motion } from "framer-motion";
 import { 
   MessageSquare, Users, Trophy, TrendingUp, Plus, Search, Filter, Clock, 
   Heart, Share2, BookOpen, Star, Calendar, ThumbsUp, MessageCircle, Eye, 
-  Pin, Edit3, Trash2, Send 
+  Pin, Edit3, Trash2, Send, Sparkles, Zap, Brain, Target, Lightbulb,
+  CheckCircle, AlertCircle, Activity, BarChart3, Users2, Award
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/UserContext";
 import axios from "axios";
+import ParticleField from "@/components/effects/ParticleField";
 
 // Interfaces from original functional component
 interface Comment {
@@ -420,7 +422,22 @@ export default function Community() {
   }
   
   return (
-    <div className="min-h-screen pt-24 pb-12 px-4">
+    <div className="min-h-screen pt-24 pb-12 px-4 bg-black text-white overflow-hidden">
+      {/* Particle Field Background */}
+      <ParticleField />
+      
+      {/* Creative Background Elements */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl floating-element"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl floating-element"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-green-500/10 rounded-full blur-2xl floating-element"></div>
+        
+        {/* Creative Shapes */}
+        <div className="absolute top-20 right-20 w-32 h-32 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-xl creative-shape"></div>
+        <div className="absolute bottom-20 left-20 w-24 h-24 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full blur-lg creative-shape"></div>
+        <div className="absolute top-1/3 right-1/3 w-16 h-16 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-full blur-md creative-shape"></div>
+      </div>
+
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -428,10 +445,12 @@ export default function Community() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <h1 className="text-4xl font-bold text-white mb-2 drop-shadow-lg">
+          <h1 className="text-4xl font-bold text-white mb-2 drop-shadow-lg flex items-center justify-center">
+            <Users2 className="w-8 h-8 mr-3 text-blue-400" />
             Learning Community
           </h1>
-          <p className="text-white drop-shadow-md">
+          <p className="text-gray-400 drop-shadow-md flex items-center justify-center">
+            <Sparkles className="w-4 h-4 mr-2 text-green-400" />
             Connect, learn, and grow together with fellow students
           </p>
         </motion.div>
@@ -443,35 +462,35 @@ export default function Community() {
           transition={{ delay: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8"
         >
-          <Card className="glassmorphism-strong shadow-xl border-slate-500/20">
+          <Card className="glassmorphism-enhanced shadow-xl border-gray-500/20 hover-lift">
             <CardContent className="p-4 text-center">
-              <Users className="h-8 w-8 mx-auto mb-2 text-blue-400" />
+              <Users className="h-8 w-8 mx-auto mb-2 text-blue-400 floating-icon" />
               <div className="text-2xl font-bold text-white">2,847</div>
-              <div className="text-sm text-slate-300">Active Members</div>
+              <div className="text-sm text-gray-300">Active Members</div>
             </CardContent>
           </Card>
           
-          <Card className="glassmorphism-strong shadow-xl border-slate-500/20">
+          <Card className="glassmorphism-enhanced shadow-xl border-gray-500/20 hover-lift">
             <CardContent className="p-4 text-center">
-              <MessageSquare className="h-8 w-8 mx-auto mb-2 text-green-400" />
+              <MessageSquare className="h-8 w-8 mx-auto mb-2 text-green-400 floating-icon" />
               <div className="text-2xl font-bold text-white">1,234</div>
-              <div className="text-sm text-slate-300">Discussions</div>
+              <div className="text-sm text-gray-300">Discussions</div>
             </CardContent>
           </Card>
           
-          <Card className="glassmorphism-strong shadow-xl border-slate-500/20">
+          <Card className="glassmorphism-enhanced shadow-xl border-gray-500/20 hover-lift">
             <CardContent className="p-4 text-center">
-              <BookOpen className="h-8 w-8 mx-auto mb-2 text-purple-400" />
+              <BookOpen className="h-8 w-8 mx-auto mb-2 text-purple-400 floating-icon" />
               <div className="text-2xl font-bold text-white">456</div>
-              <div className="text-sm text-slate-300">Study Groups</div>
+              <div className="text-sm text-gray-300">Study Groups</div>
             </CardContent>
           </Card>
           
-          <Card className="glassmorphism-strong shadow-xl border-slate-500/20">
+          <Card className="glassmorphism-enhanced shadow-xl border-gray-500/20 hover-lift">
             <CardContent className="p-4 text-center">
-              <Trophy className="h-8 w-8 mx-auto mb-2 text-yellow-400" />
+              <Trophy className="h-8 w-8 mx-auto mb-2 text-yellow-400 floating-icon" />
               <div className="text-2xl font-bold text-white">89%</div>
-              <div className="text-sm text-slate-300">Success Rate</div>
+              <div className="text-sm text-gray-300">Success Rate</div>
             </CardContent>
           </Card>
         </motion.div>
@@ -485,7 +504,7 @@ export default function Community() {
             transition={{ delay: 0.2 }}
             className="lg:col-span-1"
           >
-            <Card className="glassmorphism-strong shadow-xl border-slate-500/20">
+            <Card className="glassmorphism-strong shadow-xl border-gray-500/20">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-white">
                   <Star className="h-5 w-5 text-yellow-400" />

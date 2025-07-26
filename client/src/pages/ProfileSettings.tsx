@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useLoading } from "@/contexts/LoadingContext";
 import { useUser } from "@/contexts/UserContext";
+import ParticleField from "@/components/effects/ParticleField";
 
 export default function ProfileSettings() {
   const { toast } = useToast();
@@ -127,7 +128,22 @@ export default function ProfileSettings() {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-12 px-4">
+    <div className="min-h-screen pt-24 pb-12 px-4 bg-black text-white overflow-hidden">
+      {/* Particle Field Background */}
+      <ParticleField />
+      
+      {/* Creative Background Elements */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl floating-element"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl floating-element"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-green-500/10 rounded-full blur-2xl floating-element"></div>
+        
+        {/* Creative Shapes */}
+        <div className="absolute top-20 right-20 w-32 h-32 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-xl creative-shape"></div>
+        <div className="absolute bottom-20 left-20 w-24 h-24 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full blur-lg creative-shape"></div>
+        <div className="absolute top-1/3 right-1/3 w-16 h-16 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-full blur-md creative-shape"></div>
+      </div>
+
       <div className="max-w-4xl mx-auto">
         <motion.div
           className="text-center mb-8"
@@ -140,7 +156,7 @@ export default function ProfileSettings() {
               Profile Settings
             </span>
           </h1>
-          <p className="text-slate-400">Manage your account information and preferences</p>
+          <p className="text-gray-400">Manage your account information and preferences</p>
         </motion.div>
 
         <div className="grid lg:grid-cols-3 gap-8">
@@ -172,8 +188,8 @@ export default function ProfileSettings() {
               <h3 className="text-xl font-bold text-white mb-2">
                 {profileData.firstName} {profileData.lastName}
               </h3>
-              <p className="text-slate-400 mb-4">{profileData.occupation}</p>
-              <div className="text-sm text-slate-300">
+              <p className="text-gray-400 mb-4">{profileData.occupation}</p>
+              <div className="text-sm text-gray-300">
                 <div className="flex items-center justify-center mb-2">
                   <MapPin className="w-4 h-4 mr-2" />
                   {profileData.location}
@@ -201,69 +217,69 @@ export default function ProfileSettings() {
               </h2>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">First Name</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">First Name</label>
                   <Input
                     value={profileData.firstName}
                     onChange={(e) => setProfileData(prev => ({ ...prev, firstName: e.target.value }))}
-                    className="bg-slate-800/50 border-slate-600 text-white"
+                    className="bg-gray-800/50 border-gray-700 text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Last Name</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Last Name</label>
                   <Input
                     value={profileData.lastName}
                     onChange={(e) => setProfileData(prev => ({ ...prev, lastName: e.target.value }))}
-                    className="bg-slate-800/50 border-slate-600 text-white"
+                    className="bg-gray-800/50 border-gray-700 text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
                   <Input
                     type="email"
                     value={profileData.email}
                     onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
-                    className="bg-slate-800/50 border-slate-600 text-white"
+                    className="bg-gray-800/50 border-gray-700 text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Phone</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Phone</label>
                   <Input
                     value={profileData.phone}
                     onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
-                    className="bg-slate-800/50 border-slate-600 text-white"
+                    className="bg-gray-800/50 border-gray-700 text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Date of Birth</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Date of Birth</label>
                   <Input
                     type="date"
                     value={profileData.dateOfBirth}
                     onChange={(e) => setProfileData(prev => ({ ...prev, dateOfBirth: e.target.value }))}
-                    className="bg-slate-800/50 border-slate-600 text-white"
+                    className="bg-gray-800/50 border-gray-700 text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Occupation</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Occupation</label>
                   <Input
                     value={profileData.occupation}
                     onChange={(e) => setProfileData(prev => ({ ...prev, occupation: e.target.value }))}
-                    className="bg-slate-800/50 border-slate-600 text-white"
+                    className="bg-gray-800/50 border-gray-700 text-white"
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Company</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Company</label>
                   <Input
                     value={profileData.company}
                     onChange={(e) => setProfileData(prev => ({ ...prev, company: e.target.value }))}
-                    className="bg-slate-800/50 border-slate-600 text-white"
+                    className="bg-gray-800/50 border-gray-700 text-white"
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Bio</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Bio</label>
                   <Textarea
                     value={profileData.bio}
                     onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
-                    className="bg-slate-800/50 border-slate-600 text-white"
+                    className="bg-gray-800/50 border-gray-700 text-white"
                     rows={3}
                   />
                 </div>
@@ -282,7 +298,7 @@ export default function ProfileSettings() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-medium text-white">Email Notifications</h3>
-                    <p className="text-sm text-slate-400">Receive notifications via email</p>
+                    <p className="text-sm text-gray-400">Receive notifications via email</p>
                   </div>
                   <Switch
                     checked={preferences.emailNotifications}
@@ -292,7 +308,7 @@ export default function ProfileSettings() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-medium text-white">Push Notifications</h3>
-                    <p className="text-sm text-slate-400">Receive push notifications</p>
+                    <p className="text-sm text-gray-400">Receive push notifications</p>
                   </div>
                   <Switch
                     checked={preferences.pushNotifications}
@@ -302,7 +318,7 @@ export default function ProfileSettings() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-medium text-white">Marketing Emails</h3>
-                    <p className="text-sm text-slate-400">Receive promotional content</p>
+                    <p className="text-sm text-gray-400">Receive promotional content</p>
                   </div>
                   <Switch
                     checked={preferences.marketingEmails}
@@ -312,7 +328,7 @@ export default function ProfileSettings() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-medium text-white">Public Profile</h3>
-                    <p className="text-sm text-slate-400">Make your profile visible to others</p>
+                    <p className="text-sm text-gray-400">Make your profile visible to others</p>
                   </div>
                   <Switch
                     checked={preferences.publicProfile}
@@ -321,9 +337,9 @@ export default function ProfileSettings() {
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">Language</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Language</label>
                     <Select value={preferences.language} onValueChange={(value) => setPreferences(prev => ({ ...prev, language: value }))}>
-                      <SelectTrigger className="bg-slate-800/50 border-slate-600 text-white">
+                      <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -336,9 +352,9 @@ export default function ProfileSettings() {
                     </Select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">Timezone</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Timezone</label>
                     <Select value={profileData.timezone} onValueChange={(value) => setProfileData(prev => ({ ...prev, timezone: value }))}>
-                      <SelectTrigger className="bg-slate-800/50 border-slate-600 text-white">
+                      <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>

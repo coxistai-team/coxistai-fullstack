@@ -16,12 +16,25 @@ import {
   Search,
   Plus,
   X,
-  Upload
+  Upload,
+  Sparkles,
+  Zap,
+  Brain,
+  Target,
+  Lightbulb,
+  CheckCircle,
+  AlertCircle,
+  Activity,
+  BarChart3,
+  Users2,
+  Award,
+  Star
 } from "lucide-react";
 import GlassmorphismButton from "@/components/ui/glassmorphism-button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import ParticleField from "@/components/effects/ParticleField";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -814,23 +827,40 @@ int main() {
   );
 
   return (
-    <main className="relative z-10 pt-20">
+    <main className="relative z-10 pt-20 bg-black text-white overflow-hidden">
+      {/* Particle Field Background */}
+      <ParticleField />
+      
+      {/* Creative Background Elements */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl floating-element"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl floating-element"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-green-500/10 rounded-full blur-2xl floating-element"></div>
+        
+        {/* Creative Shapes */}
+        <div className="absolute top-20 right-20 w-32 h-32 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-xl creative-shape"></div>
+        <div className="absolute bottom-20 left-20 w-24 h-24 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full blur-lg creative-shape"></div>
+        <div className="absolute top-1/3 right-1/3 w-16 h-16 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-full blur-md creative-shape"></div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <motion.h1 
-            className="text-4xl font-bold mb-4"
+            className="text-4xl font-bold mb-4 text-white flex items-center justify-center"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
+            <Code className="w-8 h-8 mr-3 text-blue-400" />
             CodeSpark Module
           </motion.h1>
           <motion.p 
-            className="text-slate-400"
+            className="text-gray-400 flex items-center justify-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.6 }}
           >
+            <Sparkles className="w-4 h-4 mr-2 text-green-400" />
             Master programming with interactive lessons and hands-on practice
           </motion.p>
         </div>
@@ -840,18 +870,21 @@ int main() {
           <div className="lg:col-span-1 space-y-6">
             {/* Learning Roadmap */}
             <motion.div 
-              className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700"
+              className="glassmorphism-enhanced rounded-xl p-6"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <h2 className="text-xl font-bold mb-6 text-slate-900 dark:text-white">Learning Roadmap</h2>
+              <h2 className="text-xl font-bold mb-6 text-white flex items-center">
+                <Target className="w-5 h-5 mr-2 text-blue-400" />
+                Learning Roadmap
+              </h2>
               <div className="space-y-4">
                 {roadmapItems.map((item, index) => (
                   <motion.div
                     key={item.id}
-                    className={`flex items-start space-x-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 p-3 rounded-lg transition-all duration-200 ${
-                      selectedRoadmapItem === item.id ? 'bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600' : ''
+                    className={`flex items-start space-x-4 cursor-pointer hover:bg-gray-800 p-3 rounded-lg transition-all duration-200 ${
+                      selectedRoadmapItem === item.id ? 'bg-gray-800 border border-gray-600' : ''
                     }`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -864,12 +897,12 @@ int main() {
                         : item.current 
                           ? 'bg-blue-500 animate-pulse' 
                           : item.color === 'orange' ? 'bg-orange-500' 
-                          : 'bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600'
+                          : 'bg-gray-700 border border-gray-600'
                     }`}>
                       {item.completed ? (
                         <Check className="w-4 h-4 text-white" />
                       ) : (
-                        <span className="text-sm font-bold text-slate-900 dark:text-white">{item.id}</span>
+                        <span className="text-sm font-bold text-white">{item.id}</span>
                       )}
                     </div>
                     <div className="flex-1">
@@ -877,13 +910,13 @@ int main() {
                         item.completed ? 'text-green-500' : 
                         item.current ? 'text-blue-500' : 
                         item.color === 'orange' ? 'text-orange-500' :
-                        'text-slate-900 dark:text-white'
+                        'text-white'
                       }`}>
                         {item.title}
                       </h3>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">{item.description}</p>
+                      <p className="text-sm text-gray-400">{item.description}</p>
                       {item.lessons && (
-                        <div className="mt-1 text-xs text-slate-500 dark:text-slate-500">
+                        <div className="mt-1 text-xs text-gray-500">
                           {item.lessons.length} lessons
                         </div>
                       )}
@@ -891,14 +924,14 @@ int main() {
                         item.color === 'green' ? 'bg-green-500/20' :
                         item.color === 'blue' ? 'bg-blue-500/20' :
                         item.color === 'orange' ? 'bg-orange-500/20' :
-                        'bg-slate-200 dark:bg-slate-700'
+                        'bg-gray-700'
                       }`}>
                         <div 
                           className={`h-2 rounded-full transition-all duration-1000 ${
                             item.color === 'green' ? 'bg-green-500' :
                             item.color === 'blue' ? 'bg-blue-500' :
                             item.color === 'orange' ? 'bg-orange-500' :
-                            'bg-slate-400 dark:bg-slate-500'
+                            'bg-gray-600'
                           }`}
                           style={{ width: `${item.progress}%` }}
                         />
@@ -911,13 +944,13 @@ int main() {
 
             {/* Learning Resources */}
             <motion.div 
-              className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700"
+              className="bg-gray-900 rounded-xl p-6 border border-gray-700"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2, duration: 0.6 }}
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-slate-900 dark:text-white">Learning Resources</h3>
+                <h3 className="font-semibold text-white">Learning Resources</h3>
                 <GlassmorphismButton 
                   size="sm" 
                   onClick={() => setShowAddCourseDialog(true)}
@@ -928,12 +961,12 @@ int main() {
               </div>
               
               <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
                   placeholder="Search courses..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400"
+                  className="pl-10 bg-gray-800 border-gray-700 text-white placeholder-gray-500"
                 />
               </div>
 
@@ -941,7 +974,7 @@ int main() {
                 {filteredCourses.map((course) => (
                   <motion.div 
                     key={course.id}
-                    className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors border border-slate-200 dark:border-slate-600"
+                    className="bg-gray-800 rounded-lg p-3 cursor-pointer hover:bg-gray-700 transition-colors border border-gray-700"
                     onClick={() => openCourse(course.youtubeUrl)}
                     whileHover={{ scale: 1.02 }}
                     transition={{ duration: 0.2 }}
@@ -951,15 +984,15 @@ int main() {
                         {course.thumbnail}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm text-slate-900 dark:text-white truncate">{course.name}</p>
-                        <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{course.description}</p>
+                        <p className="font-semibold text-sm text-white truncate">{course.name}</p>
+                        <p className="text-xs text-gray-400 truncate">{course.description}</p>
                         <div className="flex items-center space-x-2 mt-1">
-                          <span className="text-xs text-slate-600 dark:text-slate-500">{course.duration}</span>
-                          <span className="text-xs text-slate-600 dark:text-slate-500">•</span>
-                          <span className="text-xs text-slate-600 dark:text-slate-500">{course.views} views</span>
+                          <span className="text-xs text-gray-400">{course.duration}</span>
+                          <span className="text-xs text-gray-400">•</span>
+                          <span className="text-xs text-gray-400">{course.views} views</span>
                         </div>
                       </div>
-                      <ExternalLink className="w-4 h-4 text-slate-600 dark:text-slate-400 flex-shrink-0" />
+                      <ExternalLink className="w-4 h-4 text-gray-400 flex-shrink-0" />
                     </div>
                   </motion.div>
                 ))}
@@ -981,10 +1014,10 @@ int main() {
                   <h2 className="text-2xl font-bold">Interactive Code Editor</h2>
                   <div className="flex items-center space-x-3">
                     <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
-                      <SelectTrigger className="w-40 bg-slate-700 border-slate-600 text-white">
+                      <SelectTrigger className="w-40 bg-gray-800 border-gray-700 text-white">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-slate-800 border-slate-700">
+                      <SelectContent className="bg-gray-800 border-gray-700">
                         <SelectItem value="python">Python</SelectItem>
                         <SelectItem value="javascript">JavaScript</SelectItem>
                         <SelectItem value="c">C</SelectItem>
@@ -994,7 +1027,7 @@ int main() {
                     </Select>
                   </div>
                 </div>
-                <p className="text-slate-600 dark:text-slate-400 mt-2">Practice programming with real-time code execution</p>
+                <p className="text-gray-400">Practice programming with real-time code execution</p>
               </div>
               
               {/* Code Examples */}
@@ -1018,9 +1051,9 @@ int main() {
               
               {/* Code Editor */}
               <div ref={codeEditorRef} className="p-6">
-                <div className="bg-slate-800 rounded-lg overflow-hidden">
-                  <div className="flex items-center justify-between p-3 bg-slate-700 border-b border-slate-600">
-                    <span className="text-sm text-slate-300">Code Editor</span>
+                <div className="bg-gray-800 rounded-lg overflow-hidden">
+                  <div className="flex items-center justify-between p-3 bg-gray-700 border-b border-gray-600">
+                    <span className="text-sm text-gray-300">Code Editor</span>
                     <div className="flex space-x-2">
                       <GlassmorphismButton 
                         size="sm" 
@@ -1046,7 +1079,7 @@ int main() {
                   <textarea
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
-                    className="w-full h-64 p-4 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-green-400 font-mono text-sm resize-none outline-none border border-slate-300 dark:border-slate-600"
+                    className="w-full h-64 p-4 bg-gray-100 dark:bg-gray-800 text-white font-mono text-sm resize-none outline-none border border-gray-700"
                     spellCheck={false}
                     placeholder={
                       selectedLanguage === "python" ? "# Write Python code here..." :
@@ -1061,15 +1094,15 @@ int main() {
                 
                 {/* User Input Section */}
                 <div className="mt-4">
-                  <div className="bg-slate-700 rounded-lg overflow-hidden">
-                    <div className="flex items-center justify-between p-3 bg-slate-600 border-b border-slate-500">
-                      <span className="text-sm text-slate-300">Program Input</span>
-                      <span className="text-xs text-slate-400">Enter input for your program (one line per input)</span>
+                  <div className="bg-gray-700 rounded-lg overflow-hidden">
+                    <div className="flex items-center justify-between p-3 bg-gray-600 border-b border-gray-500">
+                      <span className="text-sm text-gray-300">Program Input</span>
+                      <span className="text-xs text-gray-400">Enter input for your program (one line per input)</span>
                     </div>
                     <textarea
                       value={userInput}
                       onChange={(e) => setUserInput(e.target.value)}
-                      className="w-full h-20 p-3 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white font-mono text-sm resize-none outline-none border border-slate-300 dark:border-slate-600"
+                      className="w-full h-20 p-3 bg-gray-100 dark:bg-gray-700 text-white font-mono text-sm resize-none outline-none border border-gray-700"
                       placeholder="Enter input values here (e.g., for input() or scanf)..."
                       spellCheck={false}
                     />
@@ -1094,23 +1127,23 @@ int main() {
                   )}
                   
                   {/* Output Display */}
-                  <div className="bg-slate-900 rounded-lg overflow-hidden">
-                    <div className="p-3 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
-                      <span className="text-sm text-slate-300">
+                  <div className="bg-gray-900 rounded-lg overflow-hidden">
+                    <div className="p-3 bg-gray-800 border-b border-gray-700 flex items-center justify-between">
+                      <span className="text-sm text-gray-300">
                         {error ? "⚠️ Output (Previous Run)" : "📤 Output"}
                       </span>
                       {executionTime > 0 && (
-                        <span className="text-xs text-slate-400 flex items-center">
+                        <span className="text-xs text-gray-400 flex items-center">
                           <Clock className="w-3 h-3 mr-1" />
                           {executionTime}ms
                         </span>
                       )}
                     </div>
-                    <div className="p-4 min-h-[100px] font-mono text-sm bg-slate-100 dark:bg-slate-800">
+                    <div className="p-4 min-h-[100px] font-mono text-sm bg-gray-100 dark:bg-gray-800">
                       {output ? (
                         <pre className="text-green-700 dark:text-green-400 whitespace-pre-wrap">{output}</pre>
                       ) : (
-                        <span className="text-slate-500">
+                        <span className="text-gray-500">
                           {error ? "Fix the error above and run again..." : `Click "Run Code" to compile and execute your ${selectedLanguage.toUpperCase()} code...`}
                         </span>
                       )}
@@ -1135,7 +1168,7 @@ int main() {
                           <>
                             <div className="glassmorphism rounded-lg p-4 mb-4">
                               <h4 className="font-semibold text-blue-600 dark:text-blue-400 mb-2">Overview</h4>
-                              <p className="text-slate-600 dark:text-slate-400 text-sm">{selectedItem.detailedContent.overview}</p>
+                              <p className="text-gray-400 text-sm">{selectedItem.detailedContent.overview}</p>
                             </div>
                             
                             {selectedItem.detailedContent.concepts.map((concept, index) => (
@@ -1146,8 +1179,8 @@ int main() {
                                   </span>
                                   {concept.title}
                                 </h4>
-                                <p className="text-slate-600 dark:text-slate-400 text-sm mb-2">{concept.description}</p>
-                                <ul className="text-slate-600 dark:text-slate-500 text-xs space-y-1 ml-4">
+                                <p className="text-gray-400 text-sm mb-2">{concept.description}</p>
+                                <ul className="text-gray-400 text-xs space-y-1 ml-4">
                                   {concept.points.map((point, pointIndex) => (
                                     <li key={pointIndex}>• <span className="text-blue-600 dark:text-blue-300">{point}</span></li>
                                   ))}
@@ -1166,10 +1199,10 @@ int main() {
                       <div className="glassmorphism rounded-lg p-6">
                         <Book className="w-12 h-12 text-blue-600 dark:text-blue-400 mx-auto mb-4" />
                         <h4 className="text-lg font-semibold text-blue-600 dark:text-blue-400 mb-2">Interactive Learning</h4>
-                        <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">
+                        <p className="text-gray-400 text-sm mb-4">
                           Click on any roadmap item above to view detailed learning content and concepts for that topic.
                         </p>
-                        <p className="text-slate-600 dark:text-slate-500 text-xs">
+                        <p className="text-gray-400 text-xs">
                           Each section includes comprehensive explanations, key concepts, and practical examples to help you master programming fundamentals.
                         </p>
                       </div>
@@ -1190,14 +1223,14 @@ int main() {
             transition={{ duration: 0.6 }}
           >
             <h2 className="text-3xl font-bold mb-4">Coding Challenges</h2>
-            <p className="text-slate-600 dark:text-slate-400">Test your skills with these programming challenges</p>
+            <p className="text-gray-400">Test your skills with these programming challenges</p>
           </motion.div>
 
           <div className="grid lg:grid-cols-3 gap-6">
             {codingChallenges.map((challenge, index) => (
               <motion.div
                 key={challenge.id}
-                className="glassmorphism rounded-xl p-6 cursor-pointer hover:bg-white/5 transition-all duration-200"
+                className="glassmorphism rounded-xl p-6 cursor-pointer hover:bg-gray-800 transition-all duration-200"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1, duration: 0.5 }}
@@ -1211,15 +1244,15 @@ int main() {
                   }`}>
                     {challenge.difficulty}
                   </span>
-                  <span className="text-xs text-slate-400">{challenge.points} pts</span>
+                  <span className="text-xs text-gray-400">{challenge.points} pts</span>
                 </div>
                 
                 <h3 className="text-lg font-semibold mb-2">{challenge.title}</h3>
-                <p className="text-sm text-slate-400 mb-3">{challenge.description}</p>
+                <p className="text-sm text-gray-400 mb-3">{challenge.description}</p>
                 
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-blue-400">{challenge.category}</span>
-                  <span className={`${challenge.completed ? 'text-green-400' : 'text-slate-500'}`}>
+                  <span className={`${challenge.completed ? 'text-green-400' : 'text-gray-500'}`}>
                     {challenge.completed ? '✓ Completed' : 'Not Started'}
                   </span>
                 </div>
@@ -1234,14 +1267,14 @@ int main() {
                     <div className="space-y-3">
                       <div>
                         <h4 className="text-sm font-semibold text-blue-400 mb-1">Hint:</h4>
-                        <p className="text-xs text-slate-400">{challenge.hint}</p>
+                        <p className="text-xs text-gray-400">{challenge.hint}</p>
                       </div>
                       
                       <div>
                         <h4 className="text-sm font-semibold text-green-400 mb-2">Test Cases:</h4>
                         <div className="space-y-1">
                           {challenge.testCases.slice(0, 2).map((testCase, idx) => (
-                            <div key={idx} className="text-xs text-slate-500">
+                            <div key={idx} className="text-xs text-gray-500">
                               Input: <span className="text-blue-300">{testCase.input}</span> → 
                               Expected: <span className="text-green-300">{testCase.expected}</span>
                             </div>
@@ -1283,7 +1316,7 @@ int main() {
             transition={{ duration: 0.6 }}
           >
             <h2 className="text-3xl font-bold mb-4">Programming Tips</h2>
-            <p className="text-slate-400">Essential tips to improve your coding skills</p>
+            <p className="text-gray-400">Essential tips to improve your coding skills</p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -1301,8 +1334,8 @@ int main() {
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold text-blue-400 mb-2">{tip.category}</h3>
-                    <p className="text-sm text-slate-300 mb-3">{tip.tip}</p>
-                    <div className="bg-slate-800/50 rounded-lg p-3 border-l-4 border-green-500">
+                    <p className="text-sm text-gray-300 mb-3">{tip.tip}</p>
+                    <div className="bg-gray-800/50 rounded-lg p-3 border-l-4 border-green-500">
                       <p className="text-xs text-green-400 font-mono">{tip.example}</p>
                     </div>
                   </div>
@@ -1315,27 +1348,27 @@ int main() {
 
       {/* Add Course Dialog */}
       <Dialog open={showAddCourseDialog} onOpenChange={setShowAddCourseDialog}>
-        <DialogContent className="max-w-md bg-slate-900 border-white/20">
+        <DialogContent className="max-w-md bg-gray-900 border-white/20">
           <DialogHeader>
             <DialogTitle className="text-white">Add Custom Course</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-4">
             <div>
-              <label className="text-sm text-slate-300 mb-2 block">Course Name</label>
+              <label className="text-sm text-gray-300 mb-2 block">Course Name</label>
               <Input
                 placeholder="e.g., Advanced React Patterns"
                 value={customCourse.name}
                 onChange={(e) => setCustomCourse(prev => ({ ...prev, name: e.target.value }))}
-                className="bg-slate-800 border-slate-700 text-white"
+                className="bg-gray-800 border-gray-700 text-white"
               />
             </div>
             <div>
-              <label className="text-sm text-slate-300 mb-2 block">Search Query</label>
+              <label className="text-sm text-gray-300 mb-2 block">Search Query</label>
               <Input
                 placeholder="e.g., react hooks tutorial 2024"
                 value={customCourse.query}
                 onChange={(e) => setCustomCourse(prev => ({ ...prev, query: e.target.value }))}
-                className="bg-slate-800 border-slate-700 text-white"
+                className="bg-gray-800 border-gray-700 text-white"
               />
             </div>
             <div className="flex justify-end space-x-3 pt-4">
