@@ -53,7 +53,7 @@ const Signup = () => {
     const result = signupSchema.safeParse(formData);
     if (!result.success) {
       const fieldErrors: any = {};
-      result.error.errors.forEach(err => {
+      result.error.issues.forEach(err => {
         if (err.path[0]) fieldErrors[err.path[0]] = err.message;
       });
       setValidationErrors(fieldErrors);

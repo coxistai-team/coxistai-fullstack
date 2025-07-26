@@ -103,7 +103,7 @@ export const community_replies = pgTable('community_replies', {
   post_id: integer('post_id').notNull().references(() => community_posts.id),
   user_id: integer('user_id').notNull().references(() => users.id),
   content: text('content').notNull(),
-  parent_reply_id: integer('parent_reply_id').references(() => community_replies.id), // <-- fix: use function
+  parent_reply_id: integer('parent_reply_id'),
   created_at: timestamp('created_at').notNull().defaultNow(),
   updated_at: timestamp('updated_at').notNull().defaultNow(),
   edited_at: timestamp('edited_at'),
@@ -206,8 +206,8 @@ export const insertNoteSchema = createInsertSchema(notes).pick({
 });
 
 export const insertPresentationSchema = createInsertSchema(presentations).pick({
-  title: true,
-  slides: true,
+  topic: true,
+  json_data: true,
 });
  
 export const insertCalendarTaskSchema = createInsertSchema(calendar_tasks).pick({

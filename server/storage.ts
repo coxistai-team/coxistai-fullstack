@@ -1,4 +1,4 @@
-import { users, documents, presentations, calendar_events, community_posts, community_replies, community_likes, community_groups, community_group_members, type User, type InsertUser, type UpdateUserProfile, type Document, type InsertDocument, type Presentation, type InsertPresentation, type CalendarEvent, type InsertCalendarEvent, type CommunityPost, type InsertCommunityPost, type CommunityReply, type InsertCommunityReply, type CommunityLike, type InsertCommunityLike, type CommunityGroup, type InsertCommunityGroup, type CommunityGroupMember, type InsertCommunityGroupMember, notes, calendar_tasks, type CalendarTask, type InsertCalendarTask } from "@shared/schema";
+import { users, documents, presentations, calendar_events, community_posts, community_replies, community_likes, community_groups, community_group_members, type User, type InsertUser, type UpdateUserProfile, type Document, type InsertDocument, type Presentation, type InsertPresentation, type CalendarEvent, type InsertCalendarEvent, type CommunityPost, type InsertCommunityPost, type CommunityReply, type InsertCommunityReply, type CommunityLike, type InsertCommunityLike, type CommunityGroup, type InsertCommunityGroup, type CommunityGroupMember, type InsertCommunityGroupMember, notes, calendar_tasks, type CalendarTask, type InsertCalendarTask } from "./types/schema";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -16,10 +16,10 @@ export interface IStorage {
 
   // Presentation operations
   getPresentations(userId: number): Promise<Presentation[]>;
-  getPresentation(id: number): Promise<Presentation | undefined>;
+  getPresentation(id: string): Promise<Presentation | undefined>;
   createPresentation(data: InsertPresentation & { user_id: number }): Promise<Presentation>;
-  updatePresentation(id: number, updates: Partial<Presentation>): Promise<Presentation>;
-  deletePresentation(id: number): Promise<boolean>;
+  updatePresentation(id: string, updates: Partial<Presentation>): Promise<Presentation>;
+  deletePresentation(id: string): Promise<boolean>;
 
   // Calendar event operations
   getCalendarEvents(userId: number): Promise<CalendarEvent[]>;
@@ -153,7 +153,7 @@ export class DatabaseStorage implements IStorage {
   async getPresentations(userId: number): Promise<Presentation[]> {
     return await db.select().from(presentations).where(eq(presentations.user_id, userId));
   }
-  async getPresentation(id: number): Promise<Presentation | undefined> {
+  async getPresentation(id: string): Promise<Presentation | undefined> {
     const [presentation] = await db.select().from(presentations).where(eq(presentations.id, id));
     return presentation || undefined;
   }
@@ -161,11 +161,11 @@ export class DatabaseStorage implements IStorage {
     const [created] = await db.insert(presentations).values(data).returning();
     return created;
   }
-  async updatePresentation(id: number, updates: Partial<Presentation>): Promise<Presentation> {
+  async updatePresentation(id: string, updates: Partial<Presentation>): Promise<Presentation> {
     const [updated] = await db.update(presentations).set({ ...updates, updated_at: new Date() }).where(eq(presentations.id, id)).returning();
     return updated;
   }
-  async deletePresentation(id: number): Promise<boolean> {
+  async deletePresentation(id: string): Promise<boolean> {
     const result = await db.delete(presentations).where(eq(presentations.id, id));
     return (result.rowCount || 0) > 0;
   }
@@ -454,21 +454,6 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return updatedUser;
-  }
-
-  async getPresentationsByUser(userId: number) {
-    return db.select().from(presentations).where(eq(presentations.user_id, userId)).orderBy(desc(presentations.created_at));
-  }
-  async getPresentationById(id: string, userId: number) {
-    return db.select().from(presentations).where(and(eq(presentations.id, id), eq(presentations.user_id, userId))).then(rows => rows[0] || null);
-  }
-  async createPresentation(data: { id: string, user_id: number, topic: string, json_data: any }) {
-    const [created] = await db.insert(presentations).values({ ...data }).returning();
-    return created;
-  }
-  async updatePresentation(id: string, userId: number, data: { topic?: string, json_data?: any }) {
-    const [updated] = await db.update(presentations).set({ ...data, updated_at: new Date() }).where(and(eq(presentations.id, id), eq(presentations.user_id, userId))).returning();
-    return updated;
   }
 }
 

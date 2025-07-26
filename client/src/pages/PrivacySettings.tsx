@@ -52,8 +52,6 @@ export default function PrivacySettings() {
     try {
       await updateProfile({
         publicProfile: settings.publicProfile,
-        showOnlineStatus: settings.showOnlineStatus,
-        allowDirectMessages: settings.allowDirectMessages,
         shareStudyProgress: settings.shareStudyProgress,
         dataCollection: settings.dataCollection,
         analyticsTracking: settings.analyticsTracking,
