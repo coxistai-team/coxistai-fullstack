@@ -41,7 +41,12 @@ import {
   Target as TargetIcon,
   Zap as ZapIcon,
   Star as StarIcon,
-  Heart as HeartIcon
+  Heart as HeartIcon,
+  Coffee,
+  Music,
+  Camera,
+  Gift,
+  Flame
 } from "lucide-react";
 import GlassmorphismButton from "@/components/ui/glassmorphism-button";
 import ParticleField from "@/components/effects/ParticleField";
@@ -100,6 +105,15 @@ const Home = () => {
     "Education", "Research", "Writing", "Public Speaking", "Leadership"
   ];
 
+  const funElements = [
+    { icon: Coffee, text: "Fuel your creativity", color: "text-orange-400" },
+    { icon: Music, text: "Learn with rhythm", color: "text-purple-400" },
+    { icon: Camera, text: "Capture knowledge", color: "text-blue-400" },
+    { icon: Gift, text: "Unlock your potential", color: "text-green-400" },
+    { icon: Flame, text: "Ignite your passion", color: "text-red-400" },
+    { icon: Brain, text: "Expand your mind", color: "text-pink-400" }
+  ];
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
@@ -131,7 +145,7 @@ const Home = () => {
       {/* Hero Section */}
       <motion.section 
         ref={heroRef}
-        className="relative min-h-screen flex items-center justify-center px-4"
+        className="relative min-h-screen flex items-center justify-center px-4 pt-5"
         style={{ y: heroY, opacity: heroOpacity }}
       >
         <div className="max-w-7xl mx-auto text-center z-10">
@@ -156,39 +170,74 @@ const Home = () => {
 
             {/* Main Heading */}
             <motion.h1 
-              className="text-6xl md:text-8xl lg:text-9xl font-black mb-8 leading-tight"
+              className="text-6xl md:text-8xl font-bold text-white mb-8 leading-tight text-center"
               initial={{ opacity: 0, y: 30 }}
               animate={heroInView ? { opacity: 1, y: 0 } : {}}
               transition={{ delay: 0.3, duration: 0.8 }}
             >
-              <span className="block bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent">
-                Coexist
+              <span className="block mb-4">Your</span>
+              <span className="flex items-center justify-center space-x-4 mb-6">
+                <motion.span 
+                  className="inline-flex items-center px-6 py-3 bg-purple-500 rounded-full"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <Sparkles className="w-6 h-6 text-white mr-2" />
+                  <span className="text-white">complete</span>
+                </motion.span>
               </span>
-              <span className="block bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-gradient">
-                AI
+              <span className="flex items-center justify-center space-x-4">
+                <motion.span 
+                  className="inline-flex items-center px-6 py-3 bg-teal-400 rounded-lg"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <Star className="w-6 h-6 text-white mr-2" />
+                  <span className="text-white">learning</span>
+                </motion.span>
+                <motion.span 
+                  className="inline-flex items-center px-6 py-3 bg-yellow-400 rounded-full"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <Target className="w-6 h-6 text-white mr-2" />
+                  <span className="text-white">hub</span>
+                </motion.span>
               </span>
             </motion.h1>
             
-            {/* Subtitle */}
+            {/* Extended Subtitle */}
             <motion.p 
-              className="text-xl md:text-3xl text-gray-300 mb-6 font-light max-w-4xl mx-auto leading-relaxed"
-              initial={{ opacity: 0 }}
-              animate={heroInView ? { opacity: 1 } : {}}
+              className="text-xl md:text-2xl text-gray-300 max-w-6xl mx-auto mb-8 leading-relaxed text-center"
+              initial={{ opacity: 0, y: 20 }}
+              animate={heroInView ? { opacity: 1, y: 0 } : {}}
               transition={{ delay: 0.5, duration: 0.8 }}
             >
-              Transform your learning journey with{" "}
-              <span className="text-blue-400 font-semibold">AI-powered education</span>
+              Everything you need for academic success in one place: AI-powered tutoring, smart note-taking, presentation creation, 
+              intelligent scheduling, and interactive coding exercises. Your complete student toolkit for modern education.
             </motion.p>
-            
-            <motion.p 
-              className="text-lg md:text-xl text-gray-400 mb-12 max-w-3xl mx-auto leading-relaxed"
-              initial={{ opacity: 0 }}
-              animate={heroInView ? { opacity: 1 } : {}}
-              transition={{ delay: 0.6, duration: 0.8 }}
+
+            {/* Fun Elements Row */}
+            <motion.div 
+              className="flex flex-wrap justify-center gap-6 mb-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={heroInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.8, delay: 0.8 }}
             >
-              Personalized tutoring, intelligent note management, collaborative learning, 
-              and smart study tools designed to unlock your full potential.
-            </motion.p>
+              {funElements.map((element, index) => (
+                <motion.div
+                  key={index}
+                  className="flex items-center space-x-2 text-sm"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={heroInView ? { opacity: 1, scale: 1 } : {}}
+                  transition={{ duration: 0.4, delay: 1 + index * 0.1 }}
+                  whileHover={{ scale: 1.1 }}
+                >
+                  <element.icon className={`w-4 h-4 ${element.color}`} />
+                  <span className="text-gray-400">{element.text}</span>
+                </motion.div>
+              ))}
+            </motion.div>
 
             {/* CTA Buttons */}
             <motion.div

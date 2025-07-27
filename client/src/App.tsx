@@ -98,13 +98,12 @@
 
 // export default App;
 
-import { Switch, Route, useLocation } from "wouter"; 
+import { Switch, Route, useLocation } from "wouter";
 import { useEffect } from "react"; 
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Navigation from "@/components/layout/Navigation";
 import AnimatedBackground from "@/components/layout/AnimatedBackground";
 
 import { LoadingProvider } from "@/contexts/LoadingContext";
@@ -195,7 +194,6 @@ function App() {
                 <PageLoadingProvider>
                   <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden flex flex-col">
                     <AnimatedBackground />
-                    <Navigation />
                     <div className="flex-1">
                       <Router />
                     </div>
