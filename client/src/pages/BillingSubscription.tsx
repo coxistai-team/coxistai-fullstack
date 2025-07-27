@@ -208,7 +208,7 @@ export default function BillingSubscription() {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-12 px-4 bg-black text-white overflow-hidden">
+    <div className="min-h-screen pt-20 pb-12 px-4 bg-black text-white overflow-hidden">
       {/* Particle Field Background */}
       <ParticleField />
       

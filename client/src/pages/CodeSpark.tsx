@@ -827,7 +827,7 @@ int main() {
   );
 
   return (
-    <main className="relative z-10 pt-20 bg-black text-white overflow-hidden">
+    <main className="relative z-10 pt-16 bg-black text-white overflow-hidden">
       {/* Particle Field Background */}
       <ParticleField />
       
@@ -843,40 +843,40 @@ int main() {
         <div className="absolute top-1/3 right-1/3 w-16 h-16 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-full blur-md creative-shape"></div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="text-center mb-8">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="text-center mb-6">
           <motion.h1 
-            className="text-4xl font-bold mb-4 text-white flex items-center justify-center"
+            className="text-3xl font-bold mb-3 text-white flex items-center justify-center"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <Code className="w-8 h-8 mr-3 text-blue-400" />
+            <Code className="w-7 h-7 mr-2 text-blue-400" />
             CodeSpark Module
           </motion.h1>
           <motion.p 
-            className="text-gray-400 flex items-center justify-center"
+            className="text-gray-400 flex items-center justify-center text-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.6 }}
           >
-            <Sparkles className="w-4 h-4 mr-2 text-green-400" />
+            <Sparkles className="w-3 h-3 mr-1 text-green-400" />
             Master programming with interactive lessons and hands-on practice
           </motion.p>
         </div>
         
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-6">
           {/* Learning Roadmap & Resources */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className="lg:col-span-1 space-y-4">
             {/* Learning Roadmap */}
             <motion.div 
-              className="glassmorphism-enhanced rounded-xl p-6"
+              className="glassmorphism-enhanced rounded-xl p-4"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <h2 className="text-xl font-bold mb-6 text-white flex items-center">
-                <Target className="w-5 h-5 mr-2 text-blue-400" />
+              <h2 className="text-lg font-bold mb-4 text-white flex items-center">
+                <Target className="w-4 h-4 mr-2 text-blue-400" />
                 Learning Roadmap
               </h2>
               <div className="space-y-4">

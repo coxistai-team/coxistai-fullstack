@@ -421,7 +421,7 @@ const SparkTutorChat = () => {
         <div className="absolute top-1/3 right-1/3 w-16 h-16 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-full blur-md creative-shape"></div>
       </div>
 
-      <div className="flex h-full pt-20">
+      <div className="flex h-full pt-16">
         {/* Sidebar */}
         <AnimatePresence>
           {sidebarOpen && (
@@ -431,7 +431,7 @@ const SparkTutorChat = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed top-20 inset-x-0 bottom-0 bg-black/50 z-40 lg:hidden"
+                className="fixed top-16 inset-x-0 bottom-0 bg-black/50 z-40 lg:hidden"
                 onClick={() => setSidebarOpen(false)}
               />
               
@@ -440,7 +440,7 @@ const SparkTutorChat = () => {
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: -320, opacity: 0 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="fixed top-20 bottom-0 left-0 w-80 glassmorphism-enhanced border-r border-white/20 z-50 flex flex-col shadow-2xl"
+                className="fixed top-16 bottom-0 left-0 w-80 glassmorphism-enhanced border-r border-white/20 z-50 flex flex-col shadow-2xl"
               >
                 {/* Sidebar Header */}
                 <div className="p-4 border-b border-white/10">

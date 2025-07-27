@@ -953,7 +953,7 @@ const AIPresentations = () => {
   }
 
   return (
-    <main className="relative z-10 pt-20 min-h-screen bg-black text-white overflow-hidden">
+    <main className="relative z-10 pt-16 min-h-screen bg-black text-white overflow-hidden">
       {/* Particle Field Background */}
       <ParticleField />
       
@@ -969,24 +969,24 @@ const AIPresentations = () => {
         <div className="absolute top-1/3 right-1/3 w-16 h-16 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-full blur-md creative-shape"></div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="text-center mb-8">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="text-center mb-6">
           <motion.h1
-            className="text-4xl font-bold mb-4 text-white flex items-center justify-center"
+            className="text-3xl font-bold mb-3 text-white flex items-center justify-center"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <Presentation className="w-8 h-8 mr-3 text-blue-400" />
+            <Presentation className="w-7 h-7 mr-2 text-blue-400" />
             AI Presentations Studio
           </motion.h1>
           <motion.p
-            className="text-gray-400 mb-6 flex items-center justify-center"
+            className="text-gray-400 mb-4 flex items-center justify-center text-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.6 }}
           >
-            <Sparkles className="w-4 h-4 mr-2 text-green-400" />
+            <Sparkles className="w-3 h-3 mr-1 text-green-400" />
             Create stunning presentations with AI assistance and professional templates
           </motion.p>
 

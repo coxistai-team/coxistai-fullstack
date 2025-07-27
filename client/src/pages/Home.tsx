@@ -156,7 +156,7 @@ const Home = () => {
           >
             {/* Badge */}
             <motion.div 
-              className="inline-flex items-center space-x-2 glassmorphism rounded-full px-6 py-3 mb-8"
+              className="inline-flex items-center space-x-2 glassmorphism rounded-full px-5 py-2 mb-6"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={heroInView ? { opacity: 1, scale: 1 } : {}}
               transition={{ delay: 0.2, duration: 0.6 }}
@@ -170,7 +170,7 @@ const Home = () => {
 
             {/* Main Heading */}
             <motion.h1 
-              className="text-6xl md:text-8xl font-bold text-white mb-8 leading-tight text-center"
+              className="text-5xl md:text-7xl font-bold text-white mb-8 leading-tight text-center"
               initial={{ opacity: 0, y: 30 }}
               animate={heroInView ? { opacity: 1, y: 0 } : {}}
               transition={{ delay: 0.3, duration: 0.8 }}
@@ -178,37 +178,30 @@ const Home = () => {
               <span className="block mb-4">Your</span>
               <span className="flex items-center justify-center space-x-4 mb-6">
                 <motion.span 
-                  className="inline-flex items-center px-6 py-3 bg-purple-500 rounded-full"
+                  className="inline-flex items-center px-5 py-2 bg-purple-500 rounded-full"
                   whileHover={{ scale: 1.05 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
-                  <Sparkles className="w-6 h-6 text-white mr-2" />
-                  <span className="text-white">complete</span>
+                  <Sparkles className="w-5 h-5 text-white mr-2" />
+                  <span className="text-white">Complete</span>
                 </motion.span>
               </span>
               <span className="flex items-center justify-center space-x-4">
+                <span className="text-white">Learning</span>
                 <motion.span 
-                  className="inline-flex items-center px-6 py-3 bg-teal-400 rounded-lg"
+                  className="inline-flex items-center px-5 py-2 bg-yellow-400 rounded-full"
                   whileHover={{ scale: 1.05 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
-                  <Star className="w-6 h-6 text-white mr-2" />
-                  <span className="text-white">learning</span>
-                </motion.span>
-                <motion.span 
-                  className="inline-flex items-center px-6 py-3 bg-yellow-400 rounded-full"
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                >
-                  <Target className="w-6 h-6 text-white mr-2" />
-                  <span className="text-white">hub</span>
+                  <Target className="w-5 h-5 text-white mr-2" />
+                  <span className="text-white">Hub</span>
                 </motion.span>
               </span>
             </motion.h1>
             
             {/* Extended Subtitle */}
             <motion.p 
-              className="text-xl md:text-2xl text-gray-300 max-w-6xl mx-auto mb-8 leading-relaxed text-center"
+              className="text-lg md:text-xl text-gray-300 max-w-5xl mx-auto mb-8 leading-relaxed text-center"
               initial={{ opacity: 0, y: 20 }}
               animate={heroInView ? { opacity: 1, y: 0 } : {}}
               transition={{ delay: 0.5, duration: 0.8 }}
@@ -219,7 +212,7 @@ const Home = () => {
 
             {/* Fun Elements Row */}
             <motion.div 
-              className="flex flex-wrap justify-center gap-6 mb-8"
+              className="flex flex-wrap justify-center gap-4 mb-6"
               initial={{ opacity: 0, y: 20 }}
               animate={heroInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.8, delay: 0.8 }}
@@ -241,7 +234,7 @@ const Home = () => {
 
             {/* CTA Buttons */}
             <motion.div
-              className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16"
+              className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12"
               initial={{ opacity: 0, y: 30 }}
               animate={heroInView ? { opacity: 1, y: 0 } : {}}
               transition={{ delay: 0.7, duration: 0.8 }}

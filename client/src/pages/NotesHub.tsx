@@ -475,7 +475,7 @@ const NotesHub = () => {
 
   return (
     <NotesErrorBoundary>
-      <main className="relative z-10 pt-20 bg-black text-white overflow-hidden">
+      <main className="relative z-10 pt-16 bg-black text-white overflow-hidden">
         {/* Particle Field Background */}
         <ParticleField />
         
@@ -491,19 +491,19 @@ const NotesHub = () => {
           <div className="absolute top-1/3 right-1/3 w-16 h-16 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-full blur-md creative-shape"></div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex flex-col lg:flex-row gap-8">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex flex-col lg:flex-row gap-6">
             {/* Sidebar */}
             <div className="lg:w-1/3">
               <motion.div 
-                className="glassmorphism-enhanced rounded-xl p-6 mb-6"
+                className="glassmorphism-enhanced rounded-xl p-5 mb-4"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6 }}
               >
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl font-bold text-white flex items-center">
-                    <BookOpen className="w-6 h-6 mr-3 text-blue-400" />
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-xl font-bold text-white flex items-center">
+                    <BookOpen className="w-5 h-5 mr-2 text-blue-400" />
                     Notes Hub
                   </h2>
                   <GlassmorphismButton
@@ -523,7 +523,7 @@ const NotesHub = () => {
                     New Note
                   </GlassmorphismButton>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input 
@@ -531,16 +531,16 @@ const NotesHub = () => {
                       placeholder="Search notes..." 
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full glassmorphism-enhanced rounded-lg p-3 pl-10 bg-transparent outline-none placeholder-slate-400 text-white"
+                      className="w-full glassmorphism-enhanced rounded-lg p-2 pl-10 bg-transparent outline-none placeholder-slate-400 text-white"
                       disabled={isNotesLoading}
                     />
                   </div>
-                  <div className="flex gap-2 flex-wrap">
+                  <div className="flex gap-1.5 flex-wrap">
                     {getAllTags(notes).map((tag) => (
                       <button
                         key={tag}
                         onClick={() => setActiveTag(tag)}
-                        className={`px-3 py-1 rounded-full text-sm transition-all duration-300 hover-lift ${
+                        className={`px-2 py-0.5 rounded-full text-xs transition-all duration-300 hover-lift ${
                           activeTag === tag 
                             ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white' 
                             : 'glassmorphism-enhanced hover:bg-white/10'
@@ -555,7 +555,7 @@ const NotesHub = () => {
               </motion.div>
               
               {/* Notes List */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {isNotesLoading ? (
                   <SkeletonLoader />
                 ) : filteredNotes.length === 0 ? (
