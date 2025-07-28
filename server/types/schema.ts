@@ -51,6 +51,10 @@ export const notes = pgTable('notes', {
   content: text('content').notNull(),
   tags: varchar('tags', { length: 64 }).array(),
   attachments: text('attachments').default('[]'), // Add this line for file URLs
+  group_id: integer('group_id').references(() => note_groups.id), // Add group reference
+  position: integer('position').default(0), // For ordering within group
+  is_pinned: boolean('is_pinned').default(false),
+  is_archived: boolean('is_archived').default(false),
   created_at: timestamp('created_at').notNull().defaultNow(),
   updated_at: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -145,6 +149,16 @@ export const calendar_tasks = pgTable('calendar_tasks', {
   updated_at: timestamp('updated_at').notNull().defaultNow(),
 });
 
+export const note_groups = pgTable('note_groups', {
+  id: serial('id').primaryKey(),
+  user_id: integer('user_id').notNull().references(() => users.id),
+  name: varchar('name', { length: 255 }).notNull(),
+  description: text('description'),
+  color: varchar('color', { length: 32 }).default('#3b82f6'),
+  created_at: timestamp('created_at').notNull().defaultNow(),
+  updated_at: timestamp('updated_at').notNull().defaultNow(),
+});
+
 export const usersRelations = relations(users, ({ many }) => ({
   documents: many(documents),
   notes: many(notes),
@@ -162,6 +176,18 @@ export const notesRelations = relations(notes, ({ one }) => ({
     fields: [notes.user_id],
     references: [users.id],
   }),
+  group: one(note_groups, {
+    fields: [notes.group_id],
+    references: [note_groups.id],
+  }),
+}));
+
+export const noteGroupsRelations = relations(note_groups, ({ one, many }) => ({
+  user: one(users, {
+    fields: [note_groups.user_id],
+    references: [users.id],
+  }),
+  notes: many(notes),
 }));
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -242,3 +268,8 @@ export type InsertCommunityGroupMember = typeof community_group_members.$inferIn
 
 export type CalendarTask = typeof calendar_tasks.$inferSelect;
 export type InsertCalendarTask = z.infer<typeof insertCalendarTaskSchema>;
+
+export type NoteGroup = typeof note_groups.$inferSelect;
+export type InsertNoteGroup = typeof note_groups.$inferInsert;
+
+// MIGRATION: Added position, is_pinned, is_archived fields to notes for ordering, pinning, and archiving

@@ -1,4 +1,4 @@
-import { users, documents, presentations, calendar_events, community_posts, community_replies, community_likes, community_groups, community_group_members, type User, type InsertUser, type UpdateUserProfile, type Document, type InsertDocument, type Presentation, type InsertPresentation, type CalendarEvent, type InsertCalendarEvent, type CommunityPost, type InsertCommunityPost, type CommunityReply, type InsertCommunityReply, type CommunityLike, type InsertCommunityLike, type CommunityGroup, type InsertCommunityGroup, type CommunityGroupMember, type InsertCommunityGroupMember, notes, calendar_tasks, type CalendarTask, type InsertCalendarTask } from "./types/schema";
+import { users, documents, presentations, calendar_events, community_posts, community_replies, community_likes, community_groups, community_group_members, type User, type InsertUser, type UpdateUserProfile, type Document, type InsertDocument, type Presentation, type InsertPresentation, type CalendarEvent, type InsertCalendarEvent, type CommunityPost, type InsertCommunityPost, type CommunityReply, type InsertCommunityReply, type CommunityLike, type InsertCommunityLike, type CommunityGroup, type InsertCommunityGroup, type CommunityGroupMember, type InsertCommunityGroupMember, notes, calendar_tasks, type CalendarTask, type InsertCalendarTask, note_groups, type NoteGroup, type InsertNoteGroup } from "./types/schema";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -67,6 +67,13 @@ export interface IStorage {
   getNote(noteId: number, userId: number): Promise<any | undefined>;
   updateNote(noteId: number, userId: number, updates: any): Promise<any>;
   deleteNote(noteId: number, userId: number): Promise<boolean>;
+
+  // Note Groups CRUD
+  getNoteGroups(userId: number): Promise<NoteGroup[]>;
+  createNoteGroup(group: InsertNoteGroup & { user_id: number }): Promise<NoteGroup>;
+  getNoteGroup(id: number, userId: number): Promise<NoteGroup | undefined>;
+  updateNoteGroup(id: number, userId: number, updates: Partial<NoteGroup>): Promise<NoteGroup>;
+  deleteNoteGroup(id: number, userId: number): Promise<boolean>;
 
   // Calendar task operations
   getCalendarTasks(userId: number): Promise<CalendarTask[]>;
@@ -387,6 +394,9 @@ export class DatabaseStorage implements IStorage {
       attachments: JSON.stringify(note.attachments || []),
       created_at: new Date(),
       updated_at: new Date(),
+      position: note.position ?? 0,
+      is_pinned: note.is_pinned ?? false,
+      is_archived: note.is_archived ?? false,
     }).returning();
     // Parse attachments for frontend
     return { ...created, attachments: JSON.parse(created.attachments || "[]") };
@@ -404,6 +414,9 @@ export class DatabaseStorage implements IStorage {
         ...updates,
         attachments: JSON.stringify(updates.attachments || []),
         updated_at: new Date(),
+        position: updates.position,
+        is_pinned: updates.is_pinned,
+        is_archived: updates.is_archived,
       })
       .where(and(eq(notes.id, noteId), eq(notes.user_id, userId)))
       .returning();
@@ -413,6 +426,27 @@ export class DatabaseStorage implements IStorage {
   async deleteNote(noteId: number, userId: number) {
     await db.delete(notes).where(and(eq(notes.id, noteId), eq(notes.user_id, userId)));
     return true;
+  }
+
+  // Note Groups CRUD
+  async getNoteGroups(userId: number): Promise<NoteGroup[]> {
+    return await db.select().from(note_groups).where(eq(note_groups.user_id, userId));
+  }
+  async createNoteGroup(group: InsertNoteGroup & { user_id: number }): Promise<NoteGroup> {
+    const [created] = await db.insert(note_groups).values(group).returning();
+    return created;
+  }
+  async getNoteGroup(id: number, userId: number): Promise<NoteGroup | undefined> {
+    const [group] = await db.select().from(note_groups).where(and(eq(note_groups.id, id), eq(note_groups.user_id, userId)));
+    return group || undefined;
+  }
+  async updateNoteGroup(id: number, userId: number, updates: Partial<NoteGroup>): Promise<NoteGroup> {
+    const [updated] = await db.update(note_groups).set({ ...updates, updated_at: new Date() }).where(and(eq(note_groups.id, id), eq(note_groups.user_id, userId))).returning();
+    return updated;
+  }
+  async deleteNoteGroup(id: number, userId: number): Promise<boolean> {
+    const result = await db.delete(note_groups).where(and(eq(note_groups.id, id), eq(note_groups.user_id, userId)));
+    return (result.rowCount || 0) > 0;
   }
 
   // Calendar task operations

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth Test</title>
+</head>
+<body>
+    <h1>Authentication Test</h1>
+    <button onclick="testLogin()">Test Login</button>
+    <button onclick="testNotes()">Test Notes API</button>
+    <button onclick="testGroups()">Test Groups API</button>
+    <div id="output"></div>
+
+    <script>
+        const API_URL = 'http://localhost:5000';
+        
+        async function testLogin() {
+            try {
+                const response = await fetch(`${API_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'testuser', password: 'testpass123' })
+                });
+                
+                const data = await response.json();
+                document.getElementById('output').innerHTML = `<p>Login response: ${JSON.stringify(data)}</p>`;
+                
+                if (data.token) {
+                    localStorage.setItem('authToken', data.token);
+                    document.getElementById('output').innerHTML += '<p>Token stored in localStorage</p>';
+                }
+            } catch (error) {
+                document.getElementById('output').innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function testNotes() {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    document.getElementById('output').innerHTML = '<p>No token found. Please login first.</p>';
+                    return;
+                }
+                
+                const response = await fetch(`${API_URL}/api/notes`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                document.getElementById('output').innerHTML = `<p>Notes response: ${JSON.stringify(data)}</p>`;
+            } catch (error) {
+                document.getElementById('output').innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function testGroups() {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    document.getElementById('output').innerHTML = '<p>No token found. Please login first.</p>';
+                    return;
+                }
+                
+                const response = await fetch(`${API_URL}/api/note-groups`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                document.getElementById('output').innerHTML = `<p>Groups response: ${JSON.stringify(data)}</p>`;
+            } catch (error) {
+                document.getElementById('output').innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html> 

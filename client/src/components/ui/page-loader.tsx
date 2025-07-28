@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-import { usePageLoading } from "@/contexts/PageLoadingContext";
 import React, { useState, useEffect } from "react";
 
 interface PageLoaderProps {
