@@ -74,6 +74,7 @@ export interface IStorage {
   getNoteGroup(id: number, userId: number): Promise<NoteGroup | undefined>;
   updateNoteGroup(id: number, userId: number, updates: Partial<NoteGroup>): Promise<NoteGroup>;
   deleteNoteGroup(id: number, userId: number): Promise<boolean>;
+  moveNotesToUngrouped(groupId: number, userId: number): Promise<void>;
 
   // Calendar task operations
   getCalendarTasks(userId: number): Promise<CalendarTask[]>;
@@ -447,6 +448,12 @@ export class DatabaseStorage implements IStorage {
   async deleteNoteGroup(id: number, userId: number): Promise<boolean> {
     const result = await db.delete(note_groups).where(and(eq(note_groups.id, id), eq(note_groups.user_id, userId)));
     return (result.rowCount || 0) > 0;
+  }
+
+  async moveNotesToUngrouped(groupId: number, userId: number): Promise<void> {
+    await db.update(notes)
+      .set({ group_id: null })
+      .where(and(eq(notes.group_id, groupId), eq(notes.user_id, userId)));
   }
 
   // Calendar task operations

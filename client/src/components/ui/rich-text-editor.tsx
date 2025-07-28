@@ -32,15 +32,19 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Input } from '@/components/ui/input'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { forwardRef, useImperativeHandle } from 'react';
 
 interface RichTextEditorProps {
   content?: string
   onUpdate?: (content: string) => void
   title?: string
   className?: string
+  mode?: 'simple' | 'rich' // Add mode prop
 }
 
 const fontFamilies = [
@@ -73,9 +77,9 @@ const fontSizes = [
 
 const textFormats = [
   { label: 'Body', value: 'paragraph', icon: null },
-  { label: 'Title', value: 'heading', level: 1, icon: Heading1 },
-  { label: 'Heading', value: 'heading', level: 2, icon: Heading2 },
-  { label: 'Subheading', value: 'heading', level: 3, icon: Heading3 },
+  { label: 'Title', value: 'heading-1', level: 1, icon: Heading1 },
+  { label: 'Heading', value: 'heading-2', level: 2, icon: Heading2 },
+  { label: 'Subheading', value: 'heading-3', level: 3, icon: Heading3 },
 ]
 
 const colors = [
@@ -83,10 +87,71 @@ const colors = [
   '#FFA500', '#800080', '#FFC0CB', '#A52A2A', '#808080', '#000080', '#008000', '#800000'
 ]
 
-export default function RichTextEditor({ content = '', onUpdate, title = 'Untitled Note', className = '' }: RichTextEditorProps) {
+// Simple Text Editor Component (Google Keep Style)
+const SimpleTextEditor: React.FC<{
+  content: string
+  onUpdate: (content: string) => void
+  placeholder?: string
+  className?: string
+}> = ({ content, onUpdate, placeholder = "Take a note...", className = "" }) => {
+  const [localContent, setLocalContent] = useState(content)
+  const [isSaving, setIsSaving] = useState(false)
+
+  // Debounced auto-save
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (localContent !== content) {
+        setIsSaving(true)
+        onUpdate(localContent)
+        setTimeout(() => setIsSaving(false), 500)
+      }
+    }, 1000)
+
+    return () => clearTimeout(timeoutId)
+  }, [localContent, content, onUpdate])
+
+  return (
+    <div className={`relative ${className}`}>
+      <textarea
+        value={localContent}
+        onChange={(e) => setLocalContent(e.target.value)}
+        placeholder={placeholder}
+        className="w-full bg-transparent text-white placeholder:text-slate-400 focus:outline-none resize-none border-none p-0 text-base leading-relaxed"
+        style={{
+          minHeight: '400px',
+          fontFamily: 'inherit',
+          fontSize: '16px',
+          lineHeight: '1.6'
+        }}
+      />
+      {isSaving && (
+        <div className="absolute bottom-2 right-2 flex items-center gap-2 text-xs text-slate-400">
+          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500"></div>
+          <span>Saving...</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+const RichTextEditor = forwardRef(function RichTextEditor({ content = '', onUpdate, title = 'Untitled Note', className = '', mode = 'rich' }: RichTextEditorProps, ref) {
+  // If mode is simple, render the Google Keep-style editor
+  if (mode === 'simple') {
+    return (
+      <SimpleTextEditor
+        content={content}
+        onUpdate={onUpdate || (() => {})}
+        placeholder="Take a note..."
+        className={className}
+      />
+    )
+  }
+
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false)
   const [linkUrl, setLinkUrl] = useState('')
   const [linkText, setLinkText] = useState('')
+  const [lastSavedContent, setLastSavedContent] = useState(content)
+  const [isSaving, setIsSaving] = useState(false)
 
   const editor = useEditor({
     extensions: [
@@ -122,7 +187,17 @@ export default function RichTextEditor({ content = '', onUpdate, title = 'Untitl
     ],
     content,
     onUpdate: ({ editor }) => {
-      onUpdate?.(editor.getHTML())
+      const newContent = editor.getHTML()
+      setLastSavedContent(newContent)
+      
+      // Debounced auto-save
+      if (onUpdate) {
+        setIsSaving(true)
+        setTimeout(() => {
+          onUpdate(newContent)
+          setIsSaving(false)
+        }, 1000) // Save after 1 second of inactivity
+      }
     },
     editorProps: {
       attributes: {
@@ -155,8 +230,9 @@ export default function RichTextEditor({ content = '', onUpdate, title = 'Untitl
     
     if (format.value === 'paragraph') {
       editor.chain().focus().setParagraph().run()
-    } else if (format.value === 'heading') {
-      editor.chain().focus().setHeading({ level: format.level }).run()
+    } else if (format.value.startsWith('heading-')) {
+      const level = parseInt(format.value.split('-')[1])
+      editor.chain().focus().setHeading({ level }).run()
     }
   }, [editor])
 
@@ -164,11 +240,11 @@ export default function RichTextEditor({ content = '', onUpdate, title = 'Untitl
     if (!editor) return textFormats[0]
     
     if (editor.isActive('heading', { level: 1 })) {
-      return textFormats.find(f => f.level === 1) || textFormats[0]
+      return textFormats.find(f => f.value === 'heading-1') || textFormats[0]
     } else if (editor.isActive('heading', { level: 2 })) {
-      return textFormats.find(f => f.level === 2) || textFormats[0]
+      return textFormats.find(f => f.value === 'heading-2') || textFormats[0]
     } else if (editor.isActive('heading', { level: 3 })) {
-      return textFormats.find(f => f.level === 3) || textFormats[0]
+      return textFormats.find(f => f.value === 'heading-3') || textFormats[0]
     }
     
     return textFormats[0] // Body/paragraph
@@ -206,31 +282,73 @@ export default function RichTextEditor({ content = '', onUpdate, title = 'Untitl
     if (!editorElement) return
 
     try {
-      const canvas = await html2canvas(editorElement as HTMLElement, {
+      // Create a temporary container for better export
+      const tempContainer = document.createElement('div')
+      tempContainer.style.position = 'absolute'
+      tempContainer.style.left = '-9999px'
+      tempContainer.style.top = '0'
+      tempContainer.style.width = '800px' // Fixed width for consistent formatting
+      tempContainer.style.backgroundColor = '#ffffff'
+      tempContainer.style.color = '#000000'
+      tempContainer.style.padding = '40px'
+      tempContainer.style.fontFamily = 'Arial, sans-serif'
+      tempContainer.style.lineHeight = '1.6'
+      
+      // Clone the editor content
+      const clonedContent = editorElement.cloneNode(true) as HTMLElement
+      
+      // Apply export-specific styles
+      clonedContent.style.backgroundColor = '#ffffff'
+      clonedContent.style.color = '#000000'
+      clonedContent.style.fontFamily = 'Arial, sans-serif'
+      clonedContent.style.lineHeight = '1.6'
+      clonedContent.style.margin = '0'
+      clonedContent.style.padding = '0'
+      
+      // Remove any dark mode classes and apply light mode styles
+      clonedContent.classList.remove('dark')
+      clonedContent.classList.add('export-mode')
+      
+      // Add the cloned content to temp container
+      tempContainer.appendChild(clonedContent)
+      document.body.appendChild(tempContainer)
+
+      const canvas = await html2canvas(tempContainer, {
         backgroundColor: '#ffffff',
         scale: 2,
         useCORS: true,
+        allowTaint: true,
+        logging: false,
+        width: 800,
+        height: tempContainer.scrollHeight,
       })
+
+      // Clean up temp container
+      document.body.removeChild(tempContainer)
 
       const imgData = canvas.toDataURL('image/png')
       const pdf = new jsPDF('p', 'mm', 'a4')
       
-      const imgWidth = 210
-      const pageHeight = 295
+      const imgWidth = 170 // Leave margins
+      const pageHeight = 277 // A4 height minus margins
       const imgHeight = (canvas.height * imgWidth) / canvas.width
       let heightLeft = imgHeight
 
       let position = 0
 
-      // Add title
-      pdf.setFontSize(16)
+      // Add title with proper formatting
+      pdf.setFontSize(18)
       pdf.setTextColor(0, 0, 0)
       pdf.setFillColor(255, 255, 255)
       pdf.rect(0, 0, 210, 297, 'F')
-      pdf.text(title, 20, 20)
+      pdf.text(title, 20, 25)
+
+      // Add separator line
+      pdf.setDrawColor(200, 200, 200)
+      pdf.line(20, 30, 190, 30)
 
       // Add content
-      pdf.addImage(imgData, 'PNG', 0, 30, imgWidth, imgHeight)
+      pdf.addImage(imgData, 'PNG', 20, 35, imgWidth, imgHeight)
       heightLeft -= pageHeight
 
       while (heightLeft >= 0) {
@@ -238,15 +356,23 @@ export default function RichTextEditor({ content = '', onUpdate, title = 'Untitl
         pdf.addPage()
         pdf.setFillColor(255, 255, 255)
         pdf.rect(0, 0, 210, 297, 'F')
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+        pdf.addImage(imgData, 'PNG', 20, position + 5, imgWidth, imgHeight)
         heightLeft -= pageHeight
       }
 
-      pdf.save(`${title}.pdf`)
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-')
+      const filename = `${title.replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}.pdf`
+      pdf.save(filename)
     } catch (error) {
       console.error('Error exporting to PDF:', error)
+      alert('Failed to export PDF. Please try again.')
     }
   }, [editor, title])
+
+  useImperativeHandle(ref, () => ({
+    exportToPDF,
+  }));
 
   if (!editor) {
     return null
@@ -333,70 +459,25 @@ export default function RichTextEditor({ content = '', onUpdate, title = 'Untitl
           >
             <AlignRight className="w-4 h-4" />
           </Button>
-
-          <div className="w-px h-6 bg-white/20 mx-2" />
-
-          <Popover open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant={editor.isActive('link') ? 'default' : 'ghost'}
-                size="sm"
-                className="p-2"
-              >
-                <LinkIcon className="w-4 h-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80 bg-slate-800 border-white/20">
-              <div className="space-y-3">
-                <div>
-                  <label className="text-sm text-white">URL</label>
-                  <Input
-                    value={linkUrl}
-                    onChange={(e) => setLinkUrl(e.target.value)}
-                    placeholder="https://example.com"
-                    className="bg-white/5 border-white/20 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm text-white">Text (optional)</label>
-                  <Input
-                    value={linkText}
-                    onChange={(e) => setLinkText(e.target.value)}
-                    placeholder="Link text"
-                    className="bg-white/5 border-white/20 text-white"
-                  />
-                </div>
-                <Button onClick={addLink} size="sm" className="w-full">
-                  Add Link
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
         </div>
 
-        {/* Second Row - Font and Color Controls */}
+        {/* Second Row - Advanced Formatting */}
         <div className="flex items-center gap-2 flex-wrap">
-          <Select onValueChange={(value) => {
-            const format = textFormats.find(f => f.label === value)
-            if (format) setTextFormat(format)
-          }}>
-            <SelectTrigger className="w-36 bg-white/5 border-white/20 text-white border-2 hover:border-white/30">
-              <SelectValue placeholder={getCurrentFormat().label} />
+          <Select onValueChange={setTextFormat} value={getCurrentFormat().value}>
+            <SelectTrigger className="w-32 bg-white/5 border-white/20 text-white border-2 hover:border-white/30">
+              <SelectValue placeholder="Format" />
             </SelectTrigger>
             <SelectContent className="bg-slate-800 border-white/20">
               {textFormats.map((format) => (
-                <SelectItem key={format.label} value={format.label} className="text-white hover:bg-white/10">
-                  <div className="flex items-center">
-                    {format.icon && <format.icon className="w-4 h-4 mr-2" />}
-                    {format.label}
-                  </div>
+                <SelectItem key={format.value} value={format.value} className="text-white hover:bg-white/10">
+                  {format.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
 
           <Select onValueChange={setFontFamily}>
-            <SelectTrigger className="w-40 bg-white/5 border-white/20 text-white border-2 hover:border-white/30">
+            <SelectTrigger className="w-32 bg-white/5 border-white/20 text-white border-2 hover:border-white/30">
               <SelectValue placeholder="Font Family" />
             </SelectTrigger>
             <SelectContent className="bg-slate-800 border-white/20">
@@ -463,15 +544,24 @@ export default function RichTextEditor({ content = '', onUpdate, title = 'Untitl
             </PopoverContent>
           </Popover>
 
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsLinkDialogOpen(true)}
+            className="p-2 border-2 border-white/20 hover:border-white/30 bg-white/5"
+          >
+            <LinkIcon className="w-4 h-4" />
+            <span className="ml-2 text-sm">Link</span>
+          </Button>
+
+          {/* Remove Export PDF button from here */}
           <div className="ml-auto">
-            <Button
-              onClick={exportToPDF}
-              className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 border-2 border-transparent hover:border-white/20"
-              size="sm"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Export PDF
-            </Button>
+            {isSaving && (
+              <span className="text-xs text-slate-400 mr-2 flex items-center">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse mr-1"></div>
+                Saving...
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -481,6 +571,53 @@ export default function RichTextEditor({ content = '', onUpdate, title = 'Untitl
         <EditorContent editor={editor} />
       </div>
 
+      {/* Link Dialog */}
+      <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
+        <DialogContent className="bg-slate-900 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Add Link</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="link-url" className="text-white">URL</Label>
+              <Input
+                id="link-url"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                placeholder="https://example.com"
+                className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <Label htmlFor="link-text" className="text-white">Text (optional)</Label>
+              <Input
+                id="link-text"
+                value={linkText}
+                onChange={(e) => setLinkText(e.target.value)}
+                placeholder="Link text"
+                className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsLinkDialogOpen(false)}
+              className="border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={addLink}
+              className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+              disabled={!linkUrl.trim()}
+            >
+              Add Link
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <style>{`
         .ProseMirror {
           outline: none;
@@ -489,6 +626,53 @@ export default function RichTextEditor({ content = '', onUpdate, title = 'Untitl
         
         .dark .ProseMirror {
           color: #f1f5f9;
+        }
+        
+        /* Export mode styles for better PDF formatting */
+        .export-mode .ProseMirror {
+          color: #000000 !important;
+          background-color: #ffffff !important;
+        }
+        
+        .export-mode .ProseMirror h1 {
+          color: #000000 !important;
+          font-size: 2rem !important;
+          font-weight: bold !important;
+          margin: 1rem 0 !important;
+        }
+        
+        .export-mode .ProseMirror h2 {
+          color: #000000 !important;
+          font-size: 1.5rem !important;
+          font-weight: bold !important;
+          margin: 0.75rem 0 !important;
+        }
+        
+        .export-mode .ProseMirror h3 {
+          color: #000000 !important;
+          font-size: 1.25rem !important;
+          font-weight: bold !important;
+          margin: 0.5rem 0 !important;
+        }
+        
+        .export-mode .ProseMirror p {
+          color: #000000 !important;
+          margin: 0.5rem 0 !important;
+        }
+        
+        .export-mode .ProseMirror strong {
+          color: #000000 !important;
+          font-weight: bold !important;
+        }
+        
+        .export-mode .ProseMirror em {
+          color: #000000 !important;
+          font-style: italic !important;
+        }
+        
+        .export-mode .ProseMirror u {
+          color: #000000 !important;
+          text-decoration: underline !important;
         }
         
         .ProseMirror ul.tiptap-bullet-list {
@@ -553,7 +737,22 @@ export default function RichTextEditor({ content = '', onUpdate, title = 'Untitl
         .ProseMirror span[style*="font-size"] {
           display: inline !important;
         }
+        
+        /* Preserve formatting in export */
+        .export-mode .ProseMirror span[style*="font-size"] {
+          display: inline !important;
+        }
+        
+        .export-mode .ProseMirror span[style*="color"] {
+          color: inherit !important;
+        }
+        
+        .export-mode .ProseMirror span[style*="background-color"] {
+          background-color: transparent !important;
+        }
       `}</style>
     </div>
   )
-}
+})
+
+export default RichTextEditor;

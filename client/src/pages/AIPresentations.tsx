@@ -184,10 +184,14 @@ const AIPresentations = () => {
   const [isPreviewMode, setIsPreviewMode] = useState(false)
   const [editorSubtitle, setEditorSubtitle] = useState("") // New state for subtitle
 
-  const currentSlide = slides[currentSlideIndex]
+  const currentSlide = slides[currentSlideIndex] || null
 
   // Helper to extract title and content for the editor from the elements array
-  const getEditorContent = (slide: Slide) => {
+  const getEditorContent = (slide: Slide | null) => {
+    if (!slide || !slide.elements) {
+      return { title: "", subtitle: "", content: "" }
+    }
+    
     let title = ""
     let subtitle = "" // Initialize subtitle
     let content = ""
@@ -210,7 +214,7 @@ const AIPresentations = () => {
     return { title, subtitle, content } // Return subtitle
   }
  
-  const { title: editorTitle, subtitle: editorSubtitleValue, content: editorContent } = getEditorContent(currentSlide)
+  const { title: editorTitle, subtitle: editorSubtitleValue, content: editorContent } = currentSlide ? getEditorContent(currentSlide) : { title: "", subtitle: "", content: "" }
 
   // Update editorSubtitle state when currentSlide changes
   React.useEffect(() => {
@@ -338,23 +342,80 @@ const AIPresentations = () => {
     })
   }
 
-  // Duplicate slide
-  const duplicateSlide = (index: number) => {
-    const slideToClone = slides[index]
-    const newSlide = {
-      ...slideToClone,
-      id: Date.now().toString(),
-      slide_number: slides.length + 1,
-      elements: slideToClone.elements.map((el) => ({
-        ...el,
-        content: el.content ? `${el.content} (Copy)` : el.content,
-      })),
+  // Duplicate slide with backend persistence
+  const duplicateSlide = async (index: number) => {
+    if (!presentationId) {
+      toast({
+        title: "No Presentation",
+        description: "Please generate or load a presentation first.",
+        variant: "destructive",
+      });
+      return;
     }
-    setSlides((prev) => [...prev.slice(0, index + 1), newSlide, ...prev.slice(index + 1)])
-    toast({
-      title: "Slide Duplicated",
-      description: "Slide has been copied successfully.",
-    })
+
+    try {
+      const PPT_API_URL = import.meta.env.VITE_PPT_API_URL;
+      const response = await fetch(`${PPT_API_URL}/slide_operations`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          operation: "copy",
+          presentation_id: presentationId,
+          slide_index: index,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to duplicate slide");
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.updated_slides) {
+        // Update local state with the new slides
+        const updatedSlides = data.updated_slides.map((slide: any, slideIndex: number) => {
+          const backgroundStyle = backgroundStyles[slideIndex % backgroundStyles.length];
+          return {
+            ...slide,
+            background:
+              backgroundStyle.type === "gradient"
+                ? { type: "gradient", gradient: backgroundStyle.value }
+                : { type: "solid", color: backgroundStyle.value },
+            elements: slide.elements.map((el: any) => ({
+              ...el,
+              style: {
+                ...el.style,
+                color:
+                  backgroundStyle.type === "gradient" ||
+                  backgroundStyle.value.includes("bg-gray-900") ||
+                  backgroundStyle.value.includes("bg-blue-900")
+                    ? "#FFFFFF"
+                    : el.style.color,
+              },
+            })),
+          };
+        });
+
+        setSlides(updatedSlides);
+        
+        toast({
+          title: "Slide Duplicated",
+          description: "Slide has been copied and saved successfully.",
+        });
+      } else {
+        throw new Error(data.error || "Failed to duplicate slide");
+      }
+    } catch (error: any) {
+      console.error("Error duplicating slide:", error);
+      toast({
+        title: "Duplication Failed",
+        description: error.message || "There was an error duplicating the slide.",
+        variant: "destructive",
+      });
+    }
   }
 
   // Generate presentation with AI via Flask backend
@@ -549,7 +610,11 @@ const AIPresentations = () => {
   }
 
   // Get background classes for slide
-  const getSlideBackgroundClasses = (slide: Slide) => {
+  const getSlideBackgroundClasses = (slide: Slide | null) => {
+    if (!slide || !slide.background) {
+      return "bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700"
+    }
+    
     if (slide.background.type === "gradient" && slide.background.gradient) {
       return `bg-gradient-to-br ${slide.background.gradient}`
     } else if (slide.background.type === "solid" && slide.background.color) {
@@ -559,7 +624,14 @@ const AIPresentations = () => {
   }
 
   // Render individual slide elements
-  const renderSlideElements = (elements: SlideElement[], isFullscreen: boolean, slideNumber: number, slide: Slide) => {
+  const renderSlideElements = (elements: SlideElement[], isFullscreen: boolean, slideNumber: number, slide: Slide | null) => {
+    if (!slide || !elements) {
+      return (
+        <div className="h-full w-full flex items-center justify-center">
+          <p className="text-white text-lg">No slide content available</p>
+        </div>
+      )
+    }
     const textElements = elements.filter(
       (el) => el.type === "title" || el.type === "text" || el.type === "bullet_list" || el.type === "subtitle",
     )
@@ -835,10 +907,24 @@ const AIPresentations = () => {
   const deletePresentation = async (id: string) => {
     setIsLoadingPresentations(true);
     try {
+      // First, delete from Flask service (R2 storage)
+      const PPT_API_URL = import.meta.env.VITE_PPT_API_URL;
+      const flaskRes = await fetch(`${PPT_API_URL}/delete_presentation/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      // Then delete from Express backend (database)
       const token = localStorage.getItem('authToken');
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/presentations/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) throw new Error('Failed to delete presentation');
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/presentations/${id}`, { 
+        method: 'DELETE', 
+        headers: { Authorization: `Bearer ${token}` } 
+      });
+      
+      if (!res.ok) throw new Error('Failed to delete presentation from database');
+      
       setSavedPresentations(prev => prev.filter(p => p.id !== id));
+      
       if (presentationId === id) {
         // If deleted presentation is active, load another or fallback
         const remaining = savedPresentations.filter(p => p.id !== id);
@@ -869,10 +955,13 @@ const AIPresentations = () => {
           ]);
           setPresentationId(null);
           setPresentationTopic("AI Presentation");
+          setCurrentSlideIndex(0);
         }
       }
-      toast({ title: "Deleted", description: "Presentation deleted." });
+      
+      toast({ title: "Deleted", description: "Presentation deleted from storage and database." });
     } catch (e) {
+      console.error('Error deleting presentation:', e);
       toast({ title: "Delete Failed", description: "Could not delete presentation.", variant: "destructive" });
     } finally {
       setIsLoadingPresentations(false);
@@ -891,35 +980,87 @@ const AIPresentations = () => {
       setPendingDeleteSlide(null);
       return;
     }
+
     if (!presentationId) {
-      // Local only (unsaved presentation)
-      setSlides(prev => prev.filter((_, i) => i !== index));
-      if (currentSlideIndex >= slides.length - 1) {
-        setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1));
-      }
-      toast({ title: "Slide Deleted", description: "Slide has been removed from your presentation." });
+      toast({
+        title: "No Presentation",
+        description: "Please generate or load a presentation first.",
+        variant: "destructive",
+      });
       setPendingDeleteSlide(null);
       return;
     }
+
     try {
       const PPT_API_URL = import.meta.env.VITE_PPT_API_URL;
-      const token = localStorage.getItem('authToken');
-      const res = await fetch(`${PPT_API_URL}/presentations/${presentationId}/slides/${index}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await fetch(`${PPT_API_URL}/slide_operations`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          operation: "delete",
+          presentation_id: presentationId,
+          slide_index: index,
+        }),
       });
-      if (!res.ok) throw new Error('Failed to delete slide');
-      const updated = await res.json();
-      setSlides(updated.json_data.slides);
-      if (currentSlideIndex >= updated.json_data.slides.length) {
-        setCurrentSlideIndex(Math.max(0, updated.json_data.slides.length - 1));
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to delete slide");
       }
-      toast({ title: "Slide Deleted", description: "Slide has been removed from your presentation." });
-    } catch (e) {
-      toast({ title: "Delete Failed", description: "Could not delete slide.", variant: "destructive" });
-    } finally {
-      setPendingDeleteSlide(null);
+
+      const data = await response.json();
+      
+      if (data.success && data.updated_slides) {
+        // Update local state with the new slides
+        const updatedSlides = data.updated_slides.map((slide: any, slideIndex: number) => {
+          const backgroundStyle = backgroundStyles[slideIndex % backgroundStyles.length];
+          return {
+            ...slide,
+            background:
+              backgroundStyle.type === "gradient"
+                ? { type: "gradient", gradient: backgroundStyle.value }
+                : { type: "solid", color: backgroundStyle.value },
+            elements: slide.elements.map((el: any) => ({
+              ...el,
+              style: {
+                ...el.style,
+                color:
+                  backgroundStyle.type === "gradient" ||
+                  backgroundStyle.value.includes("bg-gray-900") ||
+                  backgroundStyle.value.includes("bg-blue-900")
+                    ? "#FFFFFF"
+                    : el.style.color,
+              },
+            })),
+          };
+        });
+
+        setSlides(updatedSlides);
+        
+        // Adjust current slide index if needed
+        if (currentSlideIndex >= updatedSlides.length) {
+          setCurrentSlideIndex(Math.max(0, updatedSlides.length - 1));
+        }
+        
+        toast({ 
+          title: "Slide Deleted", 
+          description: "Slide has been removed and saved successfully." 
+        });
+      } else {
+        throw new Error(data.error || "Failed to delete slide");
+      }
+    } catch (error: any) {
+      console.error("Error deleting slide:", error);
+      toast({
+        title: "Deletion Failed",
+        description: error.message || "There was an error deleting the slide.",
+        variant: "destructive",
+      });
     }
+    
+    setPendingDeleteSlide(null);
   };
 
   // --- Keyboard navigation for fullscreen mode ---
@@ -1151,27 +1292,27 @@ const AIPresentations = () => {
         <div className={`grid lg:grid-cols-3 gap-8 ${isPreviewMode ? "hidden" : ""}`}>
           <div className="lg:col-span-2">
             <motion.div
-              className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-2xl min-h-[500px]"
+              className="bg-slate-900/80 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50 shadow-2xl min-h-[500px]"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
             >
               {isLoadingSlides ? (
                 <div className="space-y-6">
-                  <Skeleton className="h-8 w-1/3 mb-2" />
-                  <Skeleton className="h-96 w-full rounded-lg" />
+                  <Skeleton className="h-8 w-1/3 mb-2 bg-slate-700" />
+                  <Skeleton className="h-96 w-full rounded-lg bg-slate-700" />
                   <div className="flex space-x-2 mt-4">
-                    {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 w-24 rounded" />)}
+                    {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 w-24 rounded bg-slate-700" />)}
                   </div>
                 </div>
               ) : (
                 <>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-2">
-                      <Button variant="ghost" size="sm" onClick={prevSlide} disabled={currentSlideIndex === 0}>
+                      <Button variant="ghost" size="sm" onClick={prevSlide} disabled={currentSlideIndex === 0} className="text-slate-300 hover:text-white hover:bg-slate-700">
                         <ChevronLeft className="w-4 h-4" />
                       </Button>
-                      <span className="text-sm text-slate-600 dark:text-slate-300">
+                      <span className="text-sm text-slate-300">
                         {currentSlideIndex + 1} / {slides.length}
                       </span>
                       <Button
@@ -1179,12 +1320,13 @@ const AIPresentations = () => {
                         size="sm"
                         onClick={nextSlide}
                         disabled={currentSlideIndex === slides.length - 1}
+                        className="text-slate-300 hover:text-white hover:bg-slate-700"
                       >
                         <ChevronRight className="w-4 h-4" />
                       </Button>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <GlassmorphismButton onClick={() => setIsPreviewMode(true)} variant="outline" size="sm">
+                      <GlassmorphismButton onClick={() => setIsPreviewMode(true)} variant="outline" size="sm" className="border-slate-600 text-slate-300 hover:text-white">
                         <Eye className="w-4 h-4 mr-1" />
                         Fullscreen
                       </GlassmorphismButton>
@@ -1192,7 +1334,7 @@ const AIPresentations = () => {
                   </div>
 
                   <motion.div
-                    className={`w-full rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden shadow-xl ${getSlideBackgroundClasses(currentSlide)}`}
+                    className={`w-full rounded-lg border border-slate-600/50 overflow-hidden shadow-xl ${getSlideBackgroundClasses(currentSlide)}`}
                     style={{
                       aspectRatio: "16/9",
                       minHeight: "400px",
@@ -1319,50 +1461,50 @@ const AIPresentations = () => {
 
           <div className="lg:col-span-1">
             <motion.div
-              className="bg-white dark:bg-slate-800 rounded-xl p-6 space-y-6 border border-slate-200 dark:border-slate-700 min-h-[300px]"
+              className="bg-slate-900/80 backdrop-blur-sm rounded-xl p-6 space-y-6 border border-slate-700/50 min-h-[300px]"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
             >
               {isLoadingSlides ? (
                 <div className="space-y-4">
-                  <Skeleton className="h-6 w-1/2" />
-                  <Skeleton className="h-6 w-1/2" />
-                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-6 w-1/2 bg-slate-700" />
+                  <Skeleton className="h-6 w-1/2 bg-slate-700" />
+                  <Skeleton className="h-24 w-full bg-slate-700" />
                 </div>
               ) : (
                 <>
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">Edit Slide</h2>
+                    <h2 className="text-xl font-bold text-white">Edit Slide</h2>
                   </div>
 
                   <div className="space-y-4">
                     <div>
-                      <Label className="text-slate-900 dark:text-white">Title</Label>
+                      <Label className="text-slate-300">Title</Label>
                       <Input
                         value={editorTitle}
                         onChange={(e) => updateSlideContent("title", e.target.value)}
-                        className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/20 text-slate-900 dark:text-white"
+                        className="bg-slate-800/50 border-slate-600 text-white placeholder-slate-400 focus:border-slate-500"
                       />
                     </div>
 
                     <div>
-                      <Label className="text-slate-900 dark:text-white">Subtitle</Label>
+                      <Label className="text-slate-300">Subtitle</Label>
                       <Input
                         value={editorSubtitle}
                         onChange={(e) => updateSlideContent("subtitle", e.target.value)}
-                        className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/20 text-slate-900 dark:text-white"
+                        className="bg-slate-800/50 border-slate-600 text-white placeholder-slate-400 focus:border-slate-500"
                         placeholder="Add a subtitle (for title slide)"
                       />
                     </div>
 
                     <div>
-                      <Label className="text-slate-900 dark:text-white">Content</Label>
+                      <Label className="text-slate-300">Content</Label>
                       <Textarea
                         value={editorContent}
                         onChange={(e) => updateSlideContent("content", e.target.value)}
-                        className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/20 text-slate-900 dark:text-white min-h-[100px]"
-                        placeholder="Add your slide content..."
+                        className="bg-slate-800/50 border-slate-600 text-white placeholder-slate-400 focus:border-slate-500 min-h-[120px]"
+                        placeholder="Enter slide content or bullet points..."
                       />
                     </div>
                   </div>
@@ -1373,12 +1515,12 @@ const AIPresentations = () => {
         </div>
 
         <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-          <DialogContent className="bg-white dark:bg-slate-900 border-slate-300 dark:border-white/20">
+          <DialogContent className="bg-slate-900/95 backdrop-blur-sm border-slate-700">
             <DialogHeader>
-              <DialogTitle className="text-slate-900 dark:text-white">Export Presentation</DialogTitle>
+              <DialogTitle className="text-white">Export Presentation</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <p className="text-slate-600 dark:text-slate-300">Choose your export format:</p>
+              <p className="text-slate-300">Choose your export format:</p>
               <div className="grid grid-cols-2 gap-4">
                 <Button
                   onClick={() => exportPresentation("pdf")}
@@ -1400,7 +1542,7 @@ const AIPresentations = () => {
               {isDownloading && (
                 <div className="text-center">
                   <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                  <p className="text-slate-600 dark:text-slate-400 text-sm">
+                  <p className="text-slate-400 text-sm">
                     Preparing your presentation for download...
                   </p>
                 </div>
@@ -1410,29 +1552,29 @@ const AIPresentations = () => {
         </Dialog>
 
         <Dialog open={showGenerateDialog} onOpenChange={setShowGenerateDialog}>
-          <DialogContent className="bg-white dark:bg-slate-900 border-slate-300 dark:border-white/20">
+          <DialogContent className="bg-slate-900/95 backdrop-blur-sm border-slate-700">
             <DialogHeader>
-              <DialogTitle className="text-slate-900 dark:text-white">Generate AI Presentation</DialogTitle>
+              <DialogTitle className="text-white">Generate AI Presentation</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label className="text-slate-900 dark:text-white">Topic</Label>
+                <Label className="text-slate-300">Topic</Label>
                 <Input
                   value={generateTopic}
                   onChange={(e) => setGenerateTopic(e.target.value)}
                   placeholder="e.g., Climate Change, Machine Learning, History of Art..."
-                  className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/20 text-slate-900 dark:text-white"
+                  className="bg-slate-800/50 border-slate-600 text-white placeholder-slate-400 focus:border-slate-500"
                 />
               </div>
               <div>
-                <Label className="text-slate-900 dark:text-white">Number of Slides</Label>
+                <Label className="text-slate-300">Number of Slides</Label>
                 <Input
                   type="number"
                   value={slideCount}
                   onChange={(e) => setSlideCount(Number.parseInt(e.target.value) || 5)}
                   min="3"
                   max="20"
-                  className="bg-white dark:bg-white/5 border-slate-300 dark:border-white/20 text-slate-900 dark:text-white"
+                  className="bg-slate-800/50 border-slate-600 text-white placeholder-slate-400 focus:border-slate-500"
                 />
               </div>
               <Button

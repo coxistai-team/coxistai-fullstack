@@ -13,7 +13,11 @@ import {
   Download,
   MoreVertical,
   Star,
-  Share2
+  Share2,
+  FolderOpen,
+  ChevronRight,
+  Plus,
+  X
 } from 'lucide-react';
 import {
   ContextMenu,
@@ -27,6 +31,20 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 
 interface Note {
   id: string;
@@ -64,6 +82,13 @@ interface NoteCardProps {
   onEditTags: (noteId: string, tags: string[]) => void;
   formatDate: (date: string) => string;
   isDragging?: boolean;
+  isLoading?: boolean;
+  isDeleting?: boolean;
+  isMoving?: boolean;
+  isPinning?: boolean;
+  isArchiving?: boolean;
+  isDuplicating?: boolean;
+  isEditingTags?: boolean;
 }
 
 const NoteCard: React.FC<NoteCardProps> = ({
@@ -80,8 +105,18 @@ const NoteCard: React.FC<NoteCardProps> = ({
   onEditTags,
   formatDate,
   isDragging = false,
+  isLoading = false,
+  isDeleting = false,
+  isMoving = false,
+  isPinning = false,
+  isArchiving = false,
+  isDuplicating = false,
+  isEditingTags = false,
 }) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showEditTagsDialog, setShowEditTagsDialog] = useState(false);
+  const [newTag, setNewTag] = useState('');
+  const [editingTags, setEditingTags] = useState<string[]>(note.tags || []);
 
   const {
     attributes,
@@ -124,16 +159,42 @@ const NoteCard: React.FC<NoteCardProps> = ({
   };
 
   const handleMoveToGroup = (groupId: number | null) => {
+    // Optimistic update - immediately update the note in the UI
+    const updatedNote = { ...note, group_id: groupId };
+    onUpdate(note.id, { group_id: groupId });
     onMoveToGroup(note.id, groupId);
   };
 
+  const handleMoveToUngrouped = () => {
+    handleMoveToGroup(null);
+  };
+
   const handleEditTags = () => {
-    // For now, just toggle a tag for demonstration
-    const currentTags = note.tags || [];
-    const newTags = currentTags.includes('edited') 
-      ? currentTags.filter(t => t !== 'edited')
-      : [...currentTags, 'edited'];
-    onEditTags(note.id, newTags);
+    setEditingTags(note.tags || []);
+    setShowEditTagsDialog(true);
+  };
+
+  const handleAddTag = () => {
+    if (newTag.trim() && !editingTags.includes(newTag.trim())) {
+      setEditingTags([...editingTags, newTag.trim()]);
+      setNewTag('');
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setEditingTags(editingTags.filter(tag => tag !== tagToRemove));
+  };
+
+  const handleSaveTags = () => {
+    onEditTags(note.id, editingTags);
+    setShowEditTagsDialog(false);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddTag();
+    }
   };
 
   const handleDuplicate = () => {
@@ -187,7 +248,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
                 isSelected ? 'ring-2 ring-blue-500/50 shadow-lg' : ''
               } ${note.is_pinned ? 'ring-2 ring-yellow-500/50' : ''} ${
                 note.is_archived ? 'opacity-60' : ''
-              }`}
+              } ${isLoading || isDeleting || isMoving ? 'opacity-50 pointer-events-none' : ''}`}
               onClick={handleCardClick}
             >
               <CardHeader className="pb-2">
@@ -247,6 +308,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
           <ContextMenuItem 
             onClick={handleContextMenuEdit}
             className="text-white hover:bg-slate-800"
+            disabled={isLoading || isDeleting}
           >
             <Edit3 className="w-4 h-4 mr-2" />
             Edit Note
@@ -257,25 +319,28 @@ const NoteCard: React.FC<NoteCardProps> = ({
           <ContextMenuItem 
             onClick={handlePin}
             className="text-white hover:bg-slate-800"
+            disabled={isLoading || isPinning}
           >
             <Pin className="w-4 h-4 mr-2" />
-            {note.is_pinned ? 'Unpin' : 'Pin'}
+            {isPinning ? 'Pinning...' : note.is_pinned ? 'Unpin' : 'Pin'}
           </ContextMenuItem>
           
           <ContextMenuItem 
             onClick={handleArchive}
             className="text-white hover:bg-slate-800"
+            disabled={isLoading || isArchiving}
           >
             <Archive className="w-4 h-4 mr-2" />
-            {note.is_archived ? 'Unarchive' : 'Archive'}
+            {isArchiving ? 'Archiving...' : note.is_archived ? 'Unarchive' : 'Archive'}
           </ContextMenuItem>
           
           <ContextMenuItem 
             onClick={handleDuplicate}
             className="text-white hover:bg-slate-800"
+            disabled={isLoading || isDuplicating}
           >
             <Copy className="w-4 h-4 mr-2" />
-            Duplicate
+            {isDuplicating ? 'Duplicating...' : 'Duplicate'}
           </ContextMenuItem>
           
           <ContextMenuSeparator className="bg-slate-600" />
@@ -283,19 +348,61 @@ const NoteCard: React.FC<NoteCardProps> = ({
           <ContextMenuItem 
             onClick={handleEditTags}
             className="text-white hover:bg-slate-800"
+            disabled={isLoading || isEditingTags}
           >
             <Tag className="w-4 h-4 mr-2" />
-            Edit Tags
+            {isEditingTags ? 'Editing Tags...' : 'Edit Tags'}
           </ContextMenuItem>
+          
+          <ContextMenuSeparator className="bg-slate-600" />
+          
+          {/* Move to Group Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <ContextMenuItem 
+                className="text-white hover:bg-slate-800"
+                disabled={isLoading || isMoving}
+              >
+                <FolderOpen className="w-4 h-4 mr-2" />
+                {isMoving ? 'Moving...' : 'Move to Group'}
+                <ChevronRight className="w-4 h-4 ml-auto" />
+              </ContextMenuItem>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-slate-900 border-slate-700">
+              <DropdownMenuItem 
+                onClick={handleMoveToUngrouped}
+                className="text-white hover:bg-slate-800"
+                disabled={isMoving}
+              >
+                <div className="w-3 h-3 rounded-full bg-slate-500 mr-2" />
+                Ungrouped
+              </DropdownMenuItem>
+              {noteGroups.map((group) => (
+                <DropdownMenuItem 
+                  key={group.id}
+                  onClick={() => handleMoveToGroup(group.id)}
+                  className="text-white hover:bg-slate-800"
+                  disabled={isMoving}
+                >
+                  <div 
+                    className="w-3 h-3 rounded-full mr-2"
+                    style={{ backgroundColor: group.color }}
+                  />
+                  {group.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           
           <ContextMenuSeparator className="bg-slate-600" />
           
           <ContextMenuItem 
             onClick={handleDelete}
             className="text-red-300 hover:bg-red-500/20"
+            disabled={isLoading || isDeleting}
           >
             <Trash2 className="w-4 h-4 mr-2" />
-            Delete
+            {isDeleting ? 'Deleting...' : 'Delete'}
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
@@ -319,7 +426,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
               <Button
                 variant="destructive"
                 onClick={confirmDelete}
-                className="bg-red-500 hover:bg-red-600 text-white"
+                className="bg-red-600 hover:bg-red-700 text-white border-red-600"
               >
                 Delete
               </Button>
@@ -327,6 +434,77 @@ const NoteCard: React.FC<NoteCardProps> = ({
           </div>
         </div>
       )}
+
+      {/* Edit Tags Dialog */}
+      <Dialog open={showEditTagsDialog} onOpenChange={setShowEditTagsDialog}>
+        <DialogContent className="bg-slate-900 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Edit Tags</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-white mb-2 block">
+                Add New Tag
+              </label>
+              <div className="flex gap-2">
+                <Input
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Enter tag name..."
+                  className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+                <Button
+                  onClick={handleAddTag}
+                  disabled={!newTag.trim()}
+                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium text-white mb-2 block">
+                Current Tags
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {editingTags.map((tag) => (
+                  <Badge
+                    key={tag}
+                    variant="outline"
+                    className={`${getTagColor(tag)} border cursor-pointer hover:opacity-80`}
+                  >
+                    {tag}
+                    <X 
+                      className="w-3 h-3 ml-1 cursor-pointer" 
+                      onClick={() => handleRemoveTag(tag)}
+                    />
+                  </Badge>
+                ))}
+                {editingTags.length === 0 && (
+                  <p className="text-slate-400 text-sm">No tags added yet</p>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowEditTagsDialog(false)}
+              className="border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveTags}
+              className="bg-blue-500 hover:bg-blue-600 text-white"
+            >
+              Save Tags
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

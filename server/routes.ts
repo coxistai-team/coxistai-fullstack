@@ -1396,12 +1396,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const groupId = parseInt(req.params.id);
       const { moveNotesToUngrouped } = req.query;
+      
       if (moveNotesToUngrouped === 'true') {
-        // Move notes to ungrouped
-        // This part of the code was not provided in the edit_specification,
-        // so it's commented out to avoid introducing new functionality.
-        // await db.update(notes).set({ group_id: null }).where(eq(notes.group_id, groupId));
+        // Move notes to ungrouped before deleting the group
+        await storage.moveNotesToUngrouped(groupId, userId);
       }
+      
       const deleted = await storage.deleteNoteGroup(groupId, userId);
       if (deleted) {
         res.json({ success: true });
