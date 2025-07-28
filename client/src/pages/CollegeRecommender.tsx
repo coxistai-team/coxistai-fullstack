@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Search, MapPin, Star, Users, DollarSign, GraduationCap, Filter, X, TrendingUp, Award, BookOpen } from "lucide-react";
+import { Search, MapPin, Star, Users, DollarSign, GraduationCap, Filter, X, TrendingUp, Award, BookOpen, Sparkles, Zap, Brain, Target, Lightbulb, CheckCircle, AlertCircle, Activity, BarChart3, Users2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
+import ParticleField from "@/components/effects/ParticleField";
 
 interface College {
   id: string;
@@ -526,7 +527,22 @@ export default function CollegeRecommender() {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-12 px-4">
+    <div className="min-h-screen pt-20 pb-12 px-4 bg-black text-white overflow-hidden">
+      {/* Particle Field Background */}
+      <ParticleField />
+      
+      {/* Creative Background Elements */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl floating-element"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl floating-element"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-green-500/10 rounded-full blur-2xl floating-element"></div>
+        
+        {/* Creative Shapes */}
+        <div className="absolute top-20 right-20 w-32 h-32 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-xl creative-shape"></div>
+        <div className="absolute bottom-20 left-20 w-24 h-24 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full blur-lg creative-shape"></div>
+        <div className="absolute top-1/3 right-1/3 w-16 h-16 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-full blur-md creative-shape"></div>
+      </div>
+
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -534,10 +550,12 @@ export default function CollegeRecommender() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <h1 className="text-4xl font-bold text-white mb-2 drop-shadow-lg">
+          <h1 className="text-4xl font-bold text-white mb-2 drop-shadow-lg flex items-center justify-center">
+            <GraduationCap className="w-8 h-8 mr-3 text-blue-400" />
             College Finder
           </h1>
-          <p className="text-white text-lg font-medium drop-shadow-lg">
+          <p className="text-gray-400 text-lg font-medium drop-shadow-lg flex items-center justify-center">
+            <Sparkles className="w-4 h-4 mr-2 text-green-400" />
             Find colleges that match your academic profile and preferences
           </p>
         </motion.div>
@@ -549,7 +567,7 @@ export default function CollegeRecommender() {
           transition={{ delay: 0.1 }}
           className="mb-8"
         >
-          <Card className="glassmorphism-strong shadow-xl border-slate-500/20">
+          <Card className="glassmorphism-enhanced shadow-xl border-gray-500/20">
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row gap-4 mb-4">
                 <div className="flex-1">
@@ -557,13 +575,13 @@ export default function CollegeRecommender() {
                     placeholder="Search colleges by name or location..."
                     value={filters.searchTerm}
                     onChange={(e) => setFilters({ ...filters, searchTerm: e.target.value })}
-                    className="w-full glassmorphism border-slate-500/20 text-white placeholder:text-slate-400"
+                    className="w-full glassmorphism border-gray-500/20 text-white placeholder:text-gray-400"
                   />
                 </div>
                 <Button
                   onClick={() => setShowFilters(!showFilters)}
                   variant="outline"
-                  className="flex items-center gap-2 glassmorphism-button border-slate-500/20 text-white hover:bg-slate-600/20"
+                  className="flex items-center gap-2 glassmorphism-button border-gray-500/20 text-white hover:bg-gray-600/20"
                 >
                   <Filter className="h-4 w-4" />
                   Filters
@@ -576,7 +594,7 @@ export default function CollegeRecommender() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pt-4 border-t border-slate-500/20"
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pt-4 border-t border-gray-500/20"
                 >
                   <div>
                     <Label className="text-sm font-medium mb-2 block text-white">SAT Score</Label>
@@ -585,7 +603,7 @@ export default function CollegeRecommender() {
                       placeholder="1600"
                       value={filters.satScore || ""}
                       onChange={(e) => setFilters({ ...filters, satScore: parseInt(e.target.value) || 0 })}
-                      className="glassmorphism border-slate-500/20 text-white placeholder:text-slate-400"
+                      className="glassmorphism border-gray-500/20 text-white placeholder:text-gray-400"
                     />
                   </div>
                   
@@ -596,7 +614,7 @@ export default function CollegeRecommender() {
                       placeholder="36"
                       value={filters.actScore || ""}
                       onChange={(e) => setFilters({ ...filters, actScore: parseInt(e.target.value) || 0 })}
-                      className="glassmorphism border-slate-500/20 text-white placeholder:text-slate-400"
+                      className="glassmorphism border-gray-500/20 text-white placeholder:text-gray-400"
                     />
                   </div>
                   
@@ -608,17 +626,17 @@ export default function CollegeRecommender() {
                       placeholder="4.0"
                       value={filters.gpa || ""}
                       onChange={(e) => setFilters({ ...filters, gpa: parseFloat(e.target.value) || 0 })}
-                      className="glassmorphism border-slate-500/20 text-white placeholder:text-slate-400"
+                      className="glassmorphism border-gray-500/20 text-white placeholder:text-gray-400"
                     />
                   </div>
 
                   <div>
                     <Label className="text-sm font-medium mb-2 block text-white">Major</Label>
                     <Select value={filters.major} onValueChange={(value) => setFilters({ ...filters, major: value })}>
-                      <SelectTrigger className="glassmorphism border-slate-500/20 text-white">
+                      <SelectTrigger className="glassmorphism border-gray-500/20 text-white">
                         <SelectValue placeholder="Select major" />
                       </SelectTrigger>
-                      <SelectContent className="glassmorphism border-slate-500/20">
+                      <SelectContent className="glassmorphism border-gray-500/20">
                         <SelectItem value="any">Any Major</SelectItem>
                         <SelectItem value="Computer Science">Computer Science</SelectItem>
                         <SelectItem value="Engineering">Engineering</SelectItem>
@@ -637,10 +655,10 @@ export default function CollegeRecommender() {
                   <div>
                     <Label className="text-sm font-medium mb-2 block text-white">State</Label>
                     <Select value={filters.state} onValueChange={(value) => setFilters({ ...filters, state: value })}>
-                      <SelectTrigger className="glassmorphism border-slate-500/20 text-white">
+                      <SelectTrigger className="glassmorphism border-gray-500/20 text-white">
                         <SelectValue placeholder="Select state" />
                       </SelectTrigger>
-                      <SelectContent className="glassmorphism border-slate-500/20">
+                      <SelectContent className="glassmorphism border-gray-500/20">
                         <SelectItem value="any">Any State</SelectItem>
                         <SelectItem value="California">California</SelectItem>
                         <SelectItem value="Massachusetts">Massachusetts</SelectItem>
@@ -659,10 +677,10 @@ export default function CollegeRecommender() {
                   <div>
                     <Label className="text-sm font-medium mb-2 block text-white">School Type</Label>
                     <Select value={filters.type} onValueChange={(value) => setFilters({ ...filters, type: value })}>
-                      <SelectTrigger className="glassmorphism border-slate-500/20 text-white">
+                      <SelectTrigger className="glassmorphism border-gray-500/20 text-white">
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
-                      <SelectContent className="glassmorphism border-slate-500/20">
+                      <SelectContent className="glassmorphism border-gray-500/20">
                         <SelectItem value="any">Any Type</SelectItem>
                         <SelectItem value="Public">Public</SelectItem>
                         <SelectItem value="Private">Private</SelectItem>
@@ -708,7 +726,7 @@ export default function CollegeRecommender() {
                         searchTerm: ""
                       })}
                       variant="outline"
-                      className="w-full glassmorphism-button border-slate-500/20 text-white hover:bg-slate-600/20"
+                      className="w-full glassmorphism-button border-gray-500/20 text-white hover:bg-gray-600/20"
                     >
                       Clear Filters
                     </Button>
@@ -739,7 +757,7 @@ export default function CollegeRecommender() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <Card className="glassmorphism-strong shadow-xl border-slate-500/20 hover:border-slate-400/40 transition-all duration-300">
+                <Card className="glassmorphism-strong shadow-xl border-gray-500/20 hover:border-gray-400/40 transition-all duration-300">
                   <CardContent className="p-6">
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4">
                       <div className="flex-1">
@@ -750,11 +768,11 @@ export default function CollegeRecommender() {
                           <Badge className={`${matchInfo.color} text-white`}>
                             {matchInfo.level}
                           </Badge>
-                          <Badge variant="outline" className="text-slate-300 border-slate-400">
+                          <Badge variant="outline" className="text-gray-300 border-gray-400">
                             #{college.ranking}
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-slate-400 mb-2">
+                        <div className="flex items-center gap-4 text-sm text-gray-400 mb-2">
                           <span className="flex items-center gap-1">
                             <MapPin className="h-4 w-4" />
                             {college.location}
@@ -768,7 +786,7 @@ export default function CollegeRecommender() {
                             {college.enrollment.toLocaleString()} students
                           </span>
                         </div>
-                        <p className="text-slate-300 text-sm">
+                        <p className="text-gray-300 text-sm">
                           {college.description}
                         </p>
                       </div>

@@ -85,12 +85,8 @@ export default function UserProfileDropdown({ className = "" }: UserProfileDropd
     return fullName || user.username;
   };
 
-  const getPlanColor = () => {
-    return 'bg-gradient-to-r from-blue-500 to-green-500';
-  };
-
   if (!user) {
-    return null; // Don't render anything if no user
+    return null;
   }
 
   return (
@@ -99,36 +95,28 @@ export default function UserProfileDropdown({ className = "" }: UserProfileDropd
         onClick={() => {
           if (isMobile) {
             navigateTo('/profile');
-          } else if (className.includes('w-full')) {
-            setIsOpen(!isOpen);
           } else {
             setIsOpen(!isOpen);
           }
         }}
-        className="flex items-center space-x-3 p-2 rounded-xl glassmorphism hover:bg-white/10 transition-all duration-200 w-full"
+        className="flex items-center space-x-3 p-2 rounded-xl glassmorphism hover:glassmorphism-strong transition-all duration-300 w-full border border-white/10 hover:border-white/20"
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
       >
-        <Avatar className="w-8 h-8 ring-2 ring-blue-500/30">
+        <Avatar className="w-10 h-10 ring-2 ring-blue-500/30 hover:ring-blue-400/50 transition-all">
           <AvatarImage src={user.avatar || undefined} alt={getUserName()} />
-          <AvatarFallback className="bg-gradient-to-r from-blue-500 to-green-500 text-white text-sm font-semibold">
+          <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm font-bold">
             {getInitials(user.firstName || '', user.lastName || '')}
           </AvatarFallback>
         </Avatar>
         <div className="text-left flex-1">
-          <div className="text-sm font-medium text-slate-900 dark:text-white sm:block hidden">{getUserName()}</div>
-          <div className="text-sm font-medium text-slate-900 dark:text-white sm:hidden block">Profile</div>
-          <div className="text-xs text-slate-600 dark:text-slate-400 sm:block hidden">Pro Plan</div>
-          <div className="text-xs text-slate-600 dark:text-slate-400 sm:hidden block">Settings & Account</div>
+          <div className="text-sm font-semibold text-white sm:block hidden">{getUserName()}</div>
+          <div className="text-sm font-semibold text-white sm:hidden block">Profile</div>
+          <div className="text-xs text-gray-400 sm:block hidden">Pro Plan</div>
+          <div className="text-xs text-gray-400 sm:hidden block">Settings & Account</div>
         </div>
-        {!isMobile && className.includes('w-full') ? (
-          <ChevronDown className={`w-4 h-4 text-slate-600 dark:text-slate-400 transition-transform duration-200 ${
-            isOpen ? 'rotate-180' : ''
-          }`} />
-        ) : isMobile ? (
-          <div className="text-xs text-slate-400">→</div>
-        ) : (
-          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
+        {!isMobile && (
+          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
             isOpen ? 'rotate-180' : ''
           }`} />
         )}
@@ -145,27 +133,23 @@ export default function UserProfileDropdown({ className = "" }: UserProfileDropd
             
             {/* Dropdown */}
             <motion.div
-              className="absolute top-full mt-2 glassmorphism-strong rounded-xl border border-white/10 shadow-2xl overflow-hidden z-50 
-                         w-80 max-w-[calc(100vw-1rem)] 
-                         right-0 sm:right-0 
-                         xs:right-2 xs:w-72
-                         max-sm:right-2 max-sm:w-[calc(100vw-2rem)]"
+              className="absolute top-full mt-2 glassmorphism-strong rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-50 w-80 max-w-[calc(100vw-1rem)] right-0"
               initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
               transition={{ duration: 0.2 }}
             >
               {/* User Info Section */}
-              <div className="p-4 bg-gradient-to-r from-blue-500/10 to-green-500/10">
-                <div className="flex items-center space-x-3">
+              <div className="p-6 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-b border-white/10">
+                <div className="flex items-center space-x-4">
                   <div className="relative">
-                    <Avatar className="w-12 h-12 ring-2 ring-blue-500/30">
+                    <Avatar className="w-16 h-16 ring-2 ring-blue-500/30">
                       <AvatarImage src={user.avatar || undefined} alt={getUserName()} />
-                      <AvatarFallback className="bg-gradient-to-r from-blue-500 to-green-500 text-white font-semibold">
+                      <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold text-lg">
                         {getInitials(user.firstName || '', user.lastName || '')}
                       </AvatarFallback>
                     </Avatar>
-                    <label className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-colors">
+                    <label className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-colors shadow-lg">
                       <Camera className="w-3 h-3 text-white" />
                       <input
                         type="file"
@@ -176,9 +160,9 @@ export default function UserProfileDropdown({ className = "" }: UserProfileDropd
                     </label>
                   </div>
                   <div className="flex-1">
-                    <div className="font-semibold text-white">{getUserName()}</div>
-                    <div className="text-sm text-slate-400">{user.email || 'No email set'}</div>
-                    <Badge className={`mt-1 text-xs ${getPlanColor()} text-white border-0`}>
+                    <div className="font-bold text-white text-lg">{getUserName()}</div>
+                    <div className="text-sm text-gray-400">{user.email || 'No email set'}</div>
+                    <Badge className="mt-2 text-xs bg-gradient-to-r from-blue-500 to-purple-500 text-white border-0 hover:from-blue-600 hover:to-purple-600">
                       <Crown className="w-3 h-3 mr-1" />
                       Pro Plan
                     </Badge>
@@ -186,97 +170,31 @@ export default function UserProfileDropdown({ className = "" }: UserProfileDropd
                 </div>
               </div>
 
-              <Separator className="bg-white/10" />
-
               {/* User Details */}
-              {/*
-              <div className="p-4">
-                <div className="text-sm font-medium text-white mb-2">Account Details</div>
+              <div className="p-4 border-b border-white/10">
+                <div className="text-sm font-medium text-white mb-3">Account Details</div>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-slate-400">Occupation</span>
+                    <span className="text-gray-400">Occupation</span>
                     <span className="text-white">{user.occupation || 'Not set'}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-slate-400">Location</span>
+                    <span className="text-gray-400">Location</span>
                     <span className="text-white">{user.location || 'Not set'}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-slate-400">Theme</span>
-                    <span className="text-white capitalize">{user.theme || 'dark'}</span>
                   </div>
                 </div>
               </div>
 
-              <Separator className="bg-white/10" />
-              */}
-
               {/* Menu Items */}
               <div className="p-2">
-                {/*
-                <motion.button
-                  onClick={() => navigateTo('/profile')}
-                  className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-white/10 transition-colors text-left"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <User className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                  <span className="text-slate-900 dark:text-white">Profile Settings</span>
-                </motion.button>
-
-                <motion.button
-                  onClick={() => navigateTo('/billing')}
-                  className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-white/10 transition-colors text-left"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <CreditCard className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                  <span className="text-slate-900 dark:text-white">Billing & Subscription</span>
-                </motion.button>
-
-                <motion.button
-                  onClick={() => navigateTo('/notifications')}
-                  className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-white/10 transition-colors text-left"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Bell className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                  <span className="text-slate-900 dark:text-white">Notifications</span>
-                  <div className="ml-auto">
-                    <div className={`w-2 h-2 rounded-full ${user.emailNotifications ? 'bg-green-400' : 'bg-gray-400'}`} />
-                  </div>
-                </motion.button>
-
-                <motion.button
-                  onClick={() => navigateTo('/privacy')}
-                  className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-white/10 transition-colors text-left"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Shield className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                  <span className="text-slate-900 dark:text-white">Privacy & Security</span>
-                </motion.button>
-
-                <motion.button
-                  onClick={() => navigateTo('/settings')}
-                  className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-white/10 transition-colors text-left"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Settings className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                  <span className="text-slate-900 dark:text-white">General Settings</span>
-                </motion.button>
-
-                <Separator className="bg-slate-300 dark:bg-white/10 my-2" />
-                */}
                 <motion.button
                   onClick={handleLogout}
-                  className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-red-500/20 transition-colors text-left group"
+                  className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-red-500/20 transition-colors text-left group"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <LogOut className="w-4 h-4 text-red-400" />
-                  <span className="text-red-400 group-hover:text-red-300">Log Out</span>
+                  <LogOut className="w-5 h-5 text-red-400" />
+                  <span className="text-red-400 group-hover:text-red-300 font-medium">Log Out</span>
                 </motion.button>
               </div>
             </motion.div>

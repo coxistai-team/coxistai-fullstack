@@ -20,29 +20,29 @@ const Team = () => {
       y: 0,
       transition: {
         duration: 0.6,
-        ease: "easeOut"
+        ease: "easeOut" as const
       }
     }
   };
 
   return (
-    <main className="relative z-10 pt-20">
-      <div className="max-w-7xl mx-auto px-4 py-16">
+    <main className="relative z-10 pt-16">
+      <div className="max-w-7xl mx-auto px-4 py-12">
         {/* Header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-12">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <div className="inline-flex items-center space-x-2 glassmorphism rounded-full px-4 py-2 mb-6">
-              <Users className="w-4 h-4 text-blue-400" />
-              <span className="text-sm font-semibold text-blue-400">Meet Our Team</span>
+            <div className="inline-flex items-center space-x-2 glassmorphism rounded-full px-3 py-1 mb-4">
+              <Users className="w-3 h-3 text-blue-400" />
+              <span className="text-xs font-semibold text-blue-400">Meet Our Team</span>
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
+            <h1 className="text-3xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
               The Minds Behind Coexist AI
             </h1>
-            <p className="text-xl text-slate-400 mb-8 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-lg text-slate-400 mb-6 max-w-3xl mx-auto leading-relaxed">
               Our diverse team of educators, engineers, and researchers is dedicated to revolutionizing 
               education through artificial intelligence and innovative learning technologies.
             </p>
@@ -51,7 +51,7 @@ const Team = () => {
 
         {/* Stats */}
         <motion.div 
-          className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16"
+          className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.8 }}

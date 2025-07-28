@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useLoading } from "@/contexts/LoadingContext";
+import ParticleField from "@/components/effects/ParticleField";
 
 interface SubscriptionPlan {
   id: string;
@@ -207,7 +208,22 @@ export default function BillingSubscription() {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-12 px-4">
+    <div className="min-h-screen pt-20 pb-12 px-4 bg-black text-white overflow-hidden">
+      {/* Particle Field Background */}
+      <ParticleField />
+      
+      {/* Creative Background Elements */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl floating-element"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl floating-element"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-green-500/10 rounded-full blur-2xl floating-element"></div>
+        
+        {/* Creative Shapes */}
+        <div className="absolute top-20 right-20 w-32 h-32 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-xl creative-shape"></div>
+        <div className="absolute bottom-20 left-20 w-24 h-24 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full blur-lg creative-shape"></div>
+        <div className="absolute top-1/3 right-1/3 w-16 h-16 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-full blur-md creative-shape"></div>
+      </div>
+
       <div className="max-w-6xl mx-auto">
         <motion.div
           className="text-center mb-8"
@@ -220,7 +236,7 @@ export default function BillingSubscription() {
               Billing & Subscription
             </span>
           </h1>
-          <p className="text-slate-400">Manage your subscription and billing information</p>
+          <p className="text-gray-400">Manage your subscription and billing information</p>
         </motion.div>
 
         <div className="grid lg:grid-cols-3 gap-8">
@@ -231,7 +247,7 @@ export default function BillingSubscription() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
           >
-            <Card className="glassmorphism border-slate-600">
+            <Card className="glassmorphism border-gray-700">
               <CardHeader>
                 <CardTitle className="text-white flex items-center">
                   <Crown className="w-5 h-5 mr-2 text-yellow-400" />
@@ -243,7 +259,7 @@ export default function BillingSubscription() {
                   <h3 className="text-2xl font-bold text-white">{currentPlan.name}</h3>
                   <div className="text-3xl font-bold text-blue-400 mt-2">
                     ${currentPlan.price}
-                    <span className="text-sm text-slate-400">/{currentPlan.interval}</span>
+                    <span className="text-sm text-gray-400">/{currentPlan.interval}</span>
                   </div>
                   <Badge className="mt-2 bg-green-500/20 text-green-400 border-green-400/30">
                     {currentPlan.status}
@@ -252,11 +268,11 @@ export default function BillingSubscription() {
                 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Next billing:</span>
+                    <span className="text-gray-400">Next billing:</span>
                     <span className="text-white">{formatDate(currentPlan.nextBilling)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Payment method:</span>
+                    <span className="text-gray-400">Payment method:</span>
                     <span className="text-white">•••• {paymentMethod.last4}</span>
                   </div>
                 </div>
@@ -265,7 +281,7 @@ export default function BillingSubscription() {
                   <Button 
                     onClick={handleUpdatePayment}
                     variant="outline" 
-                    className="w-full border-slate-600 text-white hover:bg-slate-700"
+                    className="w-full border-gray-700 text-white hover:bg-gray-800"
                     disabled={isBillingLoading}
                   >
                     {isBillingLoading ? 'Processing...' : 'Update Payment'}
@@ -284,7 +300,7 @@ export default function BillingSubscription() {
             </Card>
 
             {/* Payment Method */}
-            <Card className="glassmorphism border-slate-600 mt-6">
+            <Card className="glassmorphism border-gray-700 mt-6">
               <CardHeader>
                 <CardTitle className="text-white flex items-center">
                   <CreditCard className="w-5 h-5 mr-2" />
@@ -292,13 +308,13 @@ export default function BillingSubscription() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center space-x-3 p-3 bg-slate-800/50 rounded-lg">
+                <div className="flex items-center space-x-3 p-3 bg-gray-800/50 rounded-lg">
                   <div className="w-10 h-6 bg-blue-500 rounded flex items-center justify-center text-xs text-white font-bold">
                     VISA
                   </div>
                   <div className="flex-1">
                     <div className="text-white font-medium">•••• •••• •••• {paymentMethod.last4}</div>
-                    <div className="text-sm text-slate-400">Expires {paymentMethod.expiry}</div>
+                    <div className="text-sm text-gray-400">Expires {paymentMethod.expiry}</div>
                   </div>
                 </div>
               </CardContent>
@@ -317,7 +333,7 @@ export default function BillingSubscription() {
               {plans.map((plan) => (
                 <Card 
                   key={plan.id} 
-                  className={`glassmorphism border-slate-600 relative ${
+                  className={`glassmorphism border-gray-700 relative ${
                     plan.popular ? 'ring-2 ring-blue-500/50' : ''
                   }`}
                 >
@@ -333,7 +349,7 @@ export default function BillingSubscription() {
                     <CardTitle className="text-white">{plan.name}</CardTitle>
                     <div className="text-3xl font-bold text-blue-400">
                       ${plan.price}
-                      <span className="text-sm text-slate-400">/{plan.interval}</span>
+                      <span className="text-sm text-gray-400">/{plan.interval}</span>
                     </div>
                   </CardHeader>
                   
@@ -342,7 +358,7 @@ export default function BillingSubscription() {
                       {plan.features.map((feature, index) => (
                         <li key={index} className="flex items-center text-sm">
                           <Check className="w-4 h-4 text-green-400 mr-2 flex-shrink-0" />
-                          <span className="text-slate-300">{feature}</span>
+                          <span className="text-gray-300">{feature}</span>
                         </li>
                       ))}
                     </ul>
@@ -351,7 +367,7 @@ export default function BillingSubscription() {
                       onClick={() => handlePlanChange(plan.id)}
                       className={`w-full ${
                         plan.current 
-                          ? 'bg-slate-600 text-slate-400 cursor-not-allowed' 
+                          ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
                           : 'bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600'
                       }`}
                       disabled={isBillingLoading}
@@ -372,13 +388,13 @@ export default function BillingSubscription() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
         >
-          <Card className="glassmorphism border-slate-600">
+          <Card className="glassmorphism border-gray-700">
             <CardHeader>
               <CardTitle className="text-white flex items-center">
                 <Receipt className="w-5 h-5 mr-2" />
                 Billing History
               </CardTitle>
-              <CardDescription className="text-slate-400">
+              <CardDescription className="text-gray-400">
                 View and download your past invoices
               </CardDescription>
             </CardHeader>
@@ -387,7 +403,7 @@ export default function BillingSubscription() {
                 {billingHistory.map((invoice) => (
                   <div 
                     key={invoice.id}
-                    className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg"
+                    className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg"
                   >
                     <div className="flex items-center space-x-4">
                       <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
@@ -395,7 +411,7 @@ export default function BillingSubscription() {
                       </div>
                       <div>
                         <div className="font-medium text-white">{invoice.description}</div>
-                        <div className="text-sm text-slate-400">{formatDate(invoice.date)}</div>
+                        <div className="text-sm text-gray-400">{formatDate(invoice.date)}</div>
                       </div>
                     </div>
                     
@@ -431,7 +447,7 @@ export default function BillingSubscription() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <Card className="glassmorphism border-slate-600">
+          <Card className="glassmorphism border-gray-700">
             <CardHeader>
               <CardTitle className="text-white flex items-center">
                 <Zap className="w-5 h-5 mr-2 text-yellow-400" />
@@ -441,37 +457,37 @@ export default function BillingSubscription() {
             <CardContent className="space-y-4">
               <div>
                 <div className="flex justify-between text-sm mb-2">
-                  <span className="text-slate-400">AI Conversations</span>
+                  <span className="text-gray-400">AI Conversations</span>
                   <span className="text-white">247 / Unlimited</span>
                 </div>
-                <div className="w-full bg-slate-700 rounded-full h-2">
+                <div className="w-full bg-gray-700 rounded-full h-2">
                   <div className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full w-full"></div>
                 </div>
               </div>
               
               <div>
                 <div className="flex justify-between text-sm mb-2">
-                  <span className="text-slate-400">File Uploads</span>
+                  <span className="text-gray-400">File Uploads</span>
                   <span className="text-white">89 / Unlimited</span>
                 </div>
-                <div className="w-full bg-slate-700 rounded-full h-2">
+                <div className="w-full bg-gray-700 rounded-full h-2">
                   <div className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full w-full"></div>
                 </div>
               </div>
               
               <div>
                 <div className="flex justify-between text-sm mb-2">
-                  <span className="text-slate-400">Storage Used</span>
+                  <span className="text-gray-400">Storage Used</span>
                   <span className="text-white">2.3 GB / 100 GB</span>
                 </div>
-                <div className="w-full bg-slate-700 rounded-full h-2">
+                <div className="w-full bg-gray-700 rounded-full h-2">
                   <div className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full w-[23%]"></div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="glassmorphism border-slate-600">
+          <Card className="glassmorphism border-gray-700">
             <CardHeader>
               <CardTitle className="text-white flex items-center">
                 <AlertCircle className="w-5 h-5 mr-2 text-blue-400" />
@@ -479,17 +495,17 @@ export default function BillingSubscription() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-slate-300 text-sm">
+              <p className="text-gray-300 text-sm">
                 Have questions about your subscription or billing? Our support team is here to help.
               </p>
               <div className="space-y-2">
-                <Button variant="outline" className="w-full border-slate-600 text-white hover:bg-slate-700">
+                <Button variant="outline" className="w-full border-gray-700 text-white hover:bg-gray-800">
                   Contact Support
                 </Button>
-                <Button variant="outline" className="w-full border-slate-600 text-white hover:bg-slate-700">
+                <Button variant="outline" className="w-full border-gray-700 text-white hover:bg-gray-800">
                   View FAQ
                 </Button>
-                <Button variant="outline" className="w-full border-slate-600 text-white hover:bg-slate-700">
+                <Button variant="outline" className="w-full border-gray-700 text-white hover:bg-gray-800">
                   Billing Policies
                 </Button>
               </div>

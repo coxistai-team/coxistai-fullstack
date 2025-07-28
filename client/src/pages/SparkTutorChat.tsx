@@ -15,7 +15,13 @@ import {
   Trash2,
   Menu,
   Search,
-  Square
+  Square,
+  Brain,
+  Zap,
+  Lightbulb,
+  Clock,
+  CheckCircle,
+  AlertCircle
 } from "lucide-react";
 import GlassmorphismButton from "@/components/ui/glassmorphism-button";
 import FileUpload from "@/components/ui/file-upload";
@@ -23,13 +29,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { useLoading } from "@/contexts/LoadingContext";
 import { MiniLoader } from "@/components/ui/page-loader";
+import { useToast } from "@/hooks/use-toast";
 import axios from 'axios';
+import ParticleField from "@/components/effects/ParticleField";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const CHATBOT_API_URL = import.meta.env.VITE_CHATBOT_API_URL;
-
-// Add this for debugging
-console.log('Chatbot API URL:', CHATBOT_API_URL);
 
 const formatMessage = (content: string): string => {
   return content
@@ -51,6 +56,7 @@ interface Message {
   isAI: boolean;
   timestamp: string;
   attachedFiles?: AttachedFile[];
+  status?: 'sending' | 'sent' | 'error';
 }
 
 interface ChatSession {
@@ -63,6 +69,7 @@ interface ChatSession {
 
 const SparkTutorChat = () => {
   const { showLoader, hideLoader } = useLoading();
+  const { toast } = useToast();
   
   const [chatSessions, setChatSessions] = useState<ChatSession[]>(() => {
     const saved = localStorage.getItem('sparktutor-sessions');
@@ -70,18 +77,15 @@ const SparkTutorChat = () => {
   });
   
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-
-
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   const currentSession = chatSessions.find(s => s.id === currentSessionId);
-  const [messages, setMessages] = useState<Message[]>([ {
-      id: "1",
-      content: "Hello! I'm SparkTutor, your AI learning assistant. I can help you with homework, explain concepts, solve problems, and much more. You can also upload files for me to analyze! How can I assist you today?",
-      isAI: true,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  
+  const [messages, setMessages] = useState<Message[]>([{
+    id: "1",
+    content: "Hello! I'm SparkTutor, your AI learning assistant. I can help you with homework, explain concepts, solve problems, and much more. You can also upload files for me to analyze! How can I assist you today?",
+    isAI: true,
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }]);
 
   const [inputValue, setInputValue] = useState("");
@@ -99,6 +103,7 @@ const SparkTutorChat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Optimistic UI: Update sessions immediately
   useEffect(() => {
     localStorage.setItem('sparktutor-sessions', JSON.stringify(chatSessions));
   }, [chatSessions]);
@@ -149,11 +154,13 @@ const SparkTutorChat = () => {
   };
 
   const deleteSession = (sessionId: string) => {
+    // Optimistic UI: Remove immediately
     setChatSessions(prev => prev.filter(s => s.id !== sessionId));
+    
     if (currentSessionId === sessionId) {
-      const remaining = chatSessions.filter(s => s.id !== sessionId);
-      if (remaining.length > 0) {
-        switchToSession(remaining[0].id);
+      const remainingSessions = chatSessions.filter(s => s.id !== sessionId);
+      if (remainingSessions.length > 0) {
+        switchToSession(remainingSessions[0].id);
       } else {
         createNewChat();
       }
@@ -161,8 +168,8 @@ const SparkTutorChat = () => {
   };
 
   const updateSessionTitle = (sessionId: string, newTitle: string) => {
-    setChatSessions(prev => 
-      prev.map(session => 
+    setChatSessions(sessions => 
+      sessions.map(session => 
         session.id === sessionId 
           ? { ...session, title: newTitle }
           : session
@@ -171,17 +178,9 @@ const SparkTutorChat = () => {
   };
 
   const generateTitle = (firstUserMessage: string) => {
-    return firstUserMessage.length > 50 
-      ? firstUserMessage.substring(0, 47) + "..."
-      : firstUserMessage;
+    const words = firstUserMessage.split(' ').slice(0, 5);
+    return words.join(' ') + (firstUserMessage.split(' ').length > 5 ? '...' : '');
   };
-
-  const filteredSessions = chatSessions.filter(session =>
-    session.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    session.messages.some(msg => 
-      msg.content.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  );
 
   const startRecording = async () => {
     try {
@@ -191,30 +190,26 @@ const SparkTutorChat = () => {
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       
-      const audioChunks: Blob[] = [];
+      const chunks: Blob[] = [];
       
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunks.push(event.data);
-        }
+        chunks.push(event.data);
       };
       
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-        const audioFile = new File([audioBlob], `voice-recording-${Date.now()}.wav`, {
-          type: 'audio/wav'
-        });
+        const audioBlob = new Blob(chunks, { type: 'audio/wav' });
+        const audioFile = new File([audioBlob], 'voice-message.wav', { type: 'audio/wav' });
         
         setAttachedFile({
           file: audioFile,
           type: 'audio'
         });
         
-        // Clean up
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach(track => track.stop());
-          streamRef.current = null;
-        }
+        setIsRecording(false);
+        setRecordingTime(0);
+        
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop());
       };
       
       mediaRecorder.start();
@@ -227,40 +222,36 @@ const SparkTutorChat = () => {
       }, 1000);
       
     } catch (error) {
-      console.error('Error accessing microphone:', error);
-      alert('Could not access microphone. Please check your permissions.');
+      console.error('Error starting recording:', error);
+      toast({
+        title: "Recording Error",
+        description: "Could not access microphone. Please check permissions.",
+        variant: "destructive"
+      });
     }
   };
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      
-      if (recordingTimerRef.current) {
-        clearInterval(recordingTimerRef.current);
-        recordingTimerRef.current = null;
-      }
+    }
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
     }
   };
 
   const cancelRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      
-      if (recordingTimerRef.current) {
-        clearInterval(recordingTimerRef.current);
-        recordingTimerRef.current = null;
-      }
-      
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-        streamRef.current = null;
-      }
-      
-      setRecordingTime(0);
     }
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+    }
+    setIsRecording(false);
+    setRecordingTime(0);
   };
 
   const formatTime = (seconds: number) => {
@@ -269,131 +260,122 @@ const SparkTutorChat = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Optimistic UI: Add message immediately
   const handleSendMessage = async () => {
-    if ((!inputValue.trim() && !attachedFile) || isLoading) return;
-
-    let userMessageContent = inputValue;
-    if (attachedFile && inputValue.trim()) {
-      userMessageContent = `${inputValue}\n\n📎 **Attached file:** ${attachedFile.file.name}`;
-    } else if (attachedFile && !inputValue.trim()) {
-      userMessageContent = `📎 **Attached file:** ${attachedFile.file.name}\n\nPlease analyze this file.`;
-    }
+    if (!inputValue.trim() && !attachedFile) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      content: userMessageContent,
+      content: inputValue.trim(),
       isAI: false,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      attachedFiles: attachedFile ? [attachedFile] : undefined,
+      status: 'sending',
+      attachedFiles: attachedFile ? [attachedFile] : undefined
     };
 
-    if (!currentSessionId || (currentSession && currentSession.title === "New Chat" && currentSession.messages.length === 1)) {
-      const title = generateTitle(userMessage.content);
-      if (currentSessionId) {
-        updateSessionTitle(currentSessionId, title);
-      } else {
-        const newSession: ChatSession = {
-          id: Date.now().toString(),
-          title,
-          messages: [
-            {
-              id: "1",
-              content: "Hello! I'm SparkTutor, your AI learning assistant. I can help you with homework, explain concepts, solve problems, and much more. You can also upload files for me to analyze! How can I assist you today?",
-              isAI: true,
-              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            },
-            userMessage,
-          ],
-          createdAt: new Date().toISOString(),
-          lastUpdated: new Date().toISOString(),
-        };
-        setChatSessions((prev) => [newSession, ...prev]);
-        setCurrentSessionId(newSession.id);
-        setMessages(newSession.messages);
-        setInputValue("");
-        setAttachedFile(null);
-        setIsLoading(true);
-        await sendToAPI(userMessageContent, attachedFile);
-        return;
-      }
-    }
-
-    setMessages((prev) => [...prev, userMessage]);
+    // Optimistic update
+    setMessages(prev => [...prev, userMessage]);
     setInputValue("");
     setAttachedFile(null);
-    setIsLoading(true);
-    await sendToAPI(userMessageContent, attachedFile);
+
+    try {
+      const response = await sendToAPI(inputValue.trim(), attachedFile);
+      
+      // Update message status to sent
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === userMessage.id 
+            ? { ...msg, status: 'sent' }
+            : msg
+        )
+      );
+
+      // Add AI response
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: response,
+        isAI: true,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+
+      setMessages(prev => [...prev, aiMessage]);
+
+      // Update session title if it's the first user message
+      if (currentSession && currentSession.messages.length === 1) {
+        const newTitle = generateTitle(inputValue.trim());
+        updateSessionTitle(currentSession.id, newTitle);
+      }
+
+    } catch (error) {
+      console.error('Error sending message:', error);
+      
+      // Update message status to error
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === userMessage.id 
+            ? { ...msg, status: 'error' }
+            : msg
+        )
+      );
+
+      toast({
+        title: "Message Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const sendToAPI = async (messageContent: string, file: AttachedFile | null) => {
+    setIsLoading(true);
+    
     try {
-      let response;
-      const token = localStorage.getItem('authToken');
-      const config = {
-        headers: {
-          'Content-Type': file ? 'multipart/form-data' : 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        }
-      };
-
+      const formData = new FormData();
+      formData.append('message', messageContent);
+      
       if (file) {
-        const formData = new FormData();
-        formData.append("file", file.file);
-        if (messageContent.trim()) {
-          formData.append("query", messageContent);
-        }
-        response = await axios.post(`${CHATBOT_API_URL}/api/chat/file`, formData, config);
-      } else {
-        console.log('Making request to:', `${CHATBOT_API_URL}/api/chat/text`);
-        response = await axios.post(`${CHATBOT_API_URL}/api/chat/text`, {
-          message: messageContent,
-        }, config);
+        formData.append('file', file.file);
       }
 
-      setMessages((prev) => prev.filter((msg) => msg.id !== "typing"));
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        content: response.data.ai_response,
-        isAI: true,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setMessages((prev) => [...prev, aiResponse]);
-    } catch (error) {
-      console.error("Error calling API:", error);
-      console.error("Request URL:", `${CHATBOT_API_URL}/api/chat/text`);
-      setMessages((prev) => prev.filter((msg) => msg.id !== "typing"));
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        content: "I'm having trouble connecting to the server. Please try again later.",
-        isAI: true,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setMessages((prev) => [...prev, aiResponse]);
-    } finally {
+      const response = await axios.post(`${CHATBOT_API_URL}/chat`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 30000,
+      });
+
       setIsLoading(false);
+      return response.data.response || response.data.message || "I'm sorry, I couldn't process your request. Please try again.";
+      
+    } catch (error) {
+      setIsLoading(false);
+      console.error('API Error:', error);
+      throw new Error('Failed to get response from AI');
     }
   };
 
   const handleFilesChange = (files: AttachedFile[]) => {
     if (files.length > 0) {
-      setAttachedFile(files[0]); 
+      setAttachedFile(files[0]);
     }
   };
 
   const removeAttachedFile = () => {
-    if (attachedFile?.preview) {
-      URL.revokeObjectURL(attachedFile.preview);
-    }
     setAttachedFile(null);
   };
 
   const getFileIcon = (type: AttachedFile['type']) => {
     switch (type) {
-      case 'image': return <ImageIcon className="w-4 h-4" />;
-      case 'pdf': return <FileText className="w-4 h-4 text-red-400" />;
-      case 'document': return <FileText className="w-4 h-4 text-blue-400" />;
-      case 'audio': return <Mic className="w-4 h-4 text-green-400" />;
-      default: return <FileText className="w-4 h-4" />;
+      case 'image':
+        return <ImageIcon className="w-4 h-4 text-blue-400" />;
+      case 'pdf':
+        return <FileText className="w-4 h-4 text-red-400" />;
+      case 'document':
+        return <FileText className="w-4 h-4 text-green-400" />;
+      case 'audio':
+        return <Mic className="w-4 h-4 text-purple-400" />;
+      default:
+        return <FileText className="w-4 h-4 text-gray-400" />;
     }
   };
 
@@ -417,9 +399,29 @@ const SparkTutorChat = () => {
 
   const isAITyping = isLoading;
 
+  // Filter sessions based on search
+  const filteredSessions = chatSessions.filter(session =>
+    session.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <main className="relative z-10 h-screen">
-      <div className="flex h-full bg-slate-900 pt-20">
+    <main className="relative z-10 h-screen bg-black text-white overflow-hidden">
+      {/* Particle Field Background */}
+      <ParticleField />
+      
+      {/* Creative Background Elements */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl floating-element"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl floating-element"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-green-500/10 rounded-full blur-2xl floating-element"></div>
+        
+        {/* Creative Shapes */}
+        <div className="absolute top-20 right-20 w-32 h-32 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-xl creative-shape"></div>
+        <div className="absolute bottom-20 left-20 w-24 h-24 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full blur-lg creative-shape"></div>
+        <div className="absolute top-1/3 right-1/3 w-16 h-16 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-full blur-md creative-shape"></div>
+      </div>
+
+      <div className="flex h-full pt-16">
         {/* Sidebar */}
         <AnimatePresence>
           {sidebarOpen && (
@@ -429,7 +431,7 @@ const SparkTutorChat = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed top-20 inset-x-0 bottom-0 bg-black/50 z-40 lg:hidden"
+                className="fixed top-16 inset-x-0 bottom-0 bg-black/50 z-40 lg:hidden"
                 onClick={() => setSidebarOpen(false)}
               />
               
@@ -438,35 +440,38 @@ const SparkTutorChat = () => {
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: -320, opacity: 0 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="fixed top-20 bottom-0 left-0 w-80 bg-slate-800/98 backdrop-blur-xl border-r border-white/20 z-50 flex flex-col shadow-2xl"
+                className="fixed top-16 bottom-0 left-0 w-80 glassmorphism-enhanced border-r border-white/20 z-50 flex flex-col shadow-2xl"
               >
                 {/* Sidebar Header */}
                 <div className="p-4 border-b border-white/10">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-white">Chat History</h2>
+                    <h2 className="text-xl font-bold text-white flex items-center">
+                      <Brain className="w-5 h-5 mr-2 text-blue-400" />
+                      Chat History
+                    </h2>
                     <button
                       onClick={() => setSidebarOpen(false)}
                       className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                     >
-                      <X className="w-5 h-5 text-slate-400" />
+                      <X className="w-5 h-5 text-gray-400" />
                     </button>
                   </div>
                   
                   <GlassmorphismButton
                     onClick={createNewChat}
-                    className="w-full mb-4"
+                    className="w-full mb-4 hover-lift"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     New Chat
                   </GlassmorphismButton>
 
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input
                       placeholder="Search chats..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 bg-slate-700/50 border-slate-600 text-white placeholder-slate-400"
+                      className="pl-10 bg-gray-800/50 border-gray-700 text-white placeholder-gray-400"
                     />
                   </div>
                 </div>
@@ -474,21 +479,28 @@ const SparkTutorChat = () => {
                 {/* Chat Sessions List */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
                   {filteredSessions.length === 0 ? (
-                    <div className="text-center text-slate-400 py-8">
+                    <motion.div 
+                      className="text-center text-gray-400 py-8"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
                       <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
                       <p>No chats yet</p>
                       <p className="text-sm">Start a new conversation!</p>
-                    </div>
+                    </motion.div>
                   ) : (
-                    filteredSessions.map((session) => (
+                    filteredSessions.map((session, index) => (
                       <motion.div
                         key={session.id}
-                        className={`group relative p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                        className={`group relative p-3 rounded-lg cursor-pointer transition-all duration-200 hover-lift ${
                           currentSessionId === session.id
                             ? 'bg-blue-500/20 border border-blue-500/30'
                             : 'hover:bg-white/5'
                         }`}
                         onClick={() => switchToSession(session.id)}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
@@ -523,19 +535,22 @@ const SparkTutorChat = () => {
         {/* Main Chat Container */}
         <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarOpen ? 'lg:ml-80 lg:pl-4' : ''}`}>
           {/* Mobile Header */}
-          <div className="lg:hidden flex items-center justify-between p-4 border-b border-white/10 bg-slate-800/50">
+          <div className="lg:hidden flex items-center justify-between p-4 border-b border-white/10 glassmorphism-enhanced">
             <button
               onClick={() => setSidebarOpen(true)}
               className="p-2 hover:bg-white/10 rounded-lg transition-colors"
             >
               <Menu className="w-6 h-6 text-white" />
             </button>
-            <h1 className="text-xl font-bold text-white">SparkTutor Chat</h1>
+            <h1 className="text-xl font-bold text-white flex items-center">
+              <Sparkles className="w-5 h-5 mr-2 text-blue-400" />
+              SparkTutor Chat
+            </h1>
             <div className="w-10" />
           </div>
 
           {/* Desktop Header */}
-          <div className="hidden lg:flex items-center justify-between p-6 border-b border-white/10 bg-slate-800/50">
+          <div className="hidden lg:flex items-center justify-between p-6 border-b border-white/10 glassmorphism-enhanced">
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -544,27 +559,36 @@ const SparkTutorChat = () => {
                 <Menu className="w-6 h-6 text-white" />
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-white">SparkTutor Chat</h1>
-                <p className="text-slate-400">Your AI learning companion is here to help</p>
+                <h1 className="text-2xl font-bold text-white flex items-center">
+                  <Sparkles className="w-6 h-6 mr-3 text-blue-400" />
+                  SparkTutor Chat
+                </h1>
+                <p className="text-slate-400 flex items-center">
+                  <Zap className="w-4 h-4 mr-2 text-green-400" />
+                  Your AI learning companion is here to help
+                </p>
               </div>
             </div>
-            <GlassmorphismButton onClick={createNewChat} variant="outline">
+            <GlassmorphismButton onClick={createNewChat} variant="outline" className="hover-lift">
               <Plus className="w-4 h-4 mr-2" />
               New Chat
             </GlassmorphismButton>
           </div>
 
           {/* Chat Messages Area */}
-          <div className="flex-1 flex flex-col bg-slate-900">
+          <div className="flex-1 flex flex-col bg-slate-900/50">
             {/* Chat Header */}
-            <div className="border-b border-white/10 p-4 flex items-center justify-between bg-slate-800/30">
+            <div className="border-b border-white/10 p-4 flex items-center justify-between glassmorphism-enhanced">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center floating-icon">
                   <Sparkles className="w-5 h-5 text-white" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-white">SparkTutor AI</h3>
-                  <p className="text-sm text-slate-400">Online • Ready to help</p>
+                  <p className="text-sm text-slate-400 flex items-center">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2"></div>
+                    Online • Ready to help
+                  </p>
                 </div>
               </div>
               <div className="flex space-x-2">
@@ -584,23 +608,41 @@ const SparkTutorChat = () => {
                   transition={{ delay: index * 0.1 }}
                 >
                   {message.isAI && (
-                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center flex-shrink-0 floating-icon">
                       <Sparkles className="w-4 h-4 text-white" />
                     </div>
                   )}
                   
-                  <div className={`max-w-lg p-3 rounded-lg ${
+                  <div className={`max-w-lg p-3 rounded-lg relative ${
                     message.isAI 
-                      ? 'glassmorphism rounded-tl-none' 
-                      : 'bg-blue-500 rounded-tr-none'
+                      ? 'glassmorphism-enhanced rounded-tl-none' 
+                      : 'bg-gradient-to-r from-blue-500 to-purple-500 rounded-tr-none'
                   }`}>
+                    {/* Message Status Indicators */}
+                    {!message.isAI && (
+                      <div className="absolute -top-2 -right-2">
+                        {message.status === 'sending' && (
+                          <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                        )}
+                        {message.status === 'sent' && (
+                          <CheckCircle className="w-4 h-4 text-green-400" />
+                        )}
+                        {message.status === 'error' && (
+                          <AlertCircle className="w-4 h-4 text-red-400" />
+                        )}
+                      </div>
+                    )}
+
                     {/* Attached Files */}
                     {message.attachedFiles && message.attachedFiles.length > 0 && (
                       <div className="mb-3 space-y-2">
                         {message.attachedFiles.map((file, fileIndex) => (
-                          <div
+                          <motion.div
                             key={fileIndex}
                             className="flex items-center space-x-2 p-2 bg-white/10 rounded-lg"
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.2 }}
                           >
                             {getFileIcon(file.type)}
                             <span className="text-sm text-white truncate flex-1">
@@ -613,7 +655,7 @@ const SparkTutorChat = () => {
                                 className="w-8 h-8 rounded object-cover"
                               />
                             )}
-                          </div>
+                          </motion.div>
                         ))}
                       </div>
                     )}
@@ -623,13 +665,14 @@ const SparkTutorChat = () => {
                         __html: message.isAI ? formatMessage(message.content) : formatMessage(message.content)
                       }}
                     />
-                    <p className="text-xs text-slate-400 mt-3 border-t border-white/10 pt-2">
+                    <p className="text-xs text-slate-400 mt-3 border-t border-white/10 pt-2 flex items-center">
+                      <Clock className="w-3 h-3 mr-1" />
                       {message.timestamp}
                     </p>
                   </div>
                   
                   {!message.isAI && (
-                    <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 bg-gradient-to-r from-gray-500 to-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
                       <User className="w-4 h-4 text-white" />
                     </div>
                   )}
@@ -644,16 +687,19 @@ const SparkTutorChat = () => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                 >
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center flex-shrink-0 floating-icon">
                     <Sparkles className="w-4 h-4 text-white" />
                   </div>
-                  <div className="max-w-lg p-3 rounded-lg glassmorphism rounded-tl-none">
+                  <div className="max-w-lg p-3 rounded-lg glassmorphism-enhanced rounded-tl-none">
                     <div className="flex space-x-1">
                       <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                       <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
                       <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                     </div>
-                    <p className="text-xs text-slate-400 mt-2">SparkTutor is typing...</p>
+                    <p className="text-xs text-slate-400 mt-2 flex items-center">
+                      <Lightbulb className="w-3 h-3 mr-1" />
+                      SparkTutor is thinking...
+                    </p>
                   </div>
                 </motion.div>
               )}
@@ -662,10 +708,14 @@ const SparkTutorChat = () => {
             </div>
             
             {/* Chat Input */}
-            <div className="border-t border-white/10 p-4">
+            <div className="border-t border-white/10 p-4 glassmorphism-enhanced">
               {/* Recording Indicator */}
               {isRecording && (
-                <div className="mb-3 p-3 glassmorphism rounded-lg border border-red-400/30">
+                <motion.div 
+                  className="mb-3 p-3 glassmorphism-enhanced rounded-lg border border-red-400/30"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse"></div>
@@ -689,12 +739,16 @@ const SparkTutorChat = () => {
                       </button>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               )}
 
               {/* File Attachment Preview */}
               {attachedFile && (
-                <div className="mb-3 p-3 glassmorphism rounded-lg">
+                <motion.div 
+                  className="mb-3 p-3 glassmorphism-enhanced rounded-lg"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       {attachedFile.preview ? (
@@ -728,11 +782,11 @@ const SparkTutorChat = () => {
                       <X className="w-4 h-4 text-slate-400" />
                     </button>
                   </div>
-                </div>
+                </motion.div>
               )}
 
               <div className="flex items-end space-x-3">
-                <div className="flex-1 glassmorphism rounded-xl p-3">
+                <div className="flex-1 glassmorphism-enhanced rounded-xl p-3">
                   <textarea 
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
@@ -751,7 +805,7 @@ const SparkTutorChat = () => {
                   <GlassmorphismButton 
                     size="sm" 
                     variant={isRecording ? "default" : "outline"}
-                    className={`p-3 ${isRecording ? 'bg-red-500 hover:bg-red-600' : ''}`}
+                    className={`p-3 hover-lift ${isRecording ? 'bg-red-500 hover:bg-red-600' : ''}`}
                     title={isRecording ? "Recording... Click to stop" : "Record Voice Message"}
                     onClick={isRecording ? stopRecording : startRecording}
                     disabled={isLoading}
@@ -761,7 +815,7 @@ const SparkTutorChat = () => {
                   <GlassmorphismButton 
                     size="sm" 
                     variant="outline"
-                    className="p-3"
+                    className="p-3 hover-lift"
                     title="Attach File"
                     onClick={() => setShowFileDialog(true)}
                     disabled={isLoading || isRecording}
@@ -770,7 +824,7 @@ const SparkTutorChat = () => {
                   </GlassmorphismButton>
                   <GlassmorphismButton 
                     size="sm"
-                    className="p-3"
+                    className="p-3 hover-lift"
                     onClick={handleSendMessage}
                     title="Send Message"
                     disabled={isLoading || isRecording || (!inputValue.trim() && !attachedFile)}
@@ -792,7 +846,7 @@ const SparkTutorChat = () => {
 
           {/* File Upload Dialog */}
           <Dialog open={showFileDialog} onOpenChange={setShowFileDialog}>
-            <DialogContent className="max-w-2xl bg-slate-900 border-white/20">
+            <DialogContent className="max-w-2xl glassmorphism-enhanced border-white/20">
               <DialogHeader>
                 <DialogTitle className="text-white flex items-center space-x-2">
                   <Paperclip className="w-5 h-5" />
@@ -810,13 +864,14 @@ const SparkTutorChat = () => {
                   <GlassmorphismButton
                     variant="outline"
                     onClick={() => setShowFileDialog(false)}
+                    className="hover-lift"
                   >
                     Cancel
                   </GlassmorphismButton>
                   <GlassmorphismButton
                     onClick={() => setShowFileDialog(false)}
                     disabled={!attachedFile}
-                    className="bg-gradient-to-r from-blue-500 to-green-500"
+                    className="bg-gradient-to-r from-blue-500 to-green-500 hover-lift"
                   >
                     Attach File{attachedFile ? " (1)" : ""}
                   </GlassmorphismButton>

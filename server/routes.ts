@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertPresentationSchema, insertNoteSchema, insertDocumentSchema, updateUserProfileSchema, insertPresentationSchema as insertCalendarEventSchema, community_posts } from "@shared/schema";
+import { insertPresentationSchema, insertNoteSchema, insertDocumentSchema, updateUserProfileSchema, insertPresentationSchema as insertCalendarEventSchema, community_posts } from "./types/schema";
 import multer from "multer";
 import { exec, spawn } from "child_process";
 import fs from "fs/promises";
@@ -785,7 +785,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/presentations', requireAuth, async (req: Request, res: Response) => {
     try {
       const userId = req.user.id;
-      const presentations = await storage.getPresentationsByUser(userId);
+      const presentations = await storage.getPresentations(userId);
       res.json(presentations);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch presentations.' });
@@ -796,8 +796,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       const id = req.params.id;
-      const presentation = await storage.getPresentationById(id, userId);
-      if (!presentation) return res.status(404).json({ error: 'Presentation not found.' });
+      const presentation = await storage.getPresentation(id);
+      if (!presentation || presentation.user_id !== userId) return res.status(404).json({ error: 'Presentation not found.' });
       res.json(presentation);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch presentation.' });
@@ -821,8 +821,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const id = req.params.id;
       const { topic, json_data } = req.body;
-      const updated = await storage.updatePresentation(id, userId, { topic, json_data });
-      if (!updated) return res.status(404).json({ error: 'Presentation not found or not owned by user.' });
+      const presentation = await storage.getPresentation(id);
+      if (!presentation || presentation.user_id !== userId) return res.status(404).json({ error: 'Presentation not found or not owned by user.' });
+      const updated = await storage.updatePresentation(id, { topic, json_data });
       res.json(updated);
     } catch (error) {
       res.status(500).json({ error: 'Failed to update presentation.' });
@@ -834,9 +835,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       const id = req.params.id;
-      const presentation = await storage.getPresentationById(id, userId);
-      if (!presentation) return res.status(404).json({ error: 'Presentation not found or not owned by user.' });
-      const success = await storage.deletePresentation(Number(id));
+      const presentation = await storage.getPresentation(id);
+      if (!presentation || presentation.user_id !== userId) return res.status(404).json({ error: 'Presentation not found or not owned by user.' });
+      const success = await storage.deletePresentation(id);
       if (!success) return res.status(404).json({ error: 'Presentation not found.' });
       // Cleanup files
       await cleanupPresentationFiles(presentation);
@@ -853,16 +854,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = req.params.id;
       const slideIndex = parseInt(req.params.slideIndex);
       if (isNaN(slideIndex)) return res.status(400).json({ error: 'Invalid slide index.' });
-      const presentation = await storage.getPresentationById(id, userId);
-      if (!presentation) return res.status(404).json({ error: 'Presentation not found.' });
-      const json_data = presentation.json_data;
+      const presentation = await storage.getPresentation(id);
+      if (!presentation || presentation.user_id !== userId) return res.status(404).json({ error: 'Presentation not found.' });
+      const json_data = presentation.json_data as any;
       if (!json_data || !Array.isArray(json_data.slides) || slideIndex < 0 || slideIndex >= json_data.slides.length) {
         return res.status(400).json({ error: 'Invalid slide index.' });
       }
       // Remove the slide
       json_data.slides.splice(slideIndex, 1);
       // Save updated presentation
-      const updated = await storage.updatePresentation(id, userId, { json_data });
+      const updated = await storage.updatePresentation(id, { json_data });
       res.json(updated);
     } catch (error) {
       res.status(500).json({ error: 'Failed to delete slide.' });

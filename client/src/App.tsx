@@ -98,18 +98,16 @@
 
 // export default App;
 
-import { Switch, Route, useLocation } from "wouter"; 
+import { Switch, Route, useLocation } from "wouter";
 import { useEffect } from "react"; 
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Navigation from "@/components/layout/Navigation";
 import AnimatedBackground from "@/components/layout/AnimatedBackground";
 
 import { LoadingProvider } from "@/contexts/LoadingContext";
 import { PageLoadingProvider } from "@/contexts/PageLoadingContext";
-import { ThemeProvider } from "@/contexts/ThemeContext";
 import { UserProvider } from "@/contexts/UserContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import PageLoader from "@/components/ui/page-loader";
@@ -189,26 +187,23 @@ function App() {
   return (
     <PasswordGate>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <AuthProvider>
-            <UserProvider>
-              <TooltipProvider>
-                <LoadingProvider>
-                  <PageLoadingProvider>
-                    <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden flex flex-col">
-                      <AnimatedBackground />
-                      <Navigation />
-                      <div className="flex-1">
-                        <Router />
-                      </div>
-                      <Toaster />
+        <AuthProvider>
+          <UserProvider>
+            <TooltipProvider>
+              <LoadingProvider>
+                <PageLoadingProvider>
+                  <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden flex flex-col">
+                    <AnimatedBackground />
+                    <div className="flex-1">
+                      <Router />
                     </div>
-                  </PageLoadingProvider>
-                </LoadingProvider>
-              </TooltipProvider>
-            </UserProvider>
-          </AuthProvider>
-        </ThemeProvider>
+                    <Toaster />
+                  </div>
+                </PageLoadingProvider>
+              </LoadingProvider>
+            </TooltipProvider>
+          </UserProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </PasswordGate>
   );
