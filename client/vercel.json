@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://coxistai-fullstack.onrender.com/api/:path*"
+      "destination": "https://coxistai-backend.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",
