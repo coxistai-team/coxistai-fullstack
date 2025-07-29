@@ -40,7 +40,7 @@ app.use(cors({
 }));
 
 // Add this to handle all OPTIONS preflight requests
-app.options('*', cors());
+app.options('/*', cors());
 
 // Add a route to check CORS configuration
 app.get('/api/cors-check', (req: Request, res: Response) => {
