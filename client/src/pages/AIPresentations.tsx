@@ -87,6 +87,21 @@ interface Slide {
 }
 
 const AIPresentations = () => {
+  // Error boundary for the component
+  const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  if (hasError) {
+    return (
+      <main className="relative z-10 pt-20 min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex flex-col items-center justify-center">
+        <div className="flex flex-col items-center justify-center py-16">
+          <div className="text-red-500 text-lg mb-4">Something went wrong</div>
+          <div className="text-slate-600 dark:text-slate-300 mb-4">{errorMessage}</div>
+          <Button onClick={() => window.location.reload()}>Reload Page</Button>
+        </div>
+      </main>
+    );
+  }
   const { toast } = useToast()
   const [presentationId, setPresentationId] = useState<string | null>(null)
   const [presentationTopic, setPresentationTopic] = useState<string>("AI Presentation") // New state for download filename
@@ -185,8 +200,20 @@ const AIPresentations = () => {
   const [editorSubtitle, setEditorSubtitle] = useState("") // New state for subtitle
 
   const currentSlide = slides[currentSlideIndex] || null
+  
+
 
   // Helper to extract title and content for the editor from the elements array
+  // Helper function to safely map slide elements
+  const safeMapElements = (elements: SlideElement[] | undefined, mapper: (el: SlideElement, index: number) => any) => {
+    try {
+      return (elements || []).map(mapper);
+    } catch (error) {
+      console.error("Error mapping slide elements:", error);
+      return [];
+    }
+  };
+
   const getEditorContent = (slide: Slide | null) => {
     if (!slide || !slide.elements) {
       return { title: "", subtitle: "", content: "" }
@@ -225,7 +252,7 @@ const AIPresentations = () => {
   const updateSlideContent = async (field: "title" | "subtitle" | "content", value: string) => {
     const updatedSlides = slides.map((slide, index) => {
       if (index === currentSlideIndex) {
-        const newElements = slide.elements.map((el) => {
+        const newElements = safeMapElements(slide.elements, (el) => {
           if (field === "title" && el.type === "title") {
             return { ...el, content: value }
           }
@@ -374,7 +401,7 @@ const AIPresentations = () => {
 
       const data = await response.json();
       
-      if (data.success && data.updated_slides) {
+      if (data.success && data.updated_slides && Array.isArray(data.updated_slides)) {
         // Update local state with the new slides
         const updatedSlides = data.updated_slides.map((slide: any, slideIndex: number) => {
           const backgroundStyle = backgroundStyles[slideIndex % backgroundStyles.length];
@@ -384,7 +411,7 @@ const AIPresentations = () => {
               backgroundStyle.type === "gradient"
                 ? { type: "gradient", gradient: backgroundStyle.value }
                 : { type: "solid", color: backgroundStyle.value },
-            elements: slide.elements.map((el: any) => ({
+            elements: (slide.elements || []).map((el: any) => ({
               ...el,
               style: {
                 ...el.style,
@@ -431,8 +458,53 @@ const AIPresentations = () => {
 
     setIsGenerating(true)
 
+    // Check if PPT API is available first
+    const PPT_API_URL = import.meta.env.VITE_PPT_API_URL;
+    if (!PPT_API_URL) {
+      toast({
+        title: "Configuration Error",
+        description: "PPT API URL not configured. Please check your environment variables.",
+        variant: "destructive",
+      });
+      setIsGenerating(false);
+      return;
+    }
+
     try {
       const PPT_API_URL = import.meta.env.VITE_PPT_API_URL;
+      
+      if (!PPT_API_URL) {
+        throw new Error("PPT API URL not configured. Please check your environment variables.")
+      }
+      
+      console.log("Attempting to connect to PPT API at:", PPT_API_URL)
+      
+      // Check if the PPT API is available
+      try {
+        const healthResponse = await fetch(`${PPT_API_URL}/health`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        
+        if (!healthResponse.ok) {
+          throw new Error(`PPT API health check failed: ${healthResponse.status}`);
+        }
+        
+        const healthData = await healthResponse.json();
+        console.log("PPT API health check:", healthData);
+      } catch (healthError) {
+        console.error("PPT API health check failed:", healthError);
+        toast({
+          title: "Service Unavailable",
+          description: "The AI presentation service is currently unavailable. Please try again later.",
+          variant: "destructive",
+        });
+        setIsGenerating(false);
+        return;
+      }
+      
       const createResponse = await fetch(`${PPT_API_URL}/create_presentation`, {
         method: "POST",
         headers: {
@@ -445,14 +517,15 @@ const AIPresentations = () => {
       })
 
       if (!createResponse.ok) {
-        const errorData = await createResponse.json()
-        throw new Error(errorData.error || "Failed to initiate presentation generation.")
+        const errorData = await createResponse.json().catch(() => ({ error: "Failed to parse error response" }))
+        throw new Error(errorData.error || `Failed to initiate presentation generation. Status: ${createResponse.status}`)
       }
 
       const createData = await createResponse.json()
       console.log("Backend create_presentation response:", createData)
 
       if (!createData.success || !createData.presentation_id) {
+        console.error("Invalid create_presentation response:", createData)
         throw new Error(createData.error || "Backend did not return a valid presentation ID.")
       }
 
@@ -468,8 +541,8 @@ const AIPresentations = () => {
       })
 
       if (!getJsonResponse.ok) {
-        const errorData = await getJsonResponse.json()
-        throw new Error(errorData.error || "Failed to retrieve presentation JSON.")
+        const errorData = await getJsonResponse.json().catch(() => ({ error: "Failed to parse error response" }))
+        throw new Error(errorData.error || `Failed to retrieve presentation JSON. Status: ${getJsonResponse.status}`)
       }
 
       const getJsonData = await getJsonResponse.json()
@@ -478,16 +551,16 @@ const AIPresentations = () => {
       if (
         !getJsonData.success ||
         !getJsonData.json_data ||
+        !getJsonData.json_data.slides ||
         !Array.isArray(getJsonData.json_data.slides) ||
         getJsonData.json_data.slides.length === 0
       ) {
+        console.error("Invalid response structure:", getJsonData)
         throw new Error(getJsonData.error || "Retrieved presentation JSON is empty or malformed.")
       }
 
       const convertedSlides = getJsonData.json_data.slides.map((slide: any, index: number) => {
         const backgroundStyle = backgroundStyles[index % backgroundStyles.length]
-        
-        console.log(`Converting slide ${index + 1}:`, slide);
         
         // Convert AI format (title, content, description) to frontend format (elements)
         const elements: SlideElement[] = []
@@ -512,8 +585,8 @@ const AIPresentations = () => {
           slide.content.forEach((item: string, contentIndex: number) => {
             if (item && typeof item === 'string' && item.trim()) {
               elements.push({
-                type: "bullet_list",
-                items: [item],
+                type: "text",
+                content: item,
                 position: { 
                   left: 100, 
                   top: 150 + (contentIndex * 60), 
@@ -557,7 +630,6 @@ const AIPresentations = () => {
           elements: elements
         }
         
-        console.log(`Converted slide ${index + 1}:`, convertedSlide);
         return convertedSlide;
       })
 
@@ -566,9 +638,15 @@ const AIPresentations = () => {
       setPresentationId(newPresentationId)
       setPresentationTopic(createData.topic)
 
-      // Immediately save to DB after generation
-      if (newPresentationId && createData.topic && getJsonData.json_data) {
-        await savePresentation(newPresentationId, createData.topic, getJsonData.json_data);
+      // Immediately save to DB after generation with rich converted data
+      if (newPresentationId && createData.topic) {
+        const richJsonData = {
+          slides: convertedSlides,
+          topic: createData.topic,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        await savePresentation(newPresentationId, createData.topic, richJsonData);
       }
 
       toast({
@@ -577,16 +655,87 @@ const AIPresentations = () => {
       })
     } catch (error: any) {
       console.error("Error generating presentation:", error)
-      toast({
-        title: "Generation Failed",
-        description: error.message || "There was an error generating your presentation.",
-        variant: "destructive",
-      })
+      
+      // If the AI service fails, offer to create a simple presentation locally
+      if (error.message.includes("Service Unavailable") || error.message.includes("Failed to connect")) {
+        const createSimple = window.confirm(
+          "The AI service is unavailable. Would you like to create a simple presentation template instead?"
+        );
+        
+        if (createSimple) {
+          createSimplePresentation();
+        }
+      } else {
+        // Set error state for critical errors
+        setHasError(true);
+        setErrorMessage(error.message || "An unexpected error occurred while generating the presentation.");
+        toast({
+          title: "Generation Failed",
+          description: error.message || "There was an error generating your presentation.",
+          variant: "destructive",
+        })
+      }
     } finally {
       setIsGenerating(false)
       setShowGenerateDialog(false)
       setGenerateTopic("")
     }
+  }
+
+  // Create a simple presentation template when AI service is unavailable
+  const createSimplePresentation = () => {
+    const simpleSlides = [
+      {
+        id: "slide-1",
+        slide_number: 1,
+        layout_type: "title",
+        background: { type: "gradient", gradient: "from-purple-600 via-blue-600 to-indigo-700" },
+        elements: [
+          {
+            type: "title",
+            content: generateTopic || "New Presentation",
+            position: { left: 50, top: 50, width: 800, height: 100 },
+            style: { font_size: 32, font_weight: "bold", color: "#FFFFFF", alignment: "center" }
+          },
+          {
+            type: "text",
+            content: "Created with CoXist AI",
+            position: { left: 50, top: 200, width: 800, height: 50 },
+            style: { font_size: 18, font_weight: "normal", color: "#FFFFFF", alignment: "center" }
+          }
+        ]
+      },
+      {
+        id: "slide-2",
+        slide_number: 2,
+        layout_type: "content",
+        background: { type: "gradient", gradient: "from-green-600 via-blue-600 to-purple-700" },
+        elements: [
+          {
+            type: "title",
+            content: "Key Points",
+            position: { left: 50, top: 50, width: 800, height: 100 },
+            style: { font_size: 28, font_weight: "bold", color: "#FFFFFF", alignment: "center" }
+          },
+          {
+            type: "bullet_list",
+            items: ["Add your first point here", "Add your second point here", "Add your third point here"],
+            position: { left: 100, top: 150, width: 700, height: 200 },
+            style: { font_size: 18, font_weight: "normal", color: "#FFFFFF", alignment: "left" }
+          }
+        ]
+      }
+    ];
+
+    setSlides(simpleSlides);
+    setCurrentSlideIndex(0);
+    setPresentationId(`local-${Date.now()}`);
+    setPresentationTopic(generateTopic || "New Presentation");
+
+    toast({
+      title: "Simple Presentation Created",
+      description: "A basic presentation template has been created. You can now edit it manually.",
+    });
   }
 
   // Export presentation via Flask backend
@@ -679,7 +828,7 @@ const AIPresentations = () => {
 
   // Render individual slide elements
   const renderSlideElements = (elements: SlideElement[], isFullscreen: boolean, slideNumber: number, slide: Slide | null) => {
-    if (!slide || !elements) {
+    if (!elements || elements.length === 0) {
       return (
         <div className="h-full w-full flex items-center justify-center">
           <p className="text-white text-lg">No slide content available</p>
@@ -692,6 +841,8 @@ const AIPresentations = () => {
     const imageElements = elements.filter((el) => el.type === "image")
 
     const isTwoColumnLayout = imageElements.length > 0 && textElements.length > 0
+    
+
 
     return (
       <div
@@ -699,6 +850,7 @@ const AIPresentations = () => {
           isTwoColumnLayout ? "md:grid md:grid-cols-2 md:gap-12" : "space-y-6"
         } ${isFullscreen ? "p-16" : "p-8"}`}
       >
+
         <div
           className={`absolute bottom-4 right-4 text-sm font-bold bg-black/50 px-3 py-1 rounded-full z-10 text-white`}
         >
@@ -782,7 +934,8 @@ const AIPresentations = () => {
             </div>
           </>
         ) : (
-          elements.map((element, elIndex) => {
+          <>
+            {elements.map((element, elIndex) => {
             const baseStyle: React.CSSProperties = {
               fontSize: element.style?.font_size
                 ? `${isFullscreen ? Math.min(element.style.font_size * 1.3, 48) : Math.min(element.style.font_size, 32)}px`
@@ -845,14 +998,14 @@ const AIPresentations = () => {
                     style={{
                       maxWidth: isFullscreen ? "70%" : "60%",
                       maxHeight: isFullscreen ? "450px" : "300px",
-                      margin: "auto",
                     }}
                   />
                 )
               default:
                 return null
             }
-          })
+          })}
+          </>
         )}
       </div>
     )
@@ -879,14 +1032,15 @@ const AIPresentations = () => {
 
   // Auto-load the most recent saved presentation if available
   useEffect(() => {
-    if (!isLoadingPresentations && savedPresentations.length > 0) {
+    // Only auto-load if we don't have any slides or if we're not in the middle of generation
+    if (!isLoadingPresentations && savedPresentations.length > 0 && !isGenerating && slides.length === 0) {
       const mostRecent = savedPresentations[0];
       setSlides(mostRecent.json_data.slides);
       setPresentationId(mostRecent.id);
       setPresentationTopic(mostRecent.topic);
       setCurrentSlideIndex(0);
     }
-  }, [isLoadingPresentations, savedPresentations]);
+  }, [isLoadingPresentations, savedPresentations, isGenerating, slides.length]);
 
   // Load a saved presentation
   const loadPresentation = async (id: string) => {
@@ -935,8 +1089,8 @@ const AIPresentations = () => {
           slide.content.forEach((item: string, contentIndex: number) => {
             if (item && typeof item === 'string' && item.trim()) {
               elements.push({
-                type: "bullet_list",
-                items: [item],
+                type: "text",
+                content: item,
                 position: { 
                   left: 100, 
                   top: 150 + (contentIndex * 60), 
@@ -997,6 +1151,7 @@ const AIPresentations = () => {
   const savePresentation = async (id: string, topic: string, json_data: any) => {
     setIsSaving(true);
     try {
+      // Save to Express backend (database)
       const token = localStorage.getItem('authToken');
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/presentations`, {
         method: 'POST',
@@ -1006,6 +1161,21 @@ const AIPresentations = () => {
       if (!res.ok) throw new Error('Failed to save presentation');
       const created = await res.json();
       setSavedPresentations(prev => [created, ...prev]);
+      
+      // Also save rich data to Flask service for enhanced PowerPoint export
+      const PPT_API_URL = import.meta.env.VITE_PPT_API_URL;
+      if (PPT_API_URL) {
+        try {
+          await fetch(`${PPT_API_URL}/update_presentation_data/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ json_data })
+          });
+        } catch (flaskError) {
+          console.warn('Could not update Flask service with rich data:', flaskError);
+        }
+      }
+      
       toast({ title: 'Presentation Saved', description: 'Presentation saved to your account.' });
     } catch (e) {
       toast({ title: 'Save Failed', description: 'Could not save presentation.', variant: 'destructive' });
@@ -1018,6 +1188,7 @@ const AIPresentations = () => {
   const updatePresentation = async (id: string, topic: string, json_data: any) => {
     setIsSaving(true);
     try {
+      // Update in Express backend (database)
       const token = localStorage.getItem('authToken');
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/presentations/${id}`, {
         method: 'PUT',
@@ -1027,6 +1198,21 @@ const AIPresentations = () => {
       if (!res.ok) throw new Error('Failed to update presentation');
       const updated = await res.json();
       setSavedPresentations(prev => prev.map(p => p.id === id ? updated : p));
+      
+      // Also update rich data in Flask service for enhanced PowerPoint export
+      const PPT_API_URL = import.meta.env.VITE_PPT_API_URL;
+      if (PPT_API_URL) {
+        try {
+          await fetch(`${PPT_API_URL}/update_presentation_data/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ json_data })
+          });
+        } catch (flaskError) {
+          console.warn('Could not update Flask service with rich data:', flaskError);
+        }
+      }
+      
       toast({ title: 'Saved!', description: 'Presentation updated.' });
     } catch (e) {
       toast({ title: 'Save Failed', description: 'Could not update presentation.', variant: 'destructive' });
@@ -1152,7 +1338,7 @@ const AIPresentations = () => {
 
       const data = await response.json();
       
-      if (data.success && data.updated_slides) {
+      if (data.success && data.updated_slides && Array.isArray(data.updated_slides)) {
         // Update local state with the new slides
         const updatedSlides = data.updated_slides.map((slide: any, slideIndex: number) => {
           const backgroundStyle = backgroundStyles[slideIndex % backgroundStyles.length];
@@ -1162,7 +1348,7 @@ const AIPresentations = () => {
               backgroundStyle.type === "gradient"
                 ? { type: "gradient", gradient: backgroundStyle.value }
                 : { type: "solid", color: backgroundStyle.value },
-            elements: slide.elements.map((el: any) => ({
+            elements: (slide.elements || []).map((el: any) => ({
               ...el,
               style: {
                 ...el.style,
@@ -1314,7 +1500,7 @@ const AIPresentations = () => {
                 <div
                   className={`w-full h-full flex flex-col justify-center overflow-hidden ${getSlideBackgroundClasses(currentSlide)}`}
                 >
-                  {renderSlideElements(currentSlide.elements, true, currentSlide.slide_number, currentSlide)}
+                  {renderSlideElements(currentSlide?.elements || [], true, currentSlide?.slide_number || 1, currentSlide)}
                 </div>
               </div>
 
@@ -1390,7 +1576,7 @@ const AIPresentations = () => {
                     <Button
                       variant="outline"
                       size="icon"
-                      className="hover:bg-blue-100 dark:hover:bg-blue-900"
+                      className="border-slate-600 text-slate-300 hover:text-white hover:bg-slate-700/50 backdrop-blur-sm"
                       aria-label="Load presentation"
                       onClick={() => loadPresentation(pres.id)}
                       disabled={pres.id === presentationId || isLoadingSlides}
@@ -1409,16 +1595,16 @@ const AIPresentations = () => {
                           <Trash2 className="w-5 h-5" />
                         </Button>
                       </AlertDialogTrigger>
-                      <AlertDialogContent>
+                      <AlertDialogContent className="bg-slate-900/95 backdrop-blur-sm border-slate-700">
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Presentation?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete <span className="font-semibold">{pres.topic}</span>? This action cannot be undone.
+                          <AlertDialogTitle className="text-white">Delete Presentation?</AlertDialogTitle>
+                          <AlertDialogDescription className="text-slate-300">
+                            Are you sure you want to delete <span className="font-semibold text-white">{pres.topic}</span>? This action cannot be undone.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => { setPendingDeletePresentation(pres.id); deletePresentation(pres.id); }}>Delete</AlertDialogAction>
+                          <AlertDialogCancel className="bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border-slate-600">Cancel</AlertDialogCancel>
+                          <AlertDialogAction className="bg-red-600 hover:bg-red-700 text-white" onClick={() => { setPendingDeletePresentation(pres.id); deletePresentation(pres.id); }}>Delete</AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
@@ -1466,7 +1652,7 @@ const AIPresentations = () => {
                       </Button>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <GlassmorphismButton onClick={() => setIsPreviewMode(true)} variant="outline" size="sm" className="border-slate-600 text-slate-300 hover:text-white">
+                      <GlassmorphismButton onClick={() => setIsPreviewMode(true)} variant="outline" size="sm" className="border-slate-600 text-slate-300 hover:text-white hover:bg-slate-700/50">
                         <Eye className="w-4 h-4 mr-1" />
                         Fullscreen
                       </GlassmorphismButton>
@@ -1483,7 +1669,7 @@ const AIPresentations = () => {
                     whileHover={{ scale: 1.02 }}
                     transition={{ duration: 0.3 }}
                   >
-                    {renderSlideElements(currentSlide.elements, false, currentSlide.slide_number, currentSlide)}
+                    {renderSlideElements(currentSlide?.elements || [], false, currentSlide?.slide_number || 1, currentSlide)}
                   </motion.div>
 
                   <div className="flex space-x-2 overflow-x-auto pb-2 mt-4">
@@ -1504,17 +1690,17 @@ const AIPresentations = () => {
                             {index + 1}
                           </span>
                           <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-1">
-                            {slide.elements.map((el, elIdx) => {
+                            {(slide.elements || []).map((el, elIdx) => {
                               if (el.type === "title" && el.content) {
                                 return (
-                                  <p key={elIdx} className="text-[6px] font-bold leading-tight truncate w-full text-white">
+                                  <p key={`${slide.id}-title-${elIdx}`} className="text-[6px] font-bold leading-tight truncate w-full text-white">
                                     {el.content}
                                   </p>
                                 )
                               }
                               if (el.type === "subtitle" && el.content) {
                                 return (
-                                  <p key={elIdx} className="text-[5px] leading-tight truncate w-full text-white">
+                                  <p key={`${slide.id}-subtitle-${elIdx}`} className="text-[5px] leading-tight truncate w-full text-white">
                                     {el.content}
                                   </p>
                                 )
@@ -1522,7 +1708,7 @@ const AIPresentations = () => {
                               if ((el.type === "text" || el.type === "bullet_list") && (el.content || el.items)) {
                                 const contentText = el.content || (el.items ? el.items[0] : "")
                                 return (
-                                  <p key={elIdx} className="text-[4px] truncate w-full text-white">
+                                  <p key={`${slide.id}-text-${elIdx}`} className="text-[4px] truncate w-full text-white">
                                     {contentText}
                                   </p>
                                 )
@@ -1530,7 +1716,7 @@ const AIPresentations = () => {
                               if (el.type === "image" && el.src) {
                                 return (
                                   <img
-                                    key={elIdx}
+                                    key={`${slide.id}-image-${elIdx}`}
                                     src={el.src || "/placeholder.svg"}
                                     alt="thumb"
                                     className="absolute inset-0 w-full h-full object-cover opacity-50"
@@ -1567,16 +1753,16 @@ const AIPresentations = () => {
                               </Button>
                             )}
                             <AlertDialog open={pendingDeleteSlide === index} onOpenChange={(open) => { if (!open) setPendingDeleteSlide(null) }}>
-                              <AlertDialogContent>
+                              <AlertDialogContent className="bg-slate-900/95 backdrop-blur-sm border-slate-700">
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Slide?</AlertDialogTitle>
-                                  <AlertDialogDescription>
+                                  <AlertDialogTitle className="text-white">Delete Slide?</AlertDialogTitle>
+                                  <AlertDialogDescription className="text-slate-300">
                                     Are you sure you want to delete this slide? This action cannot be undone.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => deleteSlide(index)}>Delete</AlertDialogAction>
+                                  <AlertDialogCancel className="bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border-slate-600">Cancel</AlertDialogCancel>
+                                  <AlertDialogAction className="bg-red-600 hover:bg-red-700 text-white" onClick={() => deleteSlide(index)}>Delete</AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
