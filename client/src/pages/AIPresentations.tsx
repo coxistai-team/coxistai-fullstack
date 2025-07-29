@@ -486,25 +486,79 @@ const AIPresentations = () => {
 
       const convertedSlides = getJsonData.json_data.slides.map((slide: any, index: number) => {
         const backgroundStyle = backgroundStyles[index % backgroundStyles.length]
-        return {
-          ...slide,
+        
+        console.log(`Converting slide ${index + 1}:`, slide);
+        
+        // Convert AI format (title, content, description) to frontend format (elements)
+        const elements: SlideElement[] = []
+        
+        // Add title element
+        if (slide.title) {
+          elements.push({
+            type: "title",
+            content: slide.title,
+            position: { left: 50, top: 50, width: 800, height: 100 },
+            style: {
+              font_size: 32,
+              font_weight: "bold",
+              color: "#FFFFFF",
+              alignment: "center"
+            }
+          })
+        }
+        
+        // Add content elements (bullet points)
+        if (slide.content && Array.isArray(slide.content)) {
+          slide.content.forEach((item: string, contentIndex: number) => {
+            if (item && typeof item === 'string' && item.trim()) {
+              elements.push({
+                type: "bullet_list",
+                items: [item],
+                position: { 
+                  left: 100, 
+                  top: 150 + (contentIndex * 60), 
+                  width: 700, 
+                  height: 50 
+                },
+                style: {
+                  font_size: 18,
+                  font_weight: "normal",
+                  color: "#FFFFFF",
+                  alignment: "left"
+                }
+              })
+            }
+          })
+        }
+        
+        // If no elements were created, add a default text element
+        if (elements.length === 0) {
+          elements.push({
+            type: "text",
+            content: slide.description || "No content available",
+            position: { left: 50, top: 150, width: 800, height: 100 },
+            style: {
+              font_size: 18,
+              font_weight: "normal",
+              color: "#FFFFFF",
+              alignment: "center"
+            }
+          })
+        }
+        
+        const convertedSlide = {
+          id: `slide-${index + 1}`,
+          slide_number: index + 1,
+          layout_type: "title_and_content",
           background:
             backgroundStyle.type === "gradient"
               ? { type: "gradient", gradient: backgroundStyle.value }
               : { type: "solid", color: backgroundStyle.value },
-          elements: slide.elements.map((el: any) => ({
-            ...el,
-            style: {
-              ...el.style,
-              color:
-                backgroundStyle.type === "gradient" ||
-                backgroundStyle.value.includes("bg-gray-900") ||
-                backgroundStyle.value.includes("bg-blue-900")
-                  ? "#FFFFFF"
-                  : el.style.color,
-            },
-          })),
+          elements: elements
         }
+        
+        console.log(`Converted slide ${index + 1}:`, convertedSlide);
+        return convertedSlide;
       })
 
       setSlides(convertedSlides)
@@ -842,12 +896,98 @@ const AIPresentations = () => {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/presentations/${id}`, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error('Failed to fetch presentation');
       const data = await res.json();
-      setSlides(data.json_data.slides);
+      
+      // Convert slides to frontend format if needed
+      const convertedSlides = data.json_data.slides.map((slide: any, index: number) => {
+        const backgroundStyle = backgroundStyles[index % backgroundStyles.length]
+        
+        // If slide already has elements (frontend format), use it as is
+        if (slide.elements && Array.isArray(slide.elements)) {
+          return {
+            ...slide,
+            background:
+              backgroundStyle.type === "gradient"
+                ? { type: "gradient", gradient: backgroundStyle.value }
+                : { type: "solid", color: backgroundStyle.value },
+          }
+        }
+        
+        // Convert AI format (title, content, description) to frontend format (elements)
+        const elements: SlideElement[] = []
+        
+        // Add title element
+        if (slide.title) {
+          elements.push({
+            type: "title",
+            content: slide.title,
+            position: { left: 50, top: 50, width: 800, height: 100 },
+            style: {
+              font_size: 32,
+              font_weight: "bold",
+              color: "#FFFFFF",
+              alignment: "center"
+            }
+          })
+        }
+        
+        // Add content elements (bullet points)
+        if (slide.content && Array.isArray(slide.content)) {
+          slide.content.forEach((item: string, contentIndex: number) => {
+            if (item && typeof item === 'string' && item.trim()) {
+              elements.push({
+                type: "bullet_list",
+                items: [item],
+                position: { 
+                  left: 100, 
+                  top: 150 + (contentIndex * 60), 
+                  width: 700, 
+                  height: 50 
+                },
+                style: {
+                  font_size: 18,
+                  font_weight: "normal",
+                  color: "#FFFFFF",
+                  alignment: "left"
+                }
+              })
+            }
+          })
+        }
+        
+        // If no elements were created, add a default text element
+        if (elements.length === 0) {
+          elements.push({
+            type: "text",
+            content: slide.description || "No content available",
+            position: { left: 50, top: 150, width: 800, height: 100 },
+            style: {
+              font_size: 18,
+              font_weight: "normal",
+              color: "#FFFFFF",
+              alignment: "center"
+            }
+          })
+        }
+        
+        return {
+          id: slide.id || `slide-${index + 1}`,
+          slide_number: slide.slide_number || index + 1,
+          layout_type: slide.layout_type || "title_and_content",
+          background:
+            backgroundStyle.type === "gradient"
+              ? { type: "gradient", gradient: backgroundStyle.value }
+              : { type: "solid", color: backgroundStyle.value },
+          elements: elements
+        }
+      })
+      
+      setSlides(convertedSlides);
       setPresentationId(data.id);
       setPresentationTopic(data.topic);
       setCurrentSlideIndex(0);
     } catch (e) {
-      // handle error
+      console.error("Error loading presentation:", e);
+      toast({ title: 'Load Failed', description: 'Could not load presentation.', variant: 'destructive' });
     } finally {
       setIsLoadingSlides(false);
     }
