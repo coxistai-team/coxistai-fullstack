@@ -8,45 +8,20 @@ dotenv.config(); // Load .env variables
 
 const app = express();
 
-// Function to get allowed origins from environment variable
-const getAllowedOrigins = (): string[] => {
-  const originsFromEnv = process.env.ALLOWED_ORIGINS;
-  if (!originsFromEnv) {
-    // Default origins if not set
-    return [
-      "https://www.coxistai.com",
-      "http://localhost:5000",
-      "http://localhost:5173"
-    ];
-  }
-  return originsFromEnv.split(",").map(origin => origin.trim()).filter(origin => origin);
-};
+const allowedOrigins = [
+  "https://www.coxistai.com",
+  "https://coxist-chatbot.onrender.com",
+  "https://coxistai-ui-tm8n.vercel.app",
+  "https://coxistai-ui.vercel.app",
+  "https://coxistai-ui-2.vercel.app",
+  "https://coxistai-ui-3.vercel.app",
+  "https://coxistai-ui-44444444444.vercel.app"
+];
 
-const allowedOrigins = getAllowedOrigins();
-console.log("Configured CORS origins:", allowedOrigins);
-
-// Main CORS middleware
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: allowedOrigins,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
-
-// Fallback handler for all OPTIONS requests (after CORS middleware)
-app.use((req, res, next) => {
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(204);
-  } else {
-    next();
-  }
-});
 
 // Add a route to check CORS configuration
 app.get('/api/cors-check', (req: Request, res: Response) => {
