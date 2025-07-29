@@ -31,14 +31,14 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
 
   if (isMobile) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {/* Search Bar */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
             placeholder="Search"
-            className="w-full pl-10 pr-4 py-2 border border-slate-700 rounded-lg bg-slate-900 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-slate-700 rounded-lg bg-slate-900 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
           />
           <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-slate-500">⌘K</span>
         </div>
@@ -46,10 +46,10 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
         {/* Month Navigation */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-white">
+            <h2 className="text-base sm:text-lg font-semibold text-white">
               {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
             </h2>
-            <p className="text-sm text-slate-400">
+            <p className="text-xs sm:text-sm text-slate-400">
               {monthNames[currentDate.getMonth()].substring(0, 3)} 1, {currentDate.getFullYear()} — {monthNames[currentDate.getMonth()].substring(0, 3)} 31, {currentDate.getFullYear()}
             </p>
           </div>
@@ -60,32 +60,32 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
           <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg">
             <button
               onClick={onPrevMonth}
-              className="p-2 hover:bg-slate-700 rounded-l-lg transition-colors"
+              className="p-1.5 sm:p-2 hover:bg-slate-700 rounded-l-lg transition-colors"
             >
               <ChevronLeft className="w-4 h-4 text-white" />
             </button>
             <button
               onClick={onToday}
-              className="px-4 py-2 text-sm font-medium border-x border-slate-700 hover:bg-slate-700 text-white transition-colors"
+              className="px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium border-x border-slate-700 hover:bg-slate-700 text-white transition-colors"
             >
               Today
             </button>
             <button
               onClick={onNextMonth}
-              className="p-2 hover:bg-slate-700 rounded-r-lg transition-colors"
+              className="p-1.5 sm:p-2 hover:bg-slate-700 rounded-r-lg transition-colors"
             >
               <ChevronRight className="w-4 h-4 text-white" />
             </button>
           </div>
 
-          <button className="flex items-center space-x-2 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 text-white transition-colors">
-            <span className="text-sm font-medium">Month view</span>
-            <ChevronDown className="w-4 h-4" />
+          <button className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 text-white transition-colors">
+            <span className="text-xs sm:text-sm font-medium">Month view</span>
+            <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" />
           </button>
 
-          <button onClick={onAddEvent} className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-            <Plus className="w-4 h-4" />
-            <span className="text-sm font-medium">Add event</span>
+          <button onClick={onAddEvent} className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="text-xs sm:text-sm font-medium">Add event</span>
           </button>
         </div>
       </div>

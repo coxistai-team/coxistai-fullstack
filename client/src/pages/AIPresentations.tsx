@@ -3,6 +3,7 @@ import React from "react"
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useRef } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import {
   Download,
@@ -29,7 +30,8 @@ import {
   Users2,
   Award,
   Clock,
-  Star
+  Star,
+  Menu
 } from "lucide-react"
 import GlassmorphismButton from "@/components/ui/glassmorphism-button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -87,6 +89,7 @@ interface Slide {
 }
 
 const AIPresentations = () => {
+  const isMobile = useIsMobile();
   // Error boundary for the component
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");

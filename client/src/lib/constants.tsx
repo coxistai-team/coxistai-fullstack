@@ -8,9 +8,9 @@ export const COLORS = {
 } as const;
 
 export const NAVIGATION_ITEMS = [
-  { id: 'notes', label: 'Notes', path: '/notes' },
-  { id: 'calendar', label: 'Calendar', path: '/calendar' },
-  { id: 'chat', label: 'AI Chatbot', path: '/chat' },
+  { id: 'notes', label: 'Notes Hub', path: '/notes' },
+  { id: 'calendar', label: 'Smart Calendar', path: '/calendar' },
+  { id: 'chat', label: 'SparkTutor AI Chat', path: '/chat' },
   { id: 'presentations', label: 'AI PPTs', path: '/presentations' },
   { id: 'community', label: 'Community', path: '/community' },
   { id: 'code', label: 'CodeSpark', path: '/code' },

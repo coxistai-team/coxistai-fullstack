@@ -147,7 +147,7 @@ const Signup = () => {
             </motion.p>
           </div>
 
-          {/* Social Signup Buttons */}
+          {/* Social Signup Buttons 
           <motion.div 
             className="space-y-3 mb-6"
             initial={{ opacity: 0 }}
@@ -181,8 +181,9 @@ const Signup = () => {
               <span>Sign up with Apple</span>
             </GlassmorphismButton>
           </motion.div>
+          */}
 
-          {/* Divider */}
+          {/* Divider 
           <motion.div 
             className="flex items-center mb-6"
             initial={{ opacity: 0 }}
@@ -193,6 +194,7 @@ const Signup = () => {
             <span className="px-4 text-sm text-gray-400">or</span>
             <Separator className="flex-1 bg-white/20" />
           </motion.div>
+          */}
 
           {/* Signup Form */}
           <motion.form 

@@ -93,18 +93,18 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
 
   return (
     <motion.div 
-      className="w-64 bg-slate-900/50 backdrop-blur-xl border-r border-slate-700/50 p-6 space-y-6"
+      className="w-64 bg-slate-900/50 backdrop-blur-xl border-r border-slate-700/50 p-4 sm:p-6 space-y-4 sm:space-y-6"
       initial={{ x: -100, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ duration: 0.3 }}
     >
       {/* Header */}
       <div className="space-y-2">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <BookOpen className="w-5 h-5" />
+        <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+          <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
           NotesHub
         </h2>
-        <p className="text-sm text-slate-400">Organize your thoughts</p>
+        <p className="text-xs sm:text-sm text-slate-400">Organize your thoughts</p>
       </div>
 
       {/* Search */}
@@ -115,7 +115,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search notes..."
-            className="pl-10 bg-slate-800/50 border-slate-600/50 text-white placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            className="pl-10 bg-slate-800/50 border-slate-600/50 text-white placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
           />
         </div>
       </div>
@@ -123,7 +123,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
       {/* Groups */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-white">Groups</h3>
+          <h3 className="text-xs sm:text-sm font-semibold text-white">Groups</h3>
           <Button
             variant="ghost"
             size="sm"
@@ -131,7 +131,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
             className="text-blue-300 hover:text-blue-200 hover:bg-slate-700/50 p-1"
             disabled={creatingGroups}
           >
-            <FolderPlus className="w-4 h-4" />
+            <FolderPlus className="w-3 h-3 sm:w-4 sm:h-4" />
           </Button>
         </div>
         

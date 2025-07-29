@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
 import { useLoading } from '@/contexts/LoadingContext';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 import ParticleField from '@/components/effects/ParticleField';
 import NotesSidebar from '@/components/noteshub/NotesSidebar';
 import NotesKanbanBoard from '@/components/noteshub/NotesKanbanBoard';
@@ -15,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import RichTextEditor from '@/components/ui/rich-text-editor';
+import { Menu, X, BookOpen } from 'lucide-react';
 
 interface Note {
   id: string;
@@ -70,6 +72,7 @@ const useDebounce = <T,>(value: T, delay: number): T => {
 };
 
 const NotesHub = () => {
+  const isMobile = useIsMobile();
   const { user, isAuthenticated, isAuthLoading } = useAuth();
   const { showLoader, hideLoader } = useLoading();
   const { toast } = useToast();
@@ -96,6 +99,7 @@ const NotesHub = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [editingNote, setEditingNote] = useState<Partial<Note> | null>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Loading states for individual operations
   const [loadingOperations, setLoadingOperations] = useState<Set<string>>(new Set());
@@ -1113,24 +1117,87 @@ const NotesHub = () => {
       <main className="relative z-10 pt-16 bg-black text-white overflow-hidden">
         <ParticleField />
         <div className="flex h-screen">
-          <NotesSidebar
-            noteGroups={noteGroups}
-            selectedGroup={selectedGroup}
-            onGroupSelect={setSelectedGroup}
-            onCreateGroup={() => setShowNewGroupDialog(true)}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            notes={notes}
-            selectedTags={selectedTags}
-            onTagsChange={setSelectedTags}
-            onGroupRename={handleRenameGroupClick}
-            onGroupDelete={handleDeleteGroup}
-            deletingGroups={deletingGroups}
-            creatingGroups={creatingGroups}
-            renamingGroups={renamingGroups}
-          />
+          {/* Mobile Sidebar Overlay */}
+          <AnimatePresence>
+            {sidebarOpen && isMobile && (
+              <>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed top-16 inset-x-0 bottom-0 bg-black/50 z-40 lg:hidden"
+                  onClick={() => setSidebarOpen(false)}
+                />
+                
+                <motion.div
+                  initial={{ x: -320, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: -320, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="fixed top-16 bottom-0 left-0 w-80 glassmorphism-enhanced border-r border-white/20 z-50 flex flex-col shadow-2xl"
+                >
+                  <NotesSidebar
+                    noteGroups={noteGroups}
+                    selectedGroup={selectedGroup}
+                    onGroupSelect={(group) => {
+                      setSelectedGroup(group);
+                      setSidebarOpen(false);
+                    }}
+                    onCreateGroup={() => setShowNewGroupDialog(true)}
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                    notes={notes}
+                    selectedTags={selectedTags}
+                    onTagsChange={setSelectedTags}
+                    onGroupRename={handleRenameGroupClick}
+                    onGroupDelete={handleDeleteGroup}
+                    deletingGroups={deletingGroups}
+                    creatingGroups={creatingGroups}
+                    renamingGroups={renamingGroups}
+                  />
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
 
-          <div className="flex-1 flex flex-col">
+          {/* Desktop Sidebar */}
+          {!isMobile && (
+            <NotesSidebar
+              noteGroups={noteGroups}
+              selectedGroup={selectedGroup}
+              onGroupSelect={setSelectedGroup}
+              onCreateGroup={() => setShowNewGroupDialog(true)}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              notes={notes}
+              selectedTags={selectedTags}
+              onTagsChange={setSelectedTags}
+              onGroupRename={handleRenameGroupClick}
+              onGroupDelete={handleDeleteGroup}
+              deletingGroups={deletingGroups}
+              creatingGroups={creatingGroups}
+              renamingGroups={renamingGroups}
+            />
+          )}
+
+          <div className={`flex-1 flex flex-col ${!isMobile ? '' : 'w-full'}`}>
+            {/* Mobile Header */}
+            {isMobile && (
+              <div className="flex items-center justify-between p-4 border-b border-white/10 glassmorphism-enhanced">
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <Menu className="w-6 h-6 text-white" />
+                </button>
+                <h1 className="text-xl font-bold text-white flex items-center">
+                  <BookOpen className="w-5 h-5 mr-2 text-blue-400" />
+                  NotesHub
+                </h1>
+                <div className="w-10" />
+              </div>
+            )}
+
             <NotesTopToolbar
               viewMode={viewMode}
               onViewModeChange={setViewMode}
@@ -1139,7 +1206,7 @@ const NotesHub = () => {
               noteGroups={noteGroups}
             />
 
-            <div className="flex-1 p-6 overflow-auto">
+            <div className="flex-1 p-3 sm:p-6 overflow-auto">
               <NotesKanbanBoard
                 notes={filteredNotes}
                 noteGroups={noteGroups}

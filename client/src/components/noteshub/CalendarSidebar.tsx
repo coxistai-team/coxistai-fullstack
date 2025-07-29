@@ -51,35 +51,35 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
   };
 
   return (
-    <aside className="w-72 bg-slate-900/70 backdrop-blur-xl border-r border-slate-800/60 p-4 space-y-8 flex-shrink-0 overflow-y-auto h-full">
+    <aside className="w-72 bg-slate-900/70 backdrop-blur-xl border-r border-slate-800/60 p-3 sm:p-4 space-y-6 sm:space-y-8 flex-shrink-0 overflow-y-auto h-full">
       {/* Add buttons */}
       <div className="flex gap-2 mb-4">
-        <GlassmorphismButton className="flex-1" onClick={onAddEvent}>
-          <Plus className="w-4 h-4 mr-1" /> Add Event
+        <GlassmorphismButton className="flex-1 text-xs sm:text-sm" onClick={onAddEvent}>
+          <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1" /> Add Event
         </GlassmorphismButton>
-        <GlassmorphismButton className="flex-1" onClick={onAddTask}>
-          <Plus className="w-4 h-4 mr-1" /> Add Task
+        <GlassmorphismButton className="flex-1 text-xs sm:text-sm" onClick={onAddTask}>
+          <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1" /> Add Task
         </GlassmorphismButton>
       </div>
       {/* Events Section */}
       <div>
         <div className="flex items-center gap-2 mb-3">
-          <CalendarIcon className="w-5 h-5 text-blue-400" />
-          <h3 className="text-lg font-semibold text-white">Events</h3>
+          <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
+          <h3 className="text-base sm:text-lg font-semibold text-white">Events</h3>
         </div>
         <div className="space-y-2">
           {events.length === 0 ? (
-            <div className="text-slate-400 text-sm">No events</div>
+            <div className="text-slate-400 text-xs sm:text-sm">No events</div>
           ) : (
             events.map(event => (
               <ContextMenu key={event.id}>
                 <ContextMenuTrigger asChild>
                   <button
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 transition-colors text-left"
+                    className="w-full flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 transition-colors text-left"
                     style={{ borderLeft: `4px solid ${event.color}` }}
                     onClick={() => onEventClick?.(event)}
                   >
-                    <span className="flex-1 text-white text-sm truncate">{event.title}</span>
+                    <span className="flex-1 text-white text-xs sm:text-sm truncate">{event.title}</span>
                     <span className="text-xs text-slate-400">{event.time}</span>
                   </button>
                 </ContextMenuTrigger>
@@ -100,27 +100,27 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
       {/* Tasks Section */}
       <div>
         <div className="flex items-center gap-2 mb-3">
-          <ListTodo className="w-5 h-5 text-green-400" />
-          <h3 className="text-lg font-semibold text-white">{taskHeaderLabel || "Today's Tasks"}</h3>
+          <ListTodo className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
+          <h3 className="text-base sm:text-lg font-semibold text-white">{taskHeaderLabel || "Today's Tasks"}</h3>
         </div>
         <div className="space-y-2">
           {tasks.length === 0 ? (
-            <div className="text-slate-400 text-sm">No tasks for today</div>
+            <div className="text-slate-400 text-xs sm:text-sm">No tasks for today</div>
           ) : (
             tasks.map(task => (
               <ContextMenu key={task.id}>
                 <ContextMenuTrigger asChild>
                   <button
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 transition-colors text-left"
+                    className="w-full flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 transition-colors text-left"
                     onClick={() => onTaskClick?.(task)}
                   >
                     {task.completed ? (
-                      <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
                     ) : (
-                      <Circle className="w-4 h-4 text-slate-500" />
+                      <Circle className="w-3 h-3 sm:w-4 sm:h-4 text-slate-500" />
                     )}
-                    <span className={`flex-1 text-sm truncate ${task.completed ? 'line-through text-slate-400' : 'text-white'}`}>{task.title}</span>
-                    <span className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`}></span>
+                    <span className={`flex-1 text-xs sm:text-sm truncate ${task.completed ? 'line-through text-slate-400' : 'text-white'}`}>{task.title}</span>
+                    <span className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${getPriorityColor(task.priority)}`}></span>
                   </button>
                 </ContextMenuTrigger>
                 <ContextMenuContent className="bg-slate-900 border-slate-700">

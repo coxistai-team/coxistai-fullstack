@@ -27,7 +27,8 @@ import {
   BarChart3,
   Users2,
   Award,
-  Star
+  Star,
+  Menu
 } from "lucide-react";
 import { analytics } from "@/utils/analytics";
 import GlassmorphismButton from "@/components/ui/glassmorphism-button";
@@ -40,6 +41,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuthLoading } from "@/contexts/AuthContext";
 import { SkeletonLoader } from "@/components/ui/page-loader";
 import ParticleField from "@/components/effects/ParticleField";
+import { useIsMobile } from "@/hooks/use-mobile";
 // Import new components
 import CalendarSidebar from "@/components/noteshub/CalendarSidebar";
 import CalendarHeader from "@/components/noteshub/CalendarHeader";
@@ -81,6 +83,7 @@ class CalendarErrorBoundary extends React.Component<{children: React.ReactNode},
 }
 
 const SmartCalendar = () => {
+  const isMobile = useIsMobile();
   const { toast } = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -91,6 +94,7 @@ const SmartCalendar = () => {
   const [showTaskDialog, setShowTaskDialog] = useState(false);
   const [newTask, setNewTask] = useState({ title: '', priority: 'medium' as 'low' | 'medium' | 'high' });
   const [taskDialogDate, setTaskDialogDate] = useState<Date | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Real analytics data
   const [studyTimeData, setStudyTimeData] = useState(() => analytics.getStudyTimeThisWeek());
@@ -704,55 +708,148 @@ const SmartCalendar = () => {
 
   return (
     <CalendarErrorBoundary>
-      <main className="flex min-h-screen bg-black text-white overflow-hidden">
-        {/* Sidebar: Events and Tasks */}
-        <CalendarSidebar
-          events={allEventsForSidebar}
-          tasks={sidebarTasksForSidebar}
-          onEventClick={event => openEventDialog(new Date(event.date), event)}
-          onTaskClick={task => toggleTask(task.id)}
-          onAddEvent={() => openEventDialog(selectedDate || new Date())}
-          onAddTask={() => openTaskDialog(selectedDate || new Date())}
-          onEditEvent={event => openEventDialog(new Date(event.date), event)}
-          onDeleteEvent={event => deleteEvent(event.id)}
-          onEditTask={task => openEditTaskDialog(task)}
-          onDeleteTask={task => deleteTask(task.id)}
-          onToggleTaskComplete={task => toggleTask(task.id)}
-          taskHeaderLabel={sidebarTaskLabel}
-        />
-        {/* Main content: Calendar fills the rest */}
-        <div className="flex-1 flex flex-col overflow-y-auto bg-black">
-          <div className="px-4 pt-8 pb-4 bg-slate-900 border-b border-slate-800">
-            <CalendarHeader
-              currentDate={currentDate}
-              onPrevMonth={() => setCurrentDate(subMonths(currentDate, 1))}
-              onNextMonth={() => setCurrentDate(addMonths(currentDate, 1))}
-              onToday={() => setCurrentDate(new Date())}
-              isMobile={false}
+      <main className="relative z-10 min-h-screen bg-black text-white overflow-hidden">
+        {/* Particle Field Background */}
+        <ParticleField />
+        
+        {/* Creative Background Elements */}
+        <div className="fixed inset-0 pointer-events-none z-0">
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl floating-element"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl floating-element"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-green-500/10 rounded-full blur-2xl floating-element"></div>
+          
+          {/* Creative Shapes */}
+          <div className="absolute top-20 right-20 w-32 h-32 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-xl creative-shape"></div>
+          <div className="absolute bottom-20 left-20 w-24 h-24 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full blur-lg creative-shape"></div>
+          <div className="absolute top-1/3 right-1/3 w-16 h-16 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-full blur-md creative-shape"></div>
+        </div>
+
+        <div className="flex h-full pt-16">
+          {/* Mobile Sidebar Overlay */}
+          <AnimatePresence>
+            {sidebarOpen && isMobile && (
+              <>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed top-16 inset-x-0 bottom-0 bg-black/50 z-40 lg:hidden"
+                  onClick={() => setSidebarOpen(false)}
+                />
+                
+                <motion.div
+                  initial={{ x: -320, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: -320, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="fixed top-16 bottom-0 left-0 w-80 glassmorphism-enhanced border-r border-white/20 z-50 flex flex-col shadow-2xl"
+                >
+                  <CalendarSidebar
+                    events={allEventsForSidebar}
+                    tasks={sidebarTasksForSidebar}
+                    onEventClick={event => openEventDialog(new Date(event.date), event)}
+                    onTaskClick={task => toggleTask(task.id)}
+                    onAddEvent={() => openEventDialog(selectedDate || new Date())}
+                    onAddTask={() => openTaskDialog(selectedDate || new Date())}
+                    onEditEvent={event => openEventDialog(new Date(event.date), event)}
+                    onDeleteEvent={event => deleteEvent(event.id)}
+                    onEditTask={task => openEditTaskDialog(task)}
+                    onDeleteTask={task => deleteTask(task.id)}
+                    onToggleTaskComplete={task => toggleTask(task.id)}
+                    taskHeaderLabel={sidebarTaskLabel}
+                  />
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+
+          {/* Desktop Sidebar */}
+          {!isMobile && (
+            <CalendarSidebar
+              events={allEventsForSidebar}
+              tasks={sidebarTasksForSidebar}
+              onEventClick={event => openEventDialog(new Date(event.date), event)}
+              onTaskClick={task => toggleTask(task.id)}
               onAddEvent={() => openEventDialog(selectedDate || new Date())}
-                          />
-                        </div>
-          <div className="flex-1 flex flex-col justify-stretch">
-            <CalendarGrid
-              currentDate={currentDate}
-              isMobile={false}
-              getEventsForDate={getEventsForDate}
-              getTasksForDate={getTasksForDate}
-              onDayClick={setSelectedDate}
-              onDayDoubleClick={openEventDialog}
-              selectedDate={selectedDate}
-              onDayContextMenu={date => {
-                handleDayContextMenu(date);
-              }}
-              onEventContextMenu={handleEventContextMenu}
-              onTaskContextMenu={handleTaskContextMenu}
-              loading={isSavingEvent || isSavingTask || isAuthLoading}
+              onAddTask={() => openTaskDialog(selectedDate || new Date())}
+              onEditEvent={event => openEventDialog(new Date(event.date), event)}
+              onDeleteEvent={event => deleteEvent(event.id)}
+              onEditTask={task => openEditTaskDialog(task)}
+              onDeleteTask={task => deleteTask(task.id)}
+              onToggleTaskComplete={task => toggleTask(task.id)}
+              taskHeaderLabel={sidebarTaskLabel}
             />
-        <div className="mt-12">
-              {/* Analytics and AI suggestions here */}
-                      </div>
-                </div>
-          {/* Dialogs and overlays (keep as before) */}
+          )}
+
+          {/* Main content: Calendar fills the rest */}
+          <div className={`flex-1 flex flex-col overflow-y-auto bg-black ${!isMobile ? '' : 'w-full'}`}>
+            {/* Mobile Header */}
+            {isMobile && (
+              <div className="flex items-center justify-between p-4 border-b border-white/10 glassmorphism-enhanced">
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <Menu className="w-6 h-6 text-white" />
+                </button>
+                <h1 className="text-xl font-bold text-white flex items-center">
+                  <CalendarIcon className="w-5 h-5 mr-2 text-blue-400" />
+                  Smart Calendar
+                </h1>
+                <div className="w-10" />
+              </div>
+            )}
+
+            {/* Desktop Header */}
+            {!isMobile && (
+              <div className="px-4 pt-8 pb-4 bg-slate-900 border-b border-slate-800">
+                <CalendarHeader
+                  currentDate={currentDate}
+                  onPrevMonth={() => setCurrentDate(subMonths(currentDate, 1))}
+                  onNextMonth={() => setCurrentDate(addMonths(currentDate, 1))}
+                  onToday={() => setCurrentDate(new Date())}
+                  isMobile={false}
+                  onAddEvent={() => openEventDialog(selectedDate || new Date())}
+                />
+              </div>
+            )}
+
+            {/* Mobile Header */}
+            {isMobile && (
+              <div className="px-4 pt-4 pb-4 bg-slate-900 border-b border-slate-800">
+                <CalendarHeader
+                  currentDate={currentDate}
+                  onPrevMonth={() => setCurrentDate(subMonths(currentDate, 1))}
+                  onNextMonth={() => setCurrentDate(addMonths(currentDate, 1))}
+                  onToday={() => setCurrentDate(new Date())}
+                  isMobile={true}
+                  onAddEvent={() => openEventDialog(selectedDate || new Date())}
+                />
+              </div>
+            )}
+
+            <div className="flex-1 flex flex-col justify-stretch p-4">
+              <CalendarGrid
+                currentDate={currentDate}
+                isMobile={isMobile}
+                getEventsForDate={getEventsForDate}
+                getTasksForDate={getTasksForDate}
+                onDayClick={setSelectedDate}
+                onDayDoubleClick={openEventDialog}
+                selectedDate={selectedDate}
+                onDayContextMenu={date => {
+                  handleDayContextMenu(date);
+                }}
+                onEventContextMenu={handleEventContextMenu}
+                onTaskContextMenu={handleTaskContextMenu}
+                loading={isSavingEvent || isSavingTask || isAuthLoading}
+              />
+            </div>
+          </div>
+        </div>
+      </main>
+      
+      {/* Dialogs and overlays (keep as before) */}
           {dayContextMenu.show && (
             <div
               ref={dayContextMenuRef}
@@ -1085,9 +1182,7 @@ const SmartCalendar = () => {
             </div>
           </DialogContent>
         </Dialog>
-            {/* Any other overlays/dialogs here */}
-          </div> {/* <-- This closes the main content area, after all overlays */}
-      </main>
+      {/* Any other overlays/dialogs here */}
     </CalendarErrorBoundary>
   );
 };

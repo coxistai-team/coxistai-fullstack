@@ -106,7 +106,7 @@ const Navigation = () => {
                       Login
                     </motion.button>
                     <motion.button
-                      className="glassmorphism-button px-6 py-3 rounded-xl font-semibold"
+                      className="glassmorphism-button px-6 py-3 rounded-xl font-semibold whitespace-nowrap"
                       onClick={() => handleNavigation('/signup')}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}

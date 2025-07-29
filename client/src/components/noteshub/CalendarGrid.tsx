@@ -89,8 +89,8 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
       {/* Days of week header */}
       <div className="grid grid-cols-7 border-b border-slate-800 bg-slate-800">
         {daysOfWeek.map((day) => (
-          <div key={day} className="p-4 text-center">
-            <span className="text-sm font-medium text-slate-300">{day}</span>
+          <div key={day} className="p-2 sm:p-4 text-center">
+            <span className="text-xs sm:text-sm font-medium text-slate-300">{day}</span>
           </div>
         ))}
       </div>
@@ -99,15 +99,15 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
         {days.slice(0, 35).map((date, index) => {
           const dayEvents = getEventsForDate(date);
           const dayTasks = getTasksForDate(date);
-          const visibleEvents = dayEvents.slice(0, 3);
-          const hasMore = dayEvents.length > 3;
+          const visibleEvents = isMobile ? dayEvents.slice(0, 2) : dayEvents.slice(0, 3);
+          const hasMore = isMobile ? dayEvents.length > 2 : dayEvents.length > 3;
           const selected = isSelected(date);
           return (
             <ContextMenu key={date.toISOString()}>
               <ContextMenuTrigger asChild>
                 <div
                   className={`
-                    relative p-3 min-h-[120px] border-r border-b border-slate-800 transition-all duration-200 cursor-pointer
+                    relative p-2 sm:p-3 min-h-[80px] sm:min-h-[120px] border-r border-b border-slate-800 transition-all duration-200 cursor-pointer
                     ${!isCurrentMonth(date) ? 'text-slate-600 bg-slate-800' : ''}
                     ${isToday(date) ? 'border-blue-500 bg-blue-900/10' : ''}
                     ${selected ? 'bg-slate-800/80 ring-2 ring-blue-400' : 'hover:bg-slate-800/60'}
@@ -120,9 +120,9 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
                   onContextMenu={e => { e.preventDefault(); if (!loading) onDayContextMenu?.(date); }}
                   style={{ outline: 'none' }}
                 >
-                  <div className={`text-sm font-semibold mb-1 flex items-center justify-between ${isToday(date) ? 'text-blue-400' : selected ? 'text-white' : isCurrentMonth(date) ? 'text-white' : 'text-slate-500'}`}>
+                  <div className={`text-xs sm:text-sm font-semibold mb-1 flex items-center justify-between ${isToday(date) ? 'text-blue-400' : selected ? 'text-white' : isCurrentMonth(date) ? 'text-white' : 'text-slate-500'}`}>
                     <span>{date.getDate()}</span>
-                    {isToday(date) && <span className="ml-2 px-2 py-0.5 rounded-full bg-blue-500/20 text-xs text-blue-300">Today</span>}
+                    {isToday(date) && <span className="ml-1 px-1 py-0.5 rounded-full bg-blue-500/20 text-xs text-blue-300">Today</span>}
                   </div>
                   {/* Events */}
                   <div className="space-y-1">
@@ -130,13 +130,13 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
                       <ContextMenu key={event.id}>
                         <ContextMenuTrigger asChild>
                           <div
-                            className="px-2 py-1 rounded text-xs font-medium truncate text-white bg-opacity-80"
+                            className="px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs font-medium truncate text-white bg-opacity-80"
                             style={{ backgroundColor: event.color }}
                             onClick={e => { e.stopPropagation(); if (!loading) onDayClick(date); }}
                             onContextMenu={e => { e.preventDefault(); if (!loading) onEventContextMenu?.(event, date); }}
                           >
                             <span className="font-medium">{event.title}</span>
-                            <span className="ml-1 opacity-75">{event.time}</span>
+                            {!isMobile && <span className="ml-1 opacity-75">{event.time}</span>}
                           </div>
                         </ContextMenuTrigger>
                         <ContextMenuContent className="bg-slate-900 border-slate-700">
@@ -147,23 +147,23 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
                     ))}
                     {hasMore && (
                       <div className="text-xs text-slate-400">
-                        {dayEvents.length - 3} more...
+                        {dayEvents.length - (isMobile ? 2 : 3)} more...
                       </div>
                     )}
                   </div>
                   {/* Tasks indicator */}
                   {dayTasks.length > 0 && (
                     <div className="mt-1 flex flex-col gap-1">
-                      {dayTasks.map(task => (
+                      {dayTasks.slice(0, isMobile ? 1 : 2).map(task => (
                         <ContextMenu key={task.id}>
                           <ContextMenuTrigger asChild>
                             <div
-                              className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-slate-700/60 text-white cursor-pointer"
+                              className="flex items-center gap-1 text-xs px-1 sm:px-2 py-0.5 sm:py-1 rounded bg-slate-700/60 text-white cursor-pointer"
                               onClick={e => { e.stopPropagation(); if (!loading) onTaskContextMenu?.(task, date); }}
                               onContextMenu={e => { e.preventDefault(); if (!loading) onTaskContextMenu?.(task, date); }}
                             >
-                              <span className={`w-2 h-2 rounded-full mr-1 ${getPriorityColor(task.priority)}`}></span>
-                              <span className={task.completed ? 'line-through text-slate-400' : ''}>{task.title}</span>
+                              <span className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full mr-1 ${getPriorityColor(task.priority)}`}></span>
+                              <span className={`${task.completed ? 'line-through text-slate-400' : ''} truncate`}>{task.title}</span>
                             </div>
                           </ContextMenuTrigger>
                           <ContextMenuContent className="bg-slate-900 border-slate-700">
@@ -173,6 +173,11 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
                           </ContextMenuContent>
                         </ContextMenu>
                       ))}
+                      {dayTasks.length > (isMobile ? 1 : 2) && (
+                        <div className="text-xs text-slate-400">
+                          {dayTasks.length - (isMobile ? 1 : 2)} more tasks...
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
