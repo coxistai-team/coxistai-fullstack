@@ -39,8 +39,14 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Add this to handle all OPTIONS preflight requests
-app.options('/*', cors());
+// Fallback handler for all OPTIONS requests (after CORS middleware)
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(204);
+  } else {
+    next();
+  }
+});
 
 // Add a route to check CORS configuration
 app.get('/api/cors-check', (req: Request, res: Response) => {
