@@ -8,15 +8,22 @@ dotenv.config(); // Load .env variables
 
 const app = express();
 
-const allowedOrigins = [
-  "https://www.coxistai.com",
-  "https://coxist-chatbot.onrender.com",
-  "https://coxistai-ui-tm8n.vercel.app",
-  "https://coxistai-ui.vercel.app",
-  "https://coxistai-ui-2.vercel.app",
-  "https://coxistai-ui-3.vercel.app",
-  "https://coxistai-ui-44444444444.vercel.app"
-];
+// Read allowed origins from environment variable or use defaults
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
+  : [
+      "https://www.coxistai.com",
+      "https://coxist-chatbot.onrender.com",
+      "https://coxistai-ui-tm8n.vercel.app",
+      "https://coxistai-ui.vercel.app",
+      "https://coxistai-ui-2.vercel.app",
+      "https://coxistai-ui-3.vercel.app",
+      "https://coxistai-ui-44444444444.vercel.app"
+    ];
+
+console.log('CORS Configuration:');
+console.log('- Environment ALLOWED_ORIGINS:', process.env.ALLOWED_ORIGINS || 'Not set');
+console.log('- Using origins:', allowedOrigins);
 
 app.use(cors({
   origin: allowedOrigins,
