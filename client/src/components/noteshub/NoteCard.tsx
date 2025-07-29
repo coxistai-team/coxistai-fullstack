@@ -18,8 +18,8 @@ import {
   ChevronRight,
   Plus,
   X,
-  Unpin,
-  ArchiveRestore
+  RotateCcw,
+  Undo2
 } from 'lucide-react';
 import {
   ContextMenu,
@@ -80,7 +80,7 @@ interface NoteCardProps {
   onDuplicate: (noteId: string) => void;
   onPin: (noteId: string, isPinned: boolean) => void;
   onArchive: (noteId: string, isArchived: boolean) => void;
-  onMoveToGroup: (noteId: string, groupId: number | null) => void;
+  onMoveToGroup: (noteId: string, groupId: number | undefined) => void;
   onEditTags: (noteId: string, tags: string[]) => void;
   formatDate: (date: string) => string;
   isDragging?: boolean;
@@ -160,7 +160,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
     return group?.color || '#3b82f6';
   };
 
-  const handleMoveToGroup = (groupId: number | null) => {
+  const handleMoveToGroup = (groupId: number | undefined) => {
     // Optimistic update - immediately update the note in the UI
     const updatedNote = { ...note, group_id: groupId };
     onUpdate(note.id, { group_id: groupId });
@@ -168,7 +168,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
   };
 
   const handleMoveToUngrouped = () => {
-    handleMoveToGroup(null);
+    handleMoveToGroup(undefined);
   };
 
   const handleEditTags = () => {
@@ -233,7 +233,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
   };
 
   return (
-    <motion.div
+          <motion.div
       className={`relative group cursor-pointer transition-all duration-200 hover:scale-[1.02] ${
         isSelected ? 'ring-2 ring-blue-500 bg-slate-800/80' : 'bg-slate-800/40 hover:bg-slate-800/60'
       } rounded-xl border border-slate-700/50 overflow-hidden`}
@@ -242,10 +242,10 @@ const NoteCard: React.FC<NoteCardProps> = ({
       transition={{ duration: 0.3 }}
       onClick={() => onSelect(note)}
       whileHover={{ y: -2 }}
-      whileTap={{ scale: 0.98 }}
-    >
+            whileTap={{ scale: 0.98 }}
+          >
       {/* Pin indicator */}
-      {note.is_pinned && (
+                      {note.is_pinned && (
         <div className="absolute top-2 right-2 z-10">
           <div className="w-6 h-6 bg-yellow-500/20 rounded-full flex items-center justify-center">
             <Pin className="w-3 h-3 text-yellow-400" />
@@ -260,32 +260,32 @@ const NoteCard: React.FC<NoteCardProps> = ({
           <div className="flex-1 min-w-0">
             <h3 className="text-sm sm:text-base font-semibold text-white truncate mb-1">
               {note.title || 'Untitled Note'}
-            </h3>
+                      </h3>
             <p className="text-xs sm:text-sm text-slate-400 line-clamp-2">
               {note.content.replace(/<[^>]*>/g, '').substring(0, 100)}
               {note.content.replace(/<[^>]*>/g, '').length > 100 && '...'}
             </p>
-          </div>
-        </div>
+                    </div>
+                  </div>
 
         {/* Tags */}
-        {note.tags && note.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-2">
+                {note.tags && note.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-2">
             {note.tags.slice(0, 3).map((tag, index) => (
               <span
                 key={index}
                 className={`px-1.5 py-0.5 rounded-full text-xs border ${getTagColor(tag)}`}
-              >
-                {tag}
+                      >
+                        {tag}
               </span>
-            ))}
-            {note.tags.length > 3 && (
+                    ))}
+                    {note.tags.length > 3 && (
               <span className="px-1.5 py-0.5 rounded-full text-xs bg-slate-700/50 text-slate-300 border border-slate-600">
-                +{note.tags.length - 3}
+                        +{note.tags.length - 3}
               </span>
-            )}
-          </div>
-        )}
+                    )}
+                  </div>
+                )}
 
         {/* Footer */}
         <div className="flex items-center justify-between text-xs text-slate-400">
@@ -306,25 +306,25 @@ const NoteCard: React.FC<NoteCardProps> = ({
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <ContextMenu>
               <ContextMenuTrigger asChild>
-                <button
+                                <button
                   className="p-1 hover:bg-slate-700/50 rounded transition-colors"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onEditTags(note);
+                    handleEditTags();
                   }}
-                  disabled={editingTags.has(note.id)}
+                  disabled={isEditingTags}
                 >
                   <Tag className="w-3 h-3" />
                 </button>
               </ContextMenuTrigger>
               <ContextMenuContent className="bg-slate-900 border-slate-700">
-                <ContextMenuItem onClick={() => onEditTags(note)}>
+                <ContextMenuItem onClick={handleEditTags}>
                   <Tag className="w-4 h-4 mr-2" /> Edit Tags
                 </ContextMenuItem>
-                <ContextMenuItem onClick={() => onPin(note.id, !note.is_pinned)}>
+                                <ContextMenuItem onClick={() => onPin(note.id, !note.is_pinned)}>
                   {note.is_pinned ? (
                     <>
-                      <Unpin className="w-4 h-4 mr-2" /> Unpin
+                      <RotateCcw className="w-4 h-4 mr-2" /> Unpin
                     </>
                   ) : (
                     <>
@@ -335,7 +335,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
                 <ContextMenuItem onClick={() => onArchive(note.id, !note.is_archived)}>
                   {note.is_archived ? (
                     <>
-                      <ArchiveRestore className="w-4 h-4 mr-2" /> Restore
+                      <Undo2 className="w-4 h-4 mr-2" /> Restore
                     </>
                   ) : (
                     <>
@@ -345,21 +345,21 @@ const NoteCard: React.FC<NoteCardProps> = ({
                 </ContextMenuItem>
                 <ContextMenuItem onClick={() => onDuplicate(note.id)}>
                   <Copy className="w-4 h-4 mr-2" /> Duplicate
-                </ContextMenuItem>
+          </ContextMenuItem>
                 <ContextMenuItem onClick={() => onDelete(note.id)} className="text-red-400">
                   <Trash2 className="w-4 h-4 mr-2" /> Delete
-                </ContextMenuItem>
-              </ContextMenuContent>
-            </ContextMenu>
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
           </div>
-        </div>
-      </div>
-
+              </div>
+            </div>
+            
       {/* Loading overlay */}
       {(isLoading || isDeleting || isMoving || isPinning || isArchiving || isDuplicating || isEditingTags) && (
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-xl">
           <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-        </div>
+          </div>
       )}
     </motion.div>
   );

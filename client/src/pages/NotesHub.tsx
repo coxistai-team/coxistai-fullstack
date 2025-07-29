@@ -1162,22 +1162,22 @@ const NotesHub = () => {
 
           {/* Desktop Sidebar */}
           {!isMobile && (
-            <NotesSidebar
-              noteGroups={noteGroups}
-              selectedGroup={selectedGroup}
-              onGroupSelect={setSelectedGroup}
-              onCreateGroup={() => setShowNewGroupDialog(true)}
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              notes={notes}
-              selectedTags={selectedTags}
-              onTagsChange={setSelectedTags}
-              onGroupRename={handleRenameGroupClick}
-              onGroupDelete={handleDeleteGroup}
-              deletingGroups={deletingGroups}
-              creatingGroups={creatingGroups}
-              renamingGroups={renamingGroups}
-            />
+          <NotesSidebar
+            noteGroups={noteGroups}
+            selectedGroup={selectedGroup}
+            onGroupSelect={setSelectedGroup}
+            onCreateGroup={() => setShowNewGroupDialog(true)}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            notes={notes}
+            selectedTags={selectedTags}
+            onTagsChange={setSelectedTags}
+            onGroupRename={handleRenameGroupClick}
+            onGroupDelete={handleDeleteGroup}
+            deletingGroups={deletingGroups}
+            creatingGroups={creatingGroups}
+            renamingGroups={renamingGroups}
+          />
           )}
 
           <div className={`flex-1 flex flex-col ${!isMobile ? '' : 'w-full'}`}>

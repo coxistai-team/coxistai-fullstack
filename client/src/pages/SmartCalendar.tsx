@@ -744,20 +744,20 @@ const SmartCalendar = () => {
                   transition={{ duration: 0.3, ease: "easeInOut" }}
                   className="fixed top-16 bottom-0 left-0 w-80 glassmorphism-enhanced border-r border-white/20 z-50 flex flex-col shadow-2xl"
                 >
-                  <CalendarSidebar
-                    events={allEventsForSidebar}
-                    tasks={sidebarTasksForSidebar}
-                    onEventClick={event => openEventDialog(new Date(event.date), event)}
-                    onTaskClick={task => toggleTask(task.id)}
-                    onAddEvent={() => openEventDialog(selectedDate || new Date())}
-                    onAddTask={() => openTaskDialog(selectedDate || new Date())}
-                    onEditEvent={event => openEventDialog(new Date(event.date), event)}
-                    onDeleteEvent={event => deleteEvent(event.id)}
-                    onEditTask={task => openEditTaskDialog(task)}
-                    onDeleteTask={task => deleteTask(task.id)}
-                    onToggleTaskComplete={task => toggleTask(task.id)}
-                    taskHeaderLabel={sidebarTaskLabel}
-                  />
+        <CalendarSidebar
+          events={allEventsForSidebar}
+          tasks={sidebarTasksForSidebar}
+          onEventClick={event => openEventDialog(new Date(event.date), event)}
+          onTaskClick={task => toggleTask(task.id)}
+          onAddEvent={() => openEventDialog(selectedDate || new Date())}
+          onAddTask={() => openTaskDialog(selectedDate || new Date())}
+          onEditEvent={event => openEventDialog(new Date(event.date), event)}
+          onDeleteEvent={event => deleteEvent(event.id)}
+          onEditTask={task => openEditTaskDialog(task)}
+          onDeleteTask={task => deleteTask(task.id)}
+          onToggleTaskComplete={task => toggleTask(task.id)}
+          taskHeaderLabel={sidebarTaskLabel}
+        />
                 </motion.div>
               </>
             )}
@@ -781,7 +781,7 @@ const SmartCalendar = () => {
             />
           )}
 
-          {/* Main content: Calendar fills the rest */}
+        {/* Main content: Calendar fills the rest */}
           <div className={`flex-1 flex flex-col overflow-y-auto bg-black ${!isMobile ? '' : 'w-full'}`}>
             {/* Mobile Header */}
             {isMobile && (
@@ -802,16 +802,16 @@ const SmartCalendar = () => {
 
             {/* Desktop Header */}
             {!isMobile && (
-              <div className="px-4 pt-8 pb-4 bg-slate-900 border-b border-slate-800">
-                <CalendarHeader
-                  currentDate={currentDate}
-                  onPrevMonth={() => setCurrentDate(subMonths(currentDate, 1))}
-                  onNextMonth={() => setCurrentDate(addMonths(currentDate, 1))}
-                  onToday={() => setCurrentDate(new Date())}
-                  isMobile={false}
-                  onAddEvent={() => openEventDialog(selectedDate || new Date())}
-                />
-              </div>
+          <div className="px-4 pt-8 pb-4 bg-slate-900 border-b border-slate-800">
+            <CalendarHeader
+              currentDate={currentDate}
+              onPrevMonth={() => setCurrentDate(subMonths(currentDate, 1))}
+              onNextMonth={() => setCurrentDate(addMonths(currentDate, 1))}
+              onToday={() => setCurrentDate(new Date())}
+              isMobile={false}
+              onAddEvent={() => openEventDialog(selectedDate || new Date())}
+                          />
+                        </div>
             )}
 
             {/* Mobile Header */}
@@ -829,27 +829,27 @@ const SmartCalendar = () => {
             )}
 
             <div className="flex-1 flex flex-col justify-stretch p-4">
-              <CalendarGrid
-                currentDate={currentDate}
+            <CalendarGrid
+              currentDate={currentDate}
                 isMobile={isMobile}
-                getEventsForDate={getEventsForDate}
-                getTasksForDate={getTasksForDate}
-                onDayClick={setSelectedDate}
-                onDayDoubleClick={openEventDialog}
-                selectedDate={selectedDate}
-                onDayContextMenu={date => {
-                  handleDayContextMenu(date);
-                }}
-                onEventContextMenu={handleEventContextMenu}
-                onTaskContextMenu={handleTaskContextMenu}
-                loading={isSavingEvent || isSavingTask || isAuthLoading}
-              />
-            </div>
-          </div>
+              getEventsForDate={getEventsForDate}
+              getTasksForDate={getTasksForDate}
+              onDayClick={setSelectedDate}
+              onDayDoubleClick={openEventDialog}
+              selectedDate={selectedDate}
+              onDayContextMenu={date => {
+                handleDayContextMenu(date);
+              }}
+              onEventContextMenu={handleEventContextMenu}
+              onTaskContextMenu={handleTaskContextMenu}
+              loading={isSavingEvent || isSavingTask || isAuthLoading}
+            />
+                      </div>
+                </div>
         </div>
       </main>
       
-      {/* Dialogs and overlays (keep as before) */}
+          {/* Dialogs and overlays (keep as before) */}
           {dayContextMenu.show && (
             <div
               ref={dayContextMenuRef}
@@ -1182,7 +1182,7 @@ const SmartCalendar = () => {
             </div>
           </DialogContent>
         </Dialog>
-      {/* Any other overlays/dialogs here */}
+            {/* Any other overlays/dialogs here */}
     </CalendarErrorBoundary>
   );
 };
