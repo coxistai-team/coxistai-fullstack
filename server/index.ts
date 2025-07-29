@@ -70,7 +70,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Enhanced preflight handler to ensure CORS headers are properly set
-app.options('*', (req: Request, res: Response) => {
+app.options(/\/api\/.*/, (req: Request, res: Response) => {
   console.log(`🔄 PREFLIGHT OPTIONS for ${req.path} from origin: ${req.headers.origin || 'undefined'}`);
   
   // Let CORS middleware handle the response
