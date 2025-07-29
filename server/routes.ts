@@ -134,27 +134,10 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 
 // --- AUTH ENDPOINTS ---
 export async function registerAuthRoutes(app: Express) {
-  // Add specific CORS options for auth routes
-  const authCorsOptions = {
-    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-      const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()) || [];
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.log(`Auth route: Origin ${origin} not allowed by CORS`);
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    preflightContinue: false,
-    optionsSuccessStatus: 204
-  };
+  // Remove per-route CORS middleware and rely on global CORS
 
   // Signup
-  app.options('/api/auth/signup', cors(authCorsOptions));
-  app.post("/api/auth/signup", cors(authCorsOptions), async (req: Request, res: Response) => {
+  app.post("/api/auth/signup", async (req: Request, res: Response) => {
     try {
       const parse = signupSchema.safeParse(req.body);
       if (!parse.success) {
@@ -174,8 +157,7 @@ export async function registerAuthRoutes(app: Express) {
   });
 
   // Login
-  app.options('/api/auth/login', cors(authCorsOptions));
-  app.post("/api/auth/login", cors(authCorsOptions), async (req: Request, res: Response) => {
+  app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
       const parse = loginSchema.safeParse(req.body);
       if (!parse.success) {
@@ -194,8 +176,7 @@ export async function registerAuthRoutes(app: Express) {
   });
 
   // Logout
-  app.options('/api/auth/logout', cors(authCorsOptions));
-  app.post("/api/auth/logout", cors(authCorsOptions), requireAuth, (req: Request, res: Response) => {
+  app.post("/api/auth/logout", requireAuth, (req: Request, res: Response) => {
     try {
       res.json({ success: true });
     } catch {
@@ -204,8 +185,7 @@ export async function registerAuthRoutes(app: Express) {
   });
 
   // Forgot Password
-  app.options('/api/auth/forgot-password', cors(authCorsOptions));
-  app.post("/api/auth/forgot-password", cors(authCorsOptions), async (req: Request, res: Response) => {
+  app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
     try {
       const parse = forgotPasswordSchema.safeParse(req.body);
       if (!parse.success) {
@@ -224,8 +204,7 @@ export async function registerAuthRoutes(app: Express) {
   });
 
   // Reset Password
-  app.options('/api/auth/reset-password', cors(authCorsOptions));
-  app.post("/api/auth/reset-password", cors(authCorsOptions), async (req: Request, res: Response) => {
+  app.post("/api/auth/reset-password", async (req: Request, res: Response) => {
     try {
       const parse = resetPasswordSchema.safeParse(req.body);
       if (!parse.success) {
@@ -245,8 +224,7 @@ export async function registerAuthRoutes(app: Express) {
   });
 
   // Me
-  app.options('/api/auth/me', cors(authCorsOptions));
-  app.get("/api/auth/me", cors(authCorsOptions), requireAuth, async (req: Request, res: Response) => {
+  app.get("/api/auth/me", requireAuth, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user.id;
       const user = await storage.getUser(userId);
