@@ -105,6 +105,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AnimatedBackground from "@/components/layout/AnimatedBackground";
+import Navigation from "@/components/layout/Navigation";
 
 import { LoadingProvider } from "@/contexts/LoadingContext";
 import { PageLoadingProvider } from "@/contexts/PageLoadingContext";
@@ -194,6 +195,7 @@ function App() {
                 <PageLoadingProvider>
                   <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden flex flex-col">
                     <AnimatedBackground />
+                    <Navigation />
                     <div className="flex-1">
                       <Router />
                     </div>
