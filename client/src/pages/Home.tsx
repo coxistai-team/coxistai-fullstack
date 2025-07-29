@@ -78,7 +78,7 @@ const Home = () => {
     {
       name: "Sarah Chen",
       role: "Computer Science Student",
-      content: "Coexist AI transformed my learning experience. The AI tutor helped me understand complex algorithms in minutes!",
+      content: "CoXist AI transformed my learning experience. The AI tutor helped me understand complex algorithms in minutes!",
       avatar: "SC",
       rating: 5
     },
@@ -597,7 +597,7 @@ const Home = () => {
         </div>
       </motion.section>
 
-      {/* Testimonials Section */}
+      {/* Testimonials Section 
       <section className="py-20 px-4 relative z-10">
         <div className="max-w-6xl mx-auto">
           <motion.div
@@ -657,7 +657,6 @@ const Home = () => {
             </div>
           </motion.div>
 
-          {/* Testimonial indicators */}
           <div className="flex justify-center mt-8 space-x-2">
             {testimonials.map((_, index) => (
               <button
@@ -671,6 +670,7 @@ const Home = () => {
           </div>
         </div>
       </section>
+      */}
 
       {/* CTA Section */}
       <section className="py-20 px-4 relative z-10">

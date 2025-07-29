@@ -184,7 +184,7 @@ export default function GeneralSettings() {
             General Settings
           </h1>
           <p className="text-gray-600 dark:text-gray-300">
-            Customize your Coexist AI experience
+            Customize your CoXist AI experience
           </p>
         </motion.div>
 

@@ -8,26 +8,13 @@ export const COLORS = {
 } as const;
 
 export const NAVIGATION_ITEMS = [
-  { id: 'home', label: 'Home', path: '/' },
-  { id: 'chat', label: 'AI Tutor', path: '/chat' },
-  {
-    id: 'tools',
-    label: 'Learning Tools',
-    dropdown: [
-      { id: 'notes', label: 'Notes Hub', path: '/notes', description: 'Smart note-taking & organization' },
-      { id: 'presentations', label: 'AI Presentations', path: '/presentations', description: 'Create stunning slides with AI' },
-      { id: 'calendar', label: 'Smart Calendar', path: '/calendar', description: 'AI-powered scheduling' },
-      { id: 'code', label: 'CodeSpark', path: '/code', description: 'Interactive programming lessons' }
-    ]
-  },
-  {
-    id: 'connect',
-    label: 'Connect',
-    dropdown: [
-      { id: 'community', label: 'Community', path: '/community', description: 'Join study groups & forums' },
-      { id: 'college', label: 'College Finder', path: '/college', description: 'AI college recommendations' }
-    ]
-  }
+  { id: 'notes', label: 'Notes', path: '/notes' },
+  { id: 'calendar', label: 'Calendar', path: '/calendar' },
+  { id: 'chat', label: 'AI Chatbot', path: '/chat' },
+  { id: 'presentations', label: 'AI PPTs', path: '/presentations' },
+  { id: 'community', label: 'Community', path: '/community' },
+  { id: 'code', label: 'CodeSpark', path: '/code' },
+  { id: 'college', label: 'College Recommender', path: '/college' },
 ] as const;
 
 export const MOCK_COLLEGE_DATA = [

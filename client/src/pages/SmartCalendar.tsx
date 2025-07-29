@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Plus, 
@@ -39,8 +39,12 @@ import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterv
 import { useToast } from "@/hooks/use-toast";
 import { useAuthLoading } from "@/contexts/AuthContext";
 import { SkeletonLoader } from "@/components/ui/page-loader";
-import React, { Suspense } from "react";
 import ParticleField from "@/components/effects/ParticleField";
+// Import new components
+import CalendarSidebar from "@/components/noteshub/CalendarSidebar";
+import CalendarHeader from "@/components/noteshub/CalendarHeader";
+import CalendarGrid from "@/components/noteshub/CalendarGrid";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu';
 
 interface CalendarEvent {
   id: string;
@@ -86,6 +90,7 @@ const SmartCalendar = () => {
   const [showMonthSelector, setShowMonthSelector] = useState(false);
   const [showTaskDialog, setShowTaskDialog] = useState(false);
   const [newTask, setNewTask] = useState({ title: '', priority: 'medium' as 'low' | 'medium' | 'high' });
+  const [taskDialogDate, setTaskDialogDate] = useState<Date | null>(null);
   
   // Real analytics data
   const [studyTimeData, setStudyTimeData] = useState(() => analytics.getStudyTimeThisWeek());
@@ -125,6 +130,9 @@ const SmartCalendar = () => {
 
   // Add state for event attachments
   const [isSavingEvent, setIsSavingEvent] = useState(false);
+
+  // Add a loading state for tasks
+  const [isSavingTask, setIsSavingTask] = useState(false);
 
   const isAuthLoading = useAuthLoading();
   const [isEventsLoading, setIsEventsLoading] = useState(true);
@@ -204,7 +212,112 @@ const SmartCalendar = () => {
     return tasks.filter(task => isSameDay(task.date, date));
   };
 
-  // Add or update event (persistent)
+  // Add a helper to get local date string in 'yyyy-MM-dd' format
+  function getLocalDateString(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  // --- Optimistic Add Task ---
+  const addTask = async (title: string, date: Date, priority: 'low' | 'medium' | 'high' = 'medium') => {
+    const optimisticTask = {
+      id: 'optimistic-' + Date.now(),
+      title,
+      completed: false,
+      priority,
+      date,
+    };
+    setTasks(prev => [...prev, optimisticTask]);
+    setShowTaskDialog(false);
+    setNewTask({ title: '', priority: 'medium' });
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await fetch(`${API_URL}/api/calendar/tasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ title, date: getLocalDateString(date), priority })
+      });
+      if (!res.ok) throw new Error("Failed to add task");
+      const newTask = await res.json();
+      setTasks(prev => prev.map(t => t.id === optimisticTask.id ? newTask : t));
+      toast({ title: "Task Added", description: `Task "${newTask.title}" added.` });
+    } catch (e: any) {
+      setTasks(prev => prev.filter(t => t.id !== optimisticTask.id));
+      toast({ title: "Add Failed", description: e.message, variant: "destructive" });
+    }
+  };
+
+  // --- Optimistic Toggle Task ---
+  const toggleTask = async (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    const optimisticTasks = tasks.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t);
+    setTasks(optimisticTasks);
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await fetch(`${API_URL}/api/calendar/tasks/${taskId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ completed: !task.completed })
+      });
+      if (!res.ok) throw new Error("Failed to update task");
+      const updatedTask = await res.json();
+      setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+      toast({ title: "Task Updated", description: `Task "${updatedTask.title}" updated.` });
+    } catch (e: any) {
+      setTasks(tasks); // rollback
+      toast({ title: "Update Failed", description: e.message, variant: "destructive" });
+    }
+  };
+
+  // --- Optimistic Edit Task ---
+  const saveEditTask = async () => {
+    if (!editingTask) return;
+    setIsSavingTask(true);
+    const prevTasks = [...tasks];
+    const optimisticTasks = tasks.map(t => t.id === editingTask.id ? { ...t, title: editTaskData.title, priority: editTaskData.priority } : t);
+    setTasks(optimisticTasks);
+    setEditingTask(null);
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await fetch(`${API_URL}/api/calendar/tasks/${editingTask.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ title: editTaskData.title, priority: editTaskData.priority })
+      });
+      if (!res.ok) throw new Error("Failed to update task");
+      const updatedTask = await res.json();
+      setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+      toast({ title: "Task Updated", description: `Task "${updatedTask.title}" updated.` });
+    } catch (e: any) {
+      setTasks(prevTasks); // rollback
+      toast({ title: "Update Failed", description: e.message, variant: "destructive" });
+    } finally {
+      setIsSavingTask(false);
+    }
+  };
+
+  // --- Optimistic Delete Task ---
+  const deleteTask = async (taskId: string) => {
+    const prevTasks = [...tasks];
+    setTasks(prev => prev.filter(t => t.id !== taskId));
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await fetch(`${API_URL}/api/calendar/tasks/${taskId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("Failed to delete task");
+      toast({ title: "Task Deleted", description: "Task has been removed." });
+    } catch (e: any) {
+      setTasks(prevTasks); // rollback
+      toast({ title: "Delete Failed", description: e.message, variant: "destructive" });
+    }
+  };
+
+  // --- Optimistic Save Event (Add/Edit) ---
   const saveEvent = async () => {
     setIsSavingEvent(true);
     if (!newEvent.title || !newEvent.date) return;
@@ -219,6 +332,22 @@ const SmartCalendar = () => {
       color: eventColors[newEvent.type!],
       reminder: newEvent.reminder,
     };
+    let prevEvents = [...events];
+    let optimisticEvent: CalendarEvent | null = null;
+    if (!editingEvent) {
+      optimisticEvent = {
+        ...eventData,
+        id: 'optimistic-' + Date.now() + '-' + Math.random(),
+        googleEventId: '',
+        attachments: [],
+      };
+      setEvents(prev => [...prev, optimisticEvent!]);
+    } else {
+      setEvents(prev => prev.map(e => e.id === editingEvent!.id ? { ...e, ...eventData } : e));
+    }
+    setShowEventDialog(false);
+    setEditingEvent(null);
+    setNewEvent({ title: '', description: '', date: '', time: '09:00', duration: 60, type: 'study', color: '#3B82F6', reminder: 15 });
     try {
       let res, saved;
       const token = localStorage.getItem('authToken');
@@ -226,35 +355,37 @@ const SmartCalendar = () => {
         res = await fetch(`${API_URL}/api/calendar/${editingEvent.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({
-            ...eventData,
-          })
+          body: JSON.stringify({ ...eventData })
         });
       } else {
         res = await fetch(`${API_URL}/api/calendar`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({
-            ...eventData,
-          })
+          body: JSON.stringify({ ...eventData })
         });
       }
       if (!res.ok) throw new Error("Failed to save event");
       saved = await res.json();
-      fetch(`${API_URL}/api/calendar`, { headers: { Authorization: `Bearer ${token}` } })
-        .then(res => res.json())
-        .then(data => setEvents(data.map((e: any) => ({ ...e, date: typeof e.date === 'string' ? e.date : (new Date(e.date)).toISOString().split('T')[0] }))));
+      setEvents(prev => {
+        if (editingEvent) {
+          return prev.map(e => e.id === editingEvent!.id ? saved : e);
+        } else {
+          return prev.map(e => e.id === optimisticEvent!.id ? saved : e);
+        }
+      });
       toast({ title: editingEvent ? "Event Updated" : "Event Created", description: `Event ${editingEvent ? "updated" : "created"} successfully.` });
-      resetEventDialog();
     } catch (e: any) {
+      setEvents(prevEvents); // rollback
       toast({ title: "Save Failed", description: e.message, variant: "destructive" });
     } finally {
       setIsSavingEvent(false);
     }
   };
 
-  // Delete event (persistent)
+  // --- Optimistic Delete Event ---
   const deleteEvent = async (eventId: string) => {
+    const prevEvents = [...events];
+    setEvents(prev => prev.filter(e => e.id !== eventId));
     try {
       const token = localStorage.getItem('authToken');
       const res = await fetch(`${API_URL}/api/calendar/${eventId}`, {
@@ -262,11 +393,9 @@ const SmartCalendar = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) throw new Error("Failed to delete event");
-      fetch(`${API_URL}/api/calendar`, { headers: { Authorization: `Bearer ${token}` } })
-        .then(res => res.json())
-        .then(data => setEvents(data.map((e: any) => ({ ...e, date: typeof e.date === 'string' ? e.date : (new Date(e.date)).toISOString().split('T')[0] }))));
       toast({ title: "Event Deleted", description: "Event has been removed." });
     } catch (e: any) {
+      setEvents(prevEvents); // rollback
       toast({ title: "Delete Failed", description: e.message, variant: "destructive" });
     }
   };
@@ -363,95 +492,22 @@ const SmartCalendar = () => {
     setShowTaskDialog(false);
   };
 
-  const saveEditTask = async () => {
-    if (!editingTask) return;
-    try {
-      const token = localStorage.getItem('authToken');
-      const res = await fetch(`${API_URL}/api/calendar/tasks/${editingTask.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          title: editTaskData.title,
-          priority: editTaskData.priority,
-        })
-      });
-      if (!res.ok) throw new Error("Failed to update task");
-      const updatedTask = await res.json();
-      setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
-      setEditingTask(null);
-      toast({ title: "Task Updated", description: `Task "${updatedTask.title}" updated.` });
-    } catch (e: any) {
-      toast({ title: "Update Failed", description: e.message, variant: "destructive" });
-    }
-  };
-
-  // 3. Delete task handler
-  const deleteTask = async (taskId: string) => {
-    if (!window.confirm("Are you sure you want to delete this task?")) return;
-    try {
-      const token = localStorage.getItem('authToken');
-      const res = await fetch(`${API_URL}/api/calendar/tasks/${taskId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error("Failed to delete task");
-      setTasks(prev => prev.filter(t => t.id !== taskId));
-      toast({ title: "Task Deleted", description: "Task has been removed." });
-    } catch (e: any) {
-      toast({ title: "Delete Failed", description: e.message, variant: "destructive" });
-    }
-  };
-
-  // 4. Fix toggle complete to use PUT
-  const toggleTask = async (taskId: string) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-    try {
-      const token = localStorage.getItem('authToken');
-      const res = await fetch(`${API_URL}/api/calendar/tasks/${taskId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ completed: !task.completed })
-      });
-      if (!res.ok) throw new Error("Failed to update task");
-      const updatedTask = await res.json();
-      setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
-      toast({ title: "Task Updated", description: `Task "${updatedTask.title}" updated.` });
-    } catch (e: any) {
-      toast({ title: "Update Failed", description: e.message, variant: "destructive" });
-    }
-  };
-
-  // Add new task
-  const addTask = async (title: string, date: Date, priority: 'low' | 'medium' | 'high' = 'medium') => {
-    try {
-      const token = localStorage.getItem('authToken');
-      const res = await fetch(`${API_URL}/api/calendar/tasks`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ title, date: date.toISOString().split('T')[0], priority })
-      });
-      if (!res.ok) throw new Error("Failed to add task");
-      const newTask = await res.json();
-      setTasks(prev => [...prev, newTask]);
-      toast({ title: "Task Added", description: `Task "${newTask.title}" added.` });
-    } catch (e: any) {
-      toast({ title: "Add Failed", description: e.message, variant: "destructive" });
-    }
-  };
-
   // Handle task dialog
-  const openTaskDialog = () => {
+  const openTaskDialog = (date?: Date) => {
+    setTaskDialogDate(date || selectedDate || new Date());
     setNewTask({ title: '', priority: 'medium' });
     setShowTaskDialog(true);
   };
 
+  // Update saveTask to set loading state
   const saveTask = async () => {
     if (!newTask.title.trim()) return;
-    
-    await addTask(newTask.title, new Date(), newTask.priority);
+    setIsSavingTask(true);
+    await addTask(newTask.title, taskDialogDate || new Date(), newTask.priority);
     setShowTaskDialog(false);
     setNewTask({ title: '', priority: 'medium' });
+    setIsSavingTask(false);
+    setTaskDialogDate(null);
   };
 
   // Generate Google Calendar link
@@ -503,6 +559,7 @@ const SmartCalendar = () => {
   };
 
   const calendarDays = getCalendarDays();
+  const allEvents = [...events].sort((a, b) => new Date(a.date + 'T' + a.time).getTime() - new Date(b.date + 'T' + b.time).getTime());
   const todaysTasks = getTasksForDate(new Date());
   const aiSuggestions = getAISuggestions();
 
@@ -522,6 +579,90 @@ const SmartCalendar = () => {
     googleEventId: event.googleEventId || '',
     attachments: safeArray(event.attachments),
   });
+
+  // Map events to ensure 'type' is the correct union type
+  const allEventsForSidebar = allEvents.map(e => ({
+    ...e,
+    type: (['study', 'exam', 'assignment', 'personal', 'group'].includes(e.type) ? e.type : 'personal') as 'study' | 'exam' | 'assignment' | 'personal' | 'group',
+  }));
+  // Compute the date to show tasks for
+  const sidebarTaskDate = selectedDate || new Date();
+  const sidebarTasks = getTasksForDate(sidebarTaskDate);
+  const sidebarTaskLabel = isToday(sidebarTaskDate)
+    ? "Today's Tasks"
+    : `Tasks for ${format(sidebarTaskDate, 'EEEE, d MMMM yyyy')}`;
+  // Map tasks to ensure 'date' property exists and is a Date
+  const sidebarTasksForSidebar = sidebarTasks.map(t => ({ ...t, date: t.date ? new Date(t.date) : new Date() }));
+
+  const [dayContextMenu, setDayContextMenu] = useState<{ x: number; y: number; date: Date | null; show: boolean }>({ x: 0, y: 0, date: null, show: false });
+  const dayContextMenuRef = useRef<HTMLDivElement>(null);
+
+  // Handler for right-click on a day
+  const handleDayContextMenu = (date: Date) => {
+    setSelectedDate(date);
+    setDayContextMenu({ x: window.event ? (window.event as MouseEvent).clientX : 0, y: window.event ? (window.event as MouseEvent).clientY : 0, date, show: true });
+  };
+
+  // Handler for closing the custom context menu
+  const closeDayContextMenu = () => setDayContextMenu({ ...dayContextMenu, show: false });
+
+  // Handler for Add Event from context menu
+  const handleAddEventFromMenu = () => {
+    if (dayContextMenu.date) {
+      setSelectedDate(dayContextMenu.date);
+      openEventDialog(dayContextMenu.date);
+    }
+    closeDayContextMenu();
+  };
+  // Handler for Add Task from context menu
+  const handleAddTaskFromMenu = () => {
+    if (dayContextMenu.date) {
+      setSelectedDate(dayContextMenu.date);
+      openTaskDialog(dayContextMenu.date);
+    }
+    closeDayContextMenu();
+  };
+  // Handler for Edit Event from context menu
+  const handleEditEventFromMenu = () => {
+    if (dayContextMenu.date) {
+      const eventsForDay = getEventsForDate(dayContextMenu.date);
+      if (eventsForDay.length > 0) openEventDialog(dayContextMenu.date, eventsForDay[0]);
+    }
+    closeDayContextMenu();
+  };
+
+  // Handler for right-click on an event
+  const handleEventContextMenu = (event: CalendarEvent, date: Date) => {
+    setSelectedDate(date);
+    openEventDialog(date, event);
+  };
+
+  // Handler for right-click on a task
+  const handleTaskContextMenu = (task: Task, date: Date) => {
+    setSelectedDate(date);
+    openEditTaskDialog(task);
+  };
+
+  // Close context menu on outside click, scroll, or blur
+  useEffect(() => {
+    if (!dayContextMenu.show) return;
+    function handleClick(e: MouseEvent) {
+      if (dayContextMenuRef.current && !dayContextMenuRef.current.contains(e.target as Node)) {
+        closeDayContextMenu();
+      }
+    }
+    function handleScrollOrBlur() {
+      closeDayContextMenu();
+    }
+    document.addEventListener('mousedown', handleClick);
+    window.addEventListener('scroll', handleScrollOrBlur, true);
+    window.addEventListener('blur', handleScrollOrBlur);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      window.removeEventListener('scroll', handleScrollOrBlur, true);
+      window.removeEventListener('blur', handleScrollOrBlur);
+    };
+  }, [dayContextMenu.show]);
 
   if (isEventsLoading) {
     return (
@@ -563,482 +704,70 @@ const SmartCalendar = () => {
 
   return (
     <CalendarErrorBoundary>
-      <main className="relative z-10 pt-16 bg-black text-white overflow-hidden">
-        {/* Particle Field Background */}
-        <ParticleField />
-        
-        {/* Creative Background Elements */}
-        <div className="fixed inset-0 pointer-events-none z-0">
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl floating-element"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl floating-element"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-green-500/10 rounded-full blur-2xl floating-element"></div>
-          
-          {/* Creative Shapes */}
-          <div className="absolute top-20 right-20 w-32 h-32 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-xl creative-shape"></div>
-          <div className="absolute bottom-20 left-20 w-24 h-24 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full blur-lg creative-shape"></div>
-          <div className="absolute top-1/3 right-1/3 w-16 h-16 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-full blur-md creative-shape"></div>
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="text-center mb-6">
-            <motion.h1 
-              className="text-3xl font-bold mb-3 text-white flex items-center justify-center"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <CalendarIcon className="w-7 h-7 mr-2 text-blue-400" />
-              Smart Calendar
-            </motion.h1>
-            <motion.p 
-              className="text-gray-400 flex items-center justify-center text-sm"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-            >
-              <Sparkles className="w-3 h-3 mr-1 text-green-400" />
-              Intelligent scheduling with AI-powered suggestions
-            </motion.p>
-          </div>
-          
-          <div className="grid lg:grid-cols-4 gap-6">
-            {/* Sidebar */}
-            <div className="lg:col-span-1 space-y-4">
-              {/* Quick Actions */}
-              <motion.div 
-                className="glassmorphism-enhanced rounded-xl p-4"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6 }}
-              >
-                <h2 className="text-lg font-bold mb-3 text-white flex items-center">
-                  <Zap className="w-4 h-4 mr-2 text-blue-400" />
-                  Quick Actions
-                </h2>
-                <div className="space-y-3">
-                  <GlassmorphismButton
-                    onClick={() => openEventDialog(selectedDate || new Date())}
-                    className="w-full"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Event
-                  </GlassmorphismButton>
-                  <GlassmorphismButton
-                    onClick={() => openEventDialog(selectedDate || new Date(), undefined, 'study')}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    <Clock className="w-4 h-4 mr-2" />
-                    Schedule Study Session
-                  </GlassmorphismButton>
-                  <GlassmorphismButton
-                    onClick={() => openEventDialog(selectedDate || new Date(), undefined, 'group')}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    <Users className="w-4 h-4 mr-2" />
-                    Group Study
-                  </GlassmorphismButton>
-                  <GlassmorphismButton
-                    onClick={navigateToToday}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    <CalendarIcon className="w-4 h-4 mr-2" />
-                    Go to Today
-                  </GlassmorphismButton>
-                </div>
-              </motion.div>
-
-              {/* Today's Tasks */}
-              <motion.div 
-                className="glassmorphism rounded-xl p-6"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-slate-900 dark:text-white">Today's Tasks</h3>
-                <GlassmorphismButton
-                  onClick={openTaskDialog}
-                  variant="outline"
-                  className="p-1"
-                >
-                  <Plus className="w-3 h-3" />
-                </GlassmorphismButton>
-              </div>
-              <div className="space-y-2">
-                {todaysTasks.length === 0 ? (
-                  <div>
-                    <p className="text-slate-600 dark:text-slate-400 text-sm mb-2">No tasks for today</p>
-                    <GlassmorphismButton
-                      onClick={openTaskDialog}
-                      variant="outline"
-                      className="w-full text-xs"
-                    >
-                      <Plus className="w-3 h-3 mr-1" />
-                      Add Task
-                    </GlassmorphismButton>
-                  </div>
-                ) : (
-                    todaysTasks.map((task, index) => (
-                    <motion.div
-                        key={task.id}
-                        className="flex items-center space-x-2 p-2 glassmorphism rounded cursor-pointer"
-                        onClick={() => toggleTask(task.id)}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.5 + index * 0.1, duration: 0.5 }}
-                      whileHover={{ scale: 1.02 }}
-                    >
-                      {task.completed ? (
-                        <CheckCircle2 className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <Circle className="w-4 h-4 text-slate-400" />
-                      )}
-                      <span className={`text-sm flex-1 ${task.completed ? 'line-through text-slate-400' : 'text-slate-900 dark:text-white'}`}>
-                        {task.title}
-                      </span>
-                      <div className={`w-2 h-2 rounded-full ${
-                        task.priority === 'high' ? 'bg-red-500' :
-                        task.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
-                      }`} />
-                      <Edit3 onClick={e => { e.stopPropagation(); openEditTaskDialog(task); }} className="w-4 h-4 text-slate-500 hover:text-blue-500 cursor-pointer" />
-                      <Trash2 onClick={e => { e.stopPropagation(); deleteTask(task.id); }} className="w-4 h-4 text-slate-500 hover:text-red-500 cursor-pointer" />
-                    </motion.div>
-                    ))
-                  )}
-                </div>
-              </motion.div>
-              
-              {/* AI Suggestions */}
-              <motion.div 
-                className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4, duration: 0.6 }}
-              >
-                <h3 className="font-semibold mb-3 flex items-center text-slate-900 dark:text-white">
-                  <Sparkles className="w-4 h-4 mr-2 text-green-500" />
-                  AI Suggestions
-                </h3>
-                <div className="space-y-2 text-sm">
-                  {aiSuggestions.map((suggestion, index) => (
-                    <motion.div
-                      key={index}
-                      className="p-2 bg-slate-50 dark:bg-slate-700 rounded cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors text-slate-800 dark:text-slate-200"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.5 + index * 0.1, duration: 0.5 }}
-                      whileHover={{ scale: 1.02 }}
-                    >
-                      {suggestion}
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            </div>
-            
-            {/* Calendar */}
-            <div className="lg:col-span-3">
-              <motion.div 
-                className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6 }}
-              >
-                {/* Calendar Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center space-x-4">
-                    <button
-                      onClick={() => navigateMonth('prev')}
-                      className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                    >
-                      <ChevronLeft className="w-5 h-5 text-slate-900 dark:text-white" />
-                    </button>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => setShowMonthSelector(true)}
-                        className="text-2xl font-bold text-slate-900 dark:text-white hover:text-blue-500 transition-colors"
-                      >
-                        {format(currentDate, 'MMMM')}
-                      </button>
-                      <button
-                        onClick={() => setShowYearSelector(true)}
-                        className="text-2xl font-bold text-slate-900 dark:text-white hover:text-blue-500 transition-colors"
-                      >
-                        {format(currentDate, 'yyyy')}
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => navigateMonth('next')}
-                      className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                    >
-                      <ChevronRight className="w-5 h-5 text-slate-900 dark:text-white" />
-                    </button>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <span className="text-slate-600 dark:text-slate-400 text-sm">Month View</span>
-                  </div>
-                </div>
-
-                {/* Calendar Grid */}
-                <div className="grid grid-cols-7 gap-1 mb-4">
-                  {/* Day Headers */}
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                    <div key={day} className="text-center py-2 text-slate-600 dark:text-slate-400 font-semibold">
-                      {day}
-                    </div>
-                  ))}
-                  
-                  {/* Calendar Days */}
-                  {calendarDays.map((day, index) => {
-                    const dayEvents = getEventsForDate(day);
-                    const dayTasks = getTasksForDate(day);
-                    const isCurrentMonth = getMonth(day) === getMonth(currentDate);
-                    const isSelected = selectedDate && isSameDay(day, selectedDate);
-                    
-                    return (
-                      <motion.div
-                        key={day.toISOString()}
-                        className={`min-h-[120px] p-2 border border-slate-200 dark:border-slate-600 rounded-lg cursor-pointer transition-all duration-300 ${
-                          isToday(day) ? 'border-blue-500 bg-blue-500/10' :
-                          isSelected ? 'border-green-500 bg-green-500/10' :
-                          isCurrentMonth ? 'hover:bg-slate-50 dark:hover:bg-slate-700' : 'opacity-50'
-                        }`}
-                        onClick={() => setSelectedDate(day)}
-                        onDoubleClick={() => openEventDialog(day)}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: index * 0.01, duration: 0.3 }}
-                      >
-                        <div className={`text-sm font-semibold mb-1 ${
-                          isToday(day) ? 'text-blue-500' :
-                          isCurrentMonth ? 'text-slate-900 dark:text-white' : 'text-slate-500'
-                        }`}>
-                          {format(day, 'd')}
-                        </div>
-                        
-                        {/* Events */}
-                        <div className="space-y-1">
-                          {dayEvents.slice(0, 3).map((event) => (
-                            <div
-                              key={event.id}
-                              className="text-xs p-1 rounded text-white truncate"
-                              style={{ backgroundColor: event.color }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openEventDialog(day, event);
-                              }}
-                            >
-                              {event.time} {event.title}
-                            </div>
-                          ))}
-                          {dayEvents.length > 3 && (
-                            <div className="text-xs text-slate-400">
-                              +{dayEvents.length - 3} more
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Tasks indicator */}
-                        {dayTasks.length > 0 && (
-                          <div className="mt-1 flex items-center">
-                            <div className="w-2 h-2 bg-yellow-500 rounded-full mr-1"></div>
-                            <span className="text-xs text-slate-400">{dayTasks.length}</span>
-                          </div>
-                        )}
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            </div>
-          </div>
-
-          {/* Productivity Dashboard */}
-          <div className="mt-12">
-            <motion.div
-              className="text-center mb-8"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2 className="text-3xl font-bold mb-4 text-slate-900 dark:text-white">Productivity Analytics</h2>
-              <p className="text-slate-600 dark:text-slate-400">Track your study patterns and optimize your schedule</p>
-            </motion.div>
-
-            <div className="grid lg:grid-cols-3 gap-6">
-              {/* Study Time Analytics */}
-              <motion.div
-                className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1, duration: 0.5 }}
-              >
-                <h3 className="text-lg font-semibold mb-4 flex items-center text-slate-900 dark:text-white">
-                  <Clock className="w-5 h-5 mr-2 text-blue-500" />
-                  Study Time This Week
-                </h3>
-                <div className="space-y-4">
-                  {studyTimeData.map((item, index) => (
-                    <div key={item.day} className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-700 dark:text-slate-300">{item.day}</span>
-                        <span className="text-blue-500">{item.hours}h / {item.target}h</span>
-                      </div>
-                      <div className="bg-slate-200 dark:bg-slate-700 rounded-full h-2">
-                        <motion.div
-                          className={`h-2 rounded-full ${
-                            item.hours >= item.target ? 'bg-green-500' : 'bg-blue-500'
-                          }`}
-                          initial={{ width: 0 }}
-                          animate={{ width: `${Math.min((item.hours / item.target) * 100, 100)}%` }}
-                          transition={{ delay: 0.5 + index * 0.1, duration: 0.8 }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-
-              {/* Task Completion Rate */}
-              <motion.div
-                className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
-              >
-                <h3 className="text-lg font-semibold mb-4 flex items-center text-slate-900 dark:text-white">
-                  <CheckCircle2 className="w-5 h-5 mr-2 text-green-500" />
-                  Task Completion
-                </h3>
-                <div className="text-center mb-6">
-                  <div className="text-4xl font-bold text-green-500 mb-2">{completionRate}%</div>
-                  <p className="text-slate-600 dark:text-slate-400 text-sm">This week's completion rate</p>
-                </div>
-                <div className="space-y-3">
-                  {taskStats.map((item, index) => (
-                    <div key={item.category} className="flex justify-between items-center">
-                      <span className="text-sm text-slate-700 dark:text-slate-300">{item.category}</span>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs text-slate-600 dark:text-slate-400">{item.completed}/{item.total}</span>
-                        <div className="w-16 bg-slate-200 dark:bg-slate-700 rounded-full h-2">
-                          <motion.div
-                            className="bg-green-500 h-2 rounded-full"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${(item.completed / item.total) * 100}%` }}
-                            transition={{ delay: 0.7 + index * 0.1, duration: 0.6 }}
+      <main className="flex min-h-screen bg-black text-white overflow-hidden">
+        {/* Sidebar: Events and Tasks */}
+        <CalendarSidebar
+          events={allEventsForSidebar}
+          tasks={sidebarTasksForSidebar}
+          onEventClick={event => openEventDialog(new Date(event.date), event)}
+          onTaskClick={task => toggleTask(task.id)}
+          onAddEvent={() => openEventDialog(selectedDate || new Date())}
+          onAddTask={() => openTaskDialog(selectedDate || new Date())}
+          onEditEvent={event => openEventDialog(new Date(event.date), event)}
+          onDeleteEvent={event => deleteEvent(event.id)}
+          onEditTask={task => openEditTaskDialog(task)}
+          onDeleteTask={task => deleteTask(task.id)}
+          onToggleTaskComplete={task => toggleTask(task.id)}
+          taskHeaderLabel={sidebarTaskLabel}
+        />
+        {/* Main content: Calendar fills the rest */}
+        <div className="flex-1 flex flex-col overflow-y-auto bg-black">
+          <div className="px-4 pt-8 pb-4 bg-slate-900 border-b border-slate-800">
+            <CalendarHeader
+              currentDate={currentDate}
+              onPrevMonth={() => setCurrentDate(subMonths(currentDate, 1))}
+              onNextMonth={() => setCurrentDate(addMonths(currentDate, 1))}
+              onToday={() => setCurrentDate(new Date())}
+              isMobile={false}
+              onAddEvent={() => openEventDialog(selectedDate || new Date())}
                           />
                         </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-
-              {/* Study Streaks */}
-              <motion.div
-                className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.5 }}
-              >
-                <h3 className="text-lg font-semibold mb-4 flex items-center text-slate-900 dark:text-white">
-                  <Sparkles className="w-5 h-5 mr-2 text-yellow-500" />
-                  Study Streaks
-                </h3>
-                <div className="space-y-4">
-                  <div className="text-center p-4 bg-gradient-to-r from-orange-500/20 to-yellow-500/20 rounded-lg border border-yellow-500/30">
-                    <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mb-1">{currentStreak}</div>
-                    <p className="text-sm text-yellow-700 dark:text-yellow-300">Day Streak</p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{currentStreak > 0 ? 'Keep it up!' : 'Start your streak today!'}</p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-700 dark:text-slate-300">Current Streak</span>
-                      <span className="text-green-500">{currentStreak} days</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-700 dark:text-slate-300">This Week</span>
-                      <span className="text-blue-500">{studyTimeData.filter(d => d.hours > 0).length} days active</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-700 dark:text-slate-300">Total Study Hours</span>
-                      <span className="text-purple-500">{totalStudyHours}</span>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-
-        {/* Smart Scheduling Suggestions */}
+          <div className="flex-1 flex flex-col justify-stretch">
+            <CalendarGrid
+              currentDate={currentDate}
+              isMobile={false}
+              getEventsForDate={getEventsForDate}
+              getTasksForDate={getTasksForDate}
+              onDayClick={setSelectedDate}
+              onDayDoubleClick={openEventDialog}
+              selectedDate={selectedDate}
+              onDayContextMenu={date => {
+                handleDayContextMenu(date);
+              }}
+              onEventContextMenu={handleEventContextMenu}
+              onTaskContextMenu={handleTaskContextMenu}
+              loading={isSavingEvent || isSavingTask || isAuthLoading}
+            />
         <div className="mt-12">
-          <motion.div
-            className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-          >
-            <h3 className="text-lg font-semibold mb-6 flex items-center text-slate-900 dark:text-white">
-              <Sparkles className="w-5 h-5 mr-2 text-green-500" />
-              Smart Scheduling Recommendations
-            </h3>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <h4 className="font-medium text-blue-400">Optimal Study Times</h4>
-                <div className="space-y-3">
-                  {[
-                    { time: "9:00 AM - 11:00 AM", reason: "Peak focus hours based on your history", score: 95 },
-                    { time: "2:00 PM - 4:00 PM", reason: "High productivity window", score: 88 },
-                    { time: "7:00 PM - 9:00 PM", reason: "Consistent evening performance", score: 82 }
-                  ].map((slot, index) => (
-                    <motion.div
-                      key={index}
-                      className="p-3 bg-white/90 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-lg border-l-4 border-blue-500"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.5 + index * 0.1, duration: 0.5 }}
-                    >
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="font-medium text-sm text-slate-900 dark:text-white">{slot.time}</span>
-                        <span className="text-xs text-green-400">{slot.score}% match</span>
+              {/* Analytics and AI suggestions here */}
                       </div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">{slot.reason}</p>
-                    </motion.div>
-                  ))}
                 </div>
-              </div>
-              
-              <div className="space-y-4">
-                <h4 className="font-medium text-green-600 dark:text-green-400">Schedule Optimization</h4>
-                <div className="space-y-3">
-                  {[
-                    { suggestion: "Add 30min break between study sessions", benefit: "Improves retention by 23%" },
-                    { suggestion: "Schedule difficult subjects in morning", benefit: "Leverages peak cognitive hours" },
-                    { suggestion: "Group similar tasks together", benefit: "Reduces context switching" },
-                    { suggestion: "Reserve Friday evenings for review", benefit: "Strengthens weekly learning" }
-                  ].map((tip, index) => (
-                    <motion.div
-                      key={index}
-                      className="p-3 bg-white/90 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-lg border-l-4 border-green-500"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.5 + index * 0.1, duration: 0.5 }}
-                    >
-                      <div className="font-medium text-sm mb-1 text-slate-900 dark:text-white">{tip.suggestion}</div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">{tip.benefit}</p>
-                    </motion.div>
-                  ))}
+          {/* Dialogs and overlays (keep as before) */}
+          {dayContextMenu.show && (
+            <div
+              ref={dayContextMenuRef}
+              style={{ position: 'fixed', top: dayContextMenu.y, left: dayContextMenu.x, zIndex: 9999 }}
+              className="bg-slate-900 border border-slate-700 rounded-lg shadow-lg py-2 w-44 text-white"
+              onContextMenu={e => e.preventDefault()}
+              onClick={closeDayContextMenu}
+            >
+              <button className="w-full text-left px-4 py-2 hover:bg-slate-800" onClick={handleAddEventFromMenu}>Add Event</button>
+              <button className="w-full text-left px-4 py-2 hover:bg-slate-800" onClick={handleAddTaskFromMenu}>Add Task</button>
+              {dayContextMenu.date && getEventsForDate(dayContextMenu.date).length > 0 && (
+                <button className="w-full text-left px-4 py-2 hover:bg-slate-800" onClick={handleEditEventFromMenu}>Edit Event</button>
+              )}
                 </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
+          )}
         {/* Year Selector Dialog */}
         <Dialog open={showYearSelector} onOpenChange={setShowYearSelector}>
           <DialogContent className="max-w-md bg-white dark:bg-slate-900 border-slate-200 dark:border-white/20">
@@ -1089,36 +818,43 @@ const SmartCalendar = () => {
 
         {/* Task Dialog */}
         <Dialog open={showTaskDialog} onOpenChange={setShowTaskDialog}>
-          <DialogContent className="max-w-md bg-white dark:bg-slate-900 border-slate-200 dark:border-white/20">
+            <DialogContent className="max-w-md bg-slate-900 border-slate-700 text-white">
             <DialogHeader>
-              <DialogTitle className="text-slate-900 dark:text-white">Add New Task</DialogTitle>
+                <DialogTitle className="text-white">Add New Task</DialogTitle>
             </DialogHeader>
             
             <div className="space-y-4 mt-6">
+              {/* Show selected date */}
+              <div className="flex items-center gap-2 mb-2">
+                <CalendarIcon className="w-5 h-5 text-blue-400" />
+                <span className="text-base font-semibold text-blue-200">
+                  {taskDialogDate ? format(taskDialogDate, 'EEEE, d MMMM yyyy') : format(new Date(), 'EEEE, d MMMM yyyy')}
+                </span>
+              </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
                   Task Title
                 </label>
                 <Input
                   value={newTask.title}
                   onChange={(e) => setNewTask(prev => ({ ...prev, title: e.target.value }))}
                   placeholder="Enter task title..."
-                  className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
+                    className="bg-slate-800 border-slate-700 text-white focus:ring-2 focus:ring-blue-500 transition-all duration-150"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
                   Priority
                 </label>
                 <Select 
                   value={newTask.priority} 
                   onValueChange={(value: 'low' | 'medium' | 'high') => setNewTask(prev => ({ ...prev, priority: value }))}
                 >
-                  <SelectTrigger className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white">
+                    <SelectTrigger className="bg-slate-800 border-slate-700 text-white focus:ring-2 focus:ring-blue-500 transition-all duration-150">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700">
+                    <SelectContent className="bg-slate-800 border-slate-700 text-white">
                     <SelectItem value="low">Low Priority</SelectItem>
                     <SelectItem value="medium">Medium Priority</SelectItem>
                     <SelectItem value="high">High Priority</SelectItem>
@@ -1132,10 +868,11 @@ const SmartCalendar = () => {
                 </GlassmorphismButton>
                 <GlassmorphismButton 
                   onClick={saveTask}
-                  disabled={!newTask.title.trim()}
-                  className="bg-gradient-to-r from-blue-500 to-green-500"
+                    disabled={!newTask.title.trim() || isSavingTask}
+                    className="bg-gradient-to-r from-blue-500 to-green-500 flex items-center justify-center"
                 >
-                  Add Task
+                    {isSavingTask ? <span className="loader mr-2" /> : null}
+                    {isSavingTask ? 'Saving...' : 'Add Task'}
                 </GlassmorphismButton>
               </div>
             </div>
@@ -1144,9 +881,9 @@ const SmartCalendar = () => {
 
         {/* Event Dialog */}
         <Dialog open={showEventDialog} onOpenChange={setShowEventDialog}>
-          <DialogContent className="max-w-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-white/20">
+            <DialogContent className="max-w-2xl bg-slate-900 border-slate-700 text-white">
             <DialogHeader>
-              <DialogTitle className="text-slate-900 dark:text-white flex items-center space-x-2">
+                <DialogTitle className="text-white flex items-center space-x-2">
                 <CalendarIcon className="w-5 h-5" />
                 <span>{editingEvent ? 'Edit Event' : 'Add New Event'}</span>
               </DialogTitle>
@@ -1155,91 +892,77 @@ const SmartCalendar = () => {
             <div className="space-y-4 mt-6">
               {/* Date Field */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Date
-                </label>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Date</label>
                 <Input
                   type="date"
                   value={newEvent.date || ''}
                   onChange={e => setNewEvent(prev => ({ ...prev, date: e.target.value }))}
-                  className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
+                    className="bg-slate-800 border-slate-700 text-white"
                 />
               </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Event Title *
-                  </label>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Event Title *</label>
                   <Input
                     value={newEvent.title || ''}
                     onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
                     placeholder="Enter event title..."
-                    className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
+                      className="bg-slate-800 border-slate-700 text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Description
-                  </label>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Description</label>
                   <Textarea
                     value={newEvent.description || ''}
                     onChange={(e) => setNewEvent(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Event description..."
-                    className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
+                      className="bg-slate-800 border-slate-700 text-white"
                     rows={3}
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Time
-                    </label>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">Time</label>
                     <Input
                       type="time"
                       value={newEvent.time || '09:00'}
                       onChange={(e) => setNewEvent(prev => ({ ...prev, time: e.target.value }))}
-                      className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
+                        className="bg-slate-800 border-slate-700 text-white"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Duration (minutes)
-                    </label>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">Duration (minutes)</label>
                     <Input
                       type="number"
                       value={newEvent.duration || 60}
                       onChange={(e) => setNewEvent(prev => ({ ...prev, duration: parseInt(e.target.value) || 60 }))}
-                      className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
+                        className="bg-slate-800 border-slate-700 text-white"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Location
-                  </label>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Location</label>
                   <Input
                     value={newEvent.location || ''}
                     onChange={(e) => setNewEvent(prev => ({ ...prev, location: e.target.value }))}
                     placeholder="Event location..."
-                    className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
+                      className="bg-slate-800 border-slate-700 text-white"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Event Type
-                    </label>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">Event Type</label>
                     <Select 
                       value={newEvent.type} 
                       onValueChange={(value: 'study' | 'exam' | 'assignment' | 'personal' | 'group') => setNewEvent(prev => ({ ...prev, type: value, color: eventColors[value as keyof typeof eventColors] }))}
                     >
-                      <SelectTrigger className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white">
+                        <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700">
+                        <SelectContent className="bg-slate-800 border-slate-700 text-white">
                         <SelectItem value="study">Study Session</SelectItem>
                         <SelectItem value="exam">Exam</SelectItem>
                         <SelectItem value="assignment">Assignment</SelectItem>
@@ -1249,17 +972,15 @@ const SmartCalendar = () => {
                     </Select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Reminder (minutes before)
-                    </label>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">Reminder (minutes before)</label>
                     <Select 
                       value={newEvent.reminder?.toString()} 
                       onValueChange={(value) => setNewEvent(prev => ({ ...prev, reminder: parseInt(value) }))}
                     >
-                      <SelectTrigger className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white">
+                        <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700">
+                        <SelectContent className="bg-slate-800 border-slate-700 text-white">
                         <SelectItem value="0">No reminder</SelectItem>
                         <SelectItem value="5">5 minutes</SelectItem>
                         <SelectItem value="15">15 minutes</SelectItem>
@@ -1305,8 +1026,9 @@ const SmartCalendar = () => {
                     <GlassmorphismButton 
                       onClick={saveEvent}
                       disabled={!newEvent.title || isSavingEvent || isAuthLoading}
-                      className="bg-gradient-to-r from-blue-500 to-green-500"
+                        className="bg-gradient-to-r from-blue-500 to-green-500 flex items-center justify-center"
                     >
+                        {isSavingEvent ? <span className="loader mr-2" /> : null}
                       {isSavingEvent ? 'Saving...' : (editingEvent ? 'Update Event' : 'Create Event')}
                     </GlassmorphismButton>
                   </div>
@@ -1314,62 +1036,57 @@ const SmartCalendar = () => {
               </div>
             </DialogContent>
           </Dialog>
-        </div>
 
         {/* Edit Task Dialog */}
         <Dialog open={!!editingTask} onOpenChange={open => { if (!open) setEditingTask(null); }}>
-          <DialogContent className="max-w-md bg-white dark:bg-slate-900 border-slate-200 dark:border-white/20">
+          <DialogContent className="max-w-md bg-slate-900 border-slate-700 text-white transition-all duration-200">
             <DialogHeader>
-              <DialogTitle className="text-slate-900 dark:text-white">Edit Task</DialogTitle>
+              <DialogTitle className="text-white">Edit Task</DialogTitle>
             </DialogHeader>
-            
             <div className="space-y-4 mt-6">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Task Title
-                </label>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Task Title</label>
                 <Input
                   value={editTaskData.title}
                   onChange={e => setEditTaskData({ ...editTaskData, title: e.target.value })}
                   placeholder="Enter task title..."
-                  className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
+                  className="bg-slate-800 border-slate-700 text-white focus:ring-2 focus:ring-blue-500 transition-all duration-150"
                 />
               </div>
-              
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Priority
-                </label>
-                <Select 
-                  value={editTaskData.priority} 
+                <label className="block text-sm font-medium text-slate-300 mb-2">Priority</label>
+                <Select
+                  value={editTaskData.priority}
                   onValueChange={(value: 'low' | 'medium' | 'high') => setEditTaskData({ ...editTaskData, priority: value })}
                 >
-                  <SelectTrigger className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white">
+                  <SelectTrigger className="bg-slate-800 border-slate-700 text-white focus:ring-2 focus:ring-blue-500 transition-all duration-150">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700">
+                  <SelectContent className="bg-slate-800 border-slate-700 text-white">
                     <SelectItem value="low">Low Priority</SelectItem>
                     <SelectItem value="medium">Medium Priority</SelectItem>
                     <SelectItem value="high">High Priority</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              
               <div className="flex justify-end space-x-3 pt-4">
                 <GlassmorphismButton variant="outline" onClick={() => setEditingTask(null)}>
                   Cancel
                 </GlassmorphismButton>
-                <GlassmorphismButton 
+                <GlassmorphismButton
                   onClick={saveEditTask}
-                  disabled={!editTaskData.title.trim()}
-                  className="bg-gradient-to-r from-blue-500 to-green-500"
+                  disabled={!editTaskData.title.trim() || isSavingTask}
+                  className="bg-gradient-to-r from-blue-500 to-green-500 flex items-center justify-center"
                 >
-                  Save
+                  {isSavingTask ? <span className="loader mr-2" /> : null}
+                  {isSavingTask ? 'Saving...' : 'Save'}
                 </GlassmorphismButton>
               </div>
             </div>
           </DialogContent>
         </Dialog>
+            {/* Any other overlays/dialogs here */}
+          </div> {/* <-- This closes the main content area, after all overlays */}
       </main>
     </CalendarErrorBoundary>
   );
