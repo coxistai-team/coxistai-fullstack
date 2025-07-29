@@ -1,108 +1,160 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { 
-  Home,
-  Palette,
+  LayoutDashboard, 
+  FolderOpen, 
+  FileText, 
+  Calendar,
+  BarChart3,
+  CheckSquare,
   Users,
-  Plus,
   ChevronRight
 } from 'lucide-react';
 
 interface SidebarProps {
-  selectedWorkspace: string;
-  onWorkspaceChange: (workspace: string) => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ selectedWorkspace, onWorkspaceChange }) => {
-  const menuItems = [
-    { icon: Home, label: 'Home', active: false },
-    { icon: Palette, label: 'Brand', active: false }
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+  const generalMenuItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', active: false },
+    { icon: FolderOpen, label: 'Projects', active: false },
+    { icon: FileText, label: 'Documents', active: false },
+    { icon: Calendar, label: 'Calendar', active: true },
   ];
 
-  const workspaces = [
-    { name: 'Welcome to Strut', selected: false },
-    { name: 'Marketing', selected: true, highlighted: true },
-    { name: 'Social', selected: false },
+  const untitledUIItems = [
+    { icon: BarChart3, label: 'Reporting', active: false },
+    { icon: CheckSquare, label: 'Tasks', active: false, badge: '8' },
+    { icon: Users, label: 'Users', active: false },
+  ];
+
+  const teams = [
+    { name: 'Catalog', color: 'bg-blue-500', icon: 'C' },
+    { name: 'Warpspeed', color: 'bg-purple-500', icon: 'W' },
+    { name: 'Boltshift', color: 'bg-green-500', icon: 'B' },
+    { name: 'Sisyphus', color: 'bg-orange-500', icon: 'S' },
   ];
 
   return (
-    <motion.div 
-      className="fixed left-0 top-0 h-full w-64 bg-slate-100 border-r border-slate-200 shadow-sm z-10"
-      initial={{ x: -250 }}
-      animate={{ x: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      {/* Profile Section */}
-      <div className="p-6 border-b border-slate-200">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-            <span className="text-white font-semibold text-sm">JS</span>
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={onClose}
+        />
+      )}
+      
+      {/* Sidebar */}
+      <div className={`
+        fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-slate-800 
+        transform transition-transform duration-300 ease-in-out lg:translate-x-0
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="flex items-center px-6 py-4 border-b border-slate-800">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">CX</span>
+              </div>
+              <span className="font-semibold text-white">CoXist AI</span>
+            </div>
           </div>
-          <div>
-            <h3 className="font-semibold text-slate-800">John Smith</h3>
-            <p className="text-sm text-slate-500">Marketing Team</p>
+
+          {/* Navigation */}
+          <div className="flex-1 overflow-y-auto py-4">
+            {/* General Section */}
+            <div className="px-6 mb-6">
+              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                General
+              </h3>
+              <nav className="space-y-1">
+                {generalMenuItems.map((item) => (
+                  <a
+                    key={item.label}
+                    href="#"
+                    className={`
+                      flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors
+                      ${item.active 
+                        ? 'bg-slate-800 text-white' 
+                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'}
+                    `}
+                  >
+                    <item.icon className="w-5 h-5 mr-3" />
+                    {item.label}
+                  </a>
+                ))}
+              </nav>
+            </div>
+
+            {/* Untitled UI Section */}
+            <div className="px-6 mb-6">
+              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                Productivity
+              </h3>
+              <nav className="space-y-1">
+                {untitledUIItems.map((item) => (
+                  <a
+                    key={item.label}
+                    href="#"
+                    className="flex items-center px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors"
+                  >
+                    <item.icon className="w-5 h-5 mr-3" />
+                    {item.label}
+                    {item.badge && (
+                      <span className="ml-auto bg-slate-700 text-slate-200 text-xs px-2 py-1 rounded-full">
+                        {item.badge}
+                      </span>
+                    )}
+                  </a>
+                ))}
+              </nav>
+            </div>
+
+            {/* Your Teams Section */}
+            <div className="px-6 mb-6">
+              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                Your Teams
+              </h3>
+              <nav className="space-y-1">
+                {teams.map((team) => (
+                  <a
+                    key={team.name}
+                    href="#"
+                    className="flex items-center px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors group"
+                  >
+                    <div className={`w-6 h-6 ${team.color} rounded text-white text-xs flex items-center justify-center mr-3`}>
+                      {team.icon}
+                    </div>
+                    {team.name}
+                    <ChevronRight className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </a>
+                ))}
+              </nav>
+            </div>
+          </div>
+
+          {/* User Profile */}
+          <div className="border-t border-slate-800 p-4">
+            <div className="flex items-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-medium text-sm">SH</span>
+              </div>
+              <div className="ml-3 flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">
+                  Sienna Hewitt
+                </p>
+                <p className="text-xs text-slate-400 truncate">
+                  sienna@coxist.ai
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Navigation Menu */}
-      <div className="p-4">
-        <nav className="space-y-2">
-          {menuItems.map((item, index) => (
-            <motion.button
-              key={item.label}
-              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
-                item.active 
-                  ? 'bg-blue-50 text-blue-600 border border-blue-200' 
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800'
-              }`}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <item.icon className="w-5 h-5" />
-              <span className="font-medium">{item.label}</span>
-            </motion.button>
-          ))}
-        </nav>
-      </div>
-
-      {/* Workspaces Section */}
-      <div className="p-4 pt-0">
-        <h4 className="text-sm font-semibold text-slate-700 mb-3 px-3">Workspaces</h4>
-        <div className="space-y-1">
-          {workspaces.map((workspace, index) => (
-            <motion.button
-              key={workspace.name}
-              onClick={() => onWorkspaceChange(workspace.name)}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-all ${
-                workspace.selected 
-                  ? 'bg-white shadow-sm border border-slate-200 text-slate-800' 
-                  : workspace.highlighted
-                  ? 'bg-blue-50 text-blue-600 border border-blue-100'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800'
-              }`}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-            >
-              <span className="font-medium text-sm">{workspace.name}</span>
-              {workspace.highlighted && (
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              )}
-            </motion.button>
-          ))}
-          
-          {/* Add Workspace Button */}
-          <motion.button
-            className="w-full flex items-center space-x-2 px-3 py-2.5 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors"
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-          >
-            <Plus className="w-4 h-4" />
-            <span className="font-medium text-sm">Add a workspace</span>
-          </motion.button>
-        </div>
-      </div>
-    </motion.div>
+    </>
   );
 };
 

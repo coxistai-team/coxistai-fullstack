@@ -135,7 +135,7 @@ const Signup = () => {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              Join Coexist AI
+              Join CoXist AI
             </motion.h1>
             <motion.p 
               className="text-gray-400"

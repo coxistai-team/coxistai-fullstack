@@ -124,7 +124,7 @@ const Login = () => {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
             >
-              Sign in to your Coexist AI account
+              Sign in to your CoXist AI account
             </motion.p>
           </div>
 

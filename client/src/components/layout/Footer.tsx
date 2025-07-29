@@ -25,7 +25,7 @@ export default Footer;
 //           {/* Brand */}
 //           <div className="text-center md:text-left">
 //             <h3 className="text-xl font-bold bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent mb-2">
-//               Coexist AI
+//               CoXist AI
 //             </h3>
 //             <p className="text-slate-400 text-sm">
 //               Transforming education through AI
@@ -79,7 +79,7 @@ export default Footer;
 //         {/* Copyright */}
 //         <div className="mt-8 pt-6 border-t border-slate-800/50 text-center">
 //           <p className="text-slate-500 text-sm flex items-center justify-center space-x-1">
-//             <span>© {currentYear} Coexist AI. Made with</span>
+//             <span>© {currentYear} CoXist AI. Made with</span>
 //             <Heart className="w-4 h-4 text-red-500 fill-current" />
 //             <span>for learners everywhere</span>
 //           </p>

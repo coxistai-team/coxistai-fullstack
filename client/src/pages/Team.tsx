@@ -40,7 +40,7 @@ const Team = () => {
               <span className="text-xs font-semibold text-blue-400">Meet Our Team</span>
             </div>
             <h1 className="text-3xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
-              The Minds Behind Coexist AI
+              The Minds Behind CoXist AI
             </h1>
             <p className="text-lg text-slate-400 mb-6 max-w-3xl mx-auto leading-relaxed">
               Our diverse team of educators, engineers, and researchers is dedicated to revolutionizing 

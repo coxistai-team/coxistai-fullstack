@@ -6,7 +6,7 @@ import { NAVIGATION_ITEMS } from "@/lib/constants";
 import UserProfileDropdown from "@/components/ui/user-profile-dropdown";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePageLoading } from "@/contexts/PageLoadingContext";
-import logoBlack from "../../../assets/1x.png";
+import logoBlack from "../../../assets/5x.png";
 
 const Navigation = () => {
   const [location, setLocation] = useLocation();
@@ -61,19 +61,19 @@ const Navigation = () => {
               <div className="relative">
                 <img 
                   src={logoBlack} 
-                  alt="Coexist AI Logo" 
-                  className="w-12 h-12 rounded-xl shadow-lg object-cover group-hover:shadow-blue-500/25 transition-shadow duration-300" 
-                  width={48} 
-                  height={48} 
+                  alt="CoXist AI Logo" 
+                  className="w-18 h-18 rounded-xl shadow-lg object-cover group-hover:shadow-blue-500/25 transition-shadow duration-300" 
+                  width={80} 
+                  height={80} 
                   loading="eager"
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </div>
               <div>
                 <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                  Coexist AI
+                  CoXist AI
                 </span>
-                <div className="text-xs text-gray-400 group-hover:text-gray-300 transition-colors">
+                <div className="text-xs text-gray-400 group-hover:text-gray-300 transition-colors whitespace-nowrap">
                   Learning Platform
                 </div>
               </div>

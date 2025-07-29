@@ -91,7 +91,7 @@ const Support = () => {
     },
     {
       category: "features",
-      question: "Can I use Coexist AI offline?",
+      question: "Can I use CoXist AI offline?",
       answer: "Some features like viewing downloaded notes work offline, but most AI-powered features require an internet connection for optimal performance.",
     },
     {
@@ -157,7 +157,7 @@ const Support = () => {
             How Can We Help?
           </h1>
           <p className="text-lg text-slate-400 mb-6 max-w-3xl mx-auto leading-relaxed">
-            Get the support you need to make the most of your Coexist AI experience. 
+            Get the support you need to make the most of your CoXist AI experience. 
             We're here to help you succeed in your learning journey.
           </p>
         </motion.div>
