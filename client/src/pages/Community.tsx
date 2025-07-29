@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { 
   MessageSquare, Users, Trophy, TrendingUp, Plus, Search, Filter, Clock, 
   Heart, Share2, BookOpen, Star, Calendar, ThumbsUp, MessageCircle, Eye, 
   Pin, Edit3, Trash2, Send, Sparkles, Zap, Brain, Target, Lightbulb,
-  CheckCircle, AlertCircle, Activity, BarChart3, Users2, Award
+  CheckCircle, AlertCircle, Activity, BarChart3, Users2, Award, MoreVertical,
+  Copy, Flag, UserCheck
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -117,6 +118,23 @@ export default function Community() {
   const [deleteCommentDialog, setDeleteCommentDialog] = useState<string | null>(null);
   const [deletePostDialog, setDeletePostDialog] = useState<string | null>(null);
   const [deletePostLoading, setDeletePostLoading] = useState<string | null>(null);
+  
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    postId: string | null;
+    commentId: string | null;
+  }>({
+    visible: false,
+    x: 0,
+    y: 0,
+    postId: null,
+    commentId: null
+  });
+  
+  const contextMenuRef = useRef<HTMLDivElement>(null);
 
   const [studyGroups, setStudyGroups] = useState<StudyGroup[]>([
     {
@@ -396,8 +414,68 @@ export default function Community() {
   };
 
   const isUserPost = (post: Post) => {
-    return post.author.id === "current_user";
+    return post.author.id === "current_user" || String(post.author.id) === String(user?.id);
   };
+
+  const isUserComment = (comment: Comment) => {
+    return comment.author.id === "current_user" || String(comment.author.id) === String(user?.id);
+  };
+
+  // Context menu handlers
+  const handleContextMenu = (e: React.MouseEvent, postId: string, commentId?: string) => {
+    e.preventDefault();
+    setContextMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY,
+      postId,
+      commentId: commentId || null
+    });
+  };
+
+  const handleContextMenuClose = () => {
+    setContextMenu({
+      visible: false,
+      x: 0,
+      y: 0,
+      postId: null,
+      commentId: null
+    });
+  };
+
+  const handleCopyPost = (post: Post) => {
+    const textToCopy = `${post.title}\n\n${post.content}`;
+    navigator.clipboard.writeText(textToCopy);
+    toast({ title: "Copied", description: "Post content copied to clipboard" });
+    handleContextMenuClose();
+  };
+
+  const handleReportPost = (postId: string) => {
+    toast({ title: "Report submitted", description: "Thank you for reporting this post" });
+    handleContextMenuClose();
+  };
+
+  const handlePinPost = (postId: string) => {
+    setPosts(posts.map(p => 
+      p.id === postId ? { ...p, isPinned: !p.isPinned } : p
+    ));
+    toast({ title: "Post updated", description: "Post pin status updated" });
+    handleContextMenuClose();
+  };
+
+  // Close context menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(event.target as Node)) {
+        handleContextMenuClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
   
   // Utility to get display name
   function getDisplayName(author: any, currentUser: any) {
@@ -449,7 +527,7 @@ export default function Community() {
             <Users2 className="w-8 h-8 mr-3 text-blue-400" />
             Learning Community
           </h1>
-          <p className="text-gray-400 drop-shadow-md flex items-center justify-center">
+          <p className="text-slate-400 drop-shadow-md flex items-center justify-center">
             <Sparkles className="w-4 h-4 mr-2 text-green-400" />
             Connect, learn, and grow together with fellow students
           </p>
@@ -462,35 +540,35 @@ export default function Community() {
           transition={{ delay: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8"
         >
-          <Card className="glassmorphism-enhanced shadow-xl border-gray-500/20 hover-lift">
+          <Card className="glassmorphism-strong shadow-xl border-slate-500/20 hover-lift bg-slate-900/50">
             <CardContent className="p-4 text-center">
               <Users className="h-8 w-8 mx-auto mb-2 text-blue-400 floating-icon" />
               <div className="text-2xl font-bold text-white">2,847</div>
-              <div className="text-sm text-gray-300">Active Members</div>
+              <div className="text-sm text-slate-300">Active Members</div>
             </CardContent>
           </Card>
           
-          <Card className="glassmorphism-enhanced shadow-xl border-gray-500/20 hover-lift">
+          <Card className="glassmorphism-strong shadow-xl border-slate-500/20 hover-lift bg-slate-900/50">
             <CardContent className="p-4 text-center">
               <MessageSquare className="h-8 w-8 mx-auto mb-2 text-green-400 floating-icon" />
               <div className="text-2xl font-bold text-white">1,234</div>
-              <div className="text-sm text-gray-300">Discussions</div>
+              <div className="text-sm text-slate-300">Discussions</div>
             </CardContent>
           </Card>
           
-          <Card className="glassmorphism-enhanced shadow-xl border-gray-500/20 hover-lift">
+          <Card className="glassmorphism-strong shadow-xl border-slate-500/20 hover-lift bg-slate-900/50">
             <CardContent className="p-4 text-center">
               <BookOpen className="h-8 w-8 mx-auto mb-2 text-purple-400 floating-icon" />
               <div className="text-2xl font-bold text-white">456</div>
-              <div className="text-sm text-gray-300">Study Groups</div>
+              <div className="text-sm text-slate-300">Study Groups</div>
             </CardContent>
           </Card>
           
-          <Card className="glassmorphism-enhanced shadow-xl border-gray-500/20 hover-lift">
+          <Card className="glassmorphism-strong shadow-xl border-slate-500/20 hover-lift bg-slate-900/50">
             <CardContent className="p-4 text-center">
               <Trophy className="h-8 w-8 mx-auto mb-2 text-yellow-400 floating-icon" />
               <div className="text-2xl font-bold text-white">89%</div>
-              <div className="text-sm text-gray-300">Success Rate</div>
+              <div className="text-sm text-slate-300">Success Rate</div>
             </CardContent>
           </Card>
         </motion.div>
@@ -504,7 +582,7 @@ export default function Community() {
             transition={{ delay: 0.2 }}
             className="lg:col-span-1"
           >
-            <Card className="glassmorphism-strong shadow-xl border-gray-500/20">
+            <Card className="glassmorphism-strong shadow-xl border-slate-500/20 bg-slate-900/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-white">
                   <Star className="h-5 w-5 text-yellow-400" />
@@ -514,7 +592,7 @@ export default function Community() {
               <CardContent className="space-y-4">
                 {topUsers.map((user, index) => (
                   <div key={user.id} className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-xs font-bold text-blue-600 dark:text-blue-400">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500 text-xs font-bold text-white">
                       {index + 1}
                     </div>
                     <Avatar className="w-8 h-8">
@@ -560,6 +638,9 @@ export default function Community() {
                       className="w-full glassmorphism border-slate-500/20 text-white placeholder:text-slate-400"
                     />
                   </div>
+                  <div className="text-xs text-slate-400 flex items-center gap-2">
+                    <span>💡 Right-click on posts for more options</span>
+                  </div>
                   <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                     <SelectTrigger className="w-full md:w-48 glassmorphism border-slate-500/20 text-white">
                       <SelectValue />
@@ -580,33 +661,34 @@ export default function Community() {
                         New Post
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="bg-slate-900 border-slate-700">
                       <DialogHeader>
-                        <DialogTitle>Create New Post</DialogTitle>
-                        <DialogDescription>
+                        <DialogTitle className="text-white">Create New Post</DialogTitle>
+                        <DialogDescription className="text-slate-300">
                           Share your question or start a discussion
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
                         <div>
-                          <Label htmlFor="title">Title</Label>
+                          <Label htmlFor="title" className="text-white">Title</Label>
                           <Input
                             id="title"
                             value={newPost.title}
                             onChange={(e) => setNewPost({...newPost, title: e.target.value})}
                             placeholder="Enter post title..."
                             disabled={loadingPosts || postActionLoading === "new"}
+                            className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-400"
                           />
                         </div>
                         <div>
-                          <Label htmlFor="category">Category</Label>
+                          <Label htmlFor="category" className="text-white">Category</Label>
                           <Select value={newPost.category} onValueChange={(value) => setNewPost({...newPost, category: value})} disabled={loadingPosts || postActionLoading === "new"}>
-                            <SelectTrigger>
+                            <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
                               <SelectValue placeholder="Select category" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-slate-800 border-slate-600">
                               {categories.slice(1).map(category => (
-                                <SelectItem key={category} value={category}>
+                                <SelectItem key={category} value={category} className="text-white hover:bg-slate-700">
                                   {category}
                                 </SelectItem>
                               ))}
@@ -614,7 +696,7 @@ export default function Community() {
                           </Select>
                         </div>
                         <div>
-                          <Label htmlFor="content">Content</Label>
+                          <Label htmlFor="content" className="text-white">Content</Label>
                           <Textarea
                             id="content"
                             value={newPost.content}
@@ -622,24 +704,26 @@ export default function Community() {
                             placeholder="Write your post content..."
                             rows={4}
                             disabled={loadingPosts || postActionLoading === "new"}
+                            className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-400"
                           />
                         </div>
                         <div>
-                          <Label htmlFor="tags">Tags (comma separated)</Label>
+                          <Label htmlFor="tags" className="text-white">Tags (comma separated)</Label>
                           <Input
                             id="tags"
                             value={newPost.tags}
                             onChange={(e) => setNewPost({...newPost, tags: e.target.value})}
                             placeholder="e.g. math, calculus, help"
                             disabled={loadingPosts || postActionLoading === "new"}
+                            className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-400"
                           />
                         </div>
                       </div>
                       <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowNewPostDialog(false)} disabled={loadingPosts || postActionLoading === "new"}>
+                        <Button variant="outline" onClick={() => setShowNewPostDialog(false)} disabled={loadingPosts || postActionLoading === "new"} className="border-slate-600 text-white hover:bg-slate-800">
                           Cancel
                         </Button>
-                        <Button onClick={handleCreatePost} disabled={loadingPosts || postActionLoading === "new"}>
+                        <Button onClick={handleCreatePost} disabled={loadingPosts || postActionLoading === "new"} className="bg-blue-600 hover:bg-blue-700 text-white">
                           Create Post
                         </Button>
                       </DialogFooter>
@@ -655,7 +739,11 @@ export default function Community() {
                     <p className="text-center text-white">No discussions found. Be the first to create one!</p>
                   ) : (
                     filteredPosts.map((post) => (
-                      <Card key={post.id} className="glassmorphism-strong shadow-xl border-slate-500/20 hover:border-slate-400/40 transition-colors">
+                      <Card 
+                        key={post.id} 
+                        className="glassmorphism-strong shadow-xl border-slate-500/20 hover:border-slate-400/40 transition-colors bg-slate-900/50"
+                        onContextMenu={(e) => handleContextMenu(e, post.id)}
+                      >
                         <CardContent className="p-6">
                           <div className="flex items-start gap-4">
                             <Avatar className="w-10 h-10">
@@ -670,7 +758,7 @@ export default function Community() {
                                     <Input
                                       value={post.title}
                                       onChange={(e) => setPosts(posts.map(p => p.id === post.id ? {...p, title: e.target.value} : p))}
-                                      className="font-semibold"
+                                      className="font-semibold bg-slate-800 border-slate-600 text-white"
                                     />
                                   ) : (
                                     <h3 className="font-semibold text-white">
@@ -680,72 +768,47 @@ export default function Community() {
                                   <Badge variant="outline" className="text-slate-300 border-slate-400">{post.category}</Badge>
                                 </div>
                                 
-                                {isUserPost(post) && (
                                   <div className="flex items-center gap-1">
+                                  {isUserPost(post) && (
+                                    <>
                                     {editingPost === post.id ? (
                                       <>
-                                        <Button variant="ghost" size="sm" onClick={() => handleEditPost(post.id, post.title, post.content)} disabled={loadingPosts || postActionLoading === post.id}>Save</Button>
-                                        <Button variant="ghost" size="sm" onClick={() => setEditingPost(null)} disabled={loadingPosts || postActionLoading === post.id}>Cancel</Button>
+                                          <Button variant="ghost" size="sm" onClick={() => handleEditPost(post.id, post.title, post.content)} disabled={loadingPosts || postActionLoading === post.id} className="text-white hover:bg-slate-700">Save</Button>
+                                          <Button variant="ghost" size="sm" onClick={() => setEditingPost(null)} disabled={loadingPosts || postActionLoading === post.id} className="text-white hover:bg-slate-700">Cancel</Button>
                                       </>
                                     ) : (
                                       <>
-                                        <Button variant="ghost" size="sm" onClick={() => setEditingPost(post.id)} disabled={loadingPosts || postActionLoading === post.id}><Edit3 className="h-4 w-4" /></Button>
+                                          <Button variant="ghost" size="sm" onClick={() => setEditingPost(post.id)} disabled={loadingPosts || postActionLoading === post.id} className="text-white hover:bg-slate-700"><Edit3 className="h-4 w-4" /></Button>
                                         <Button
                                           variant="ghost"
                                           size="sm"
                                           aria-label="Delete post"
                                           onClick={() => setDeletePostDialog(post.id)}
-                                          className="text-red-500 hover:text-red-700"
+                                            className="text-red-400 hover:text-red-300 hover:bg-slate-700"
                                           disabled={loadingPosts || deletePostLoading === post.id}
                                         >
                                           <Trash2 className="h-4 w-4" />
                                         </Button>
-                                        {/* Confirmation Dialog */}
-                                        {deletePostDialog === post.id && (
-                                          <Dialog open onOpenChange={() => setDeletePostDialog(null)}>
-                                            <DialogContent>
-                                              <DialogHeader>
-                                                <DialogTitle>Delete Post</DialogTitle>
-                                                <DialogDescription>Are you sure you want to delete this post? All comments and likes will also be deleted. This action cannot be undone.</DialogDescription>
-                                              </DialogHeader>
-                                              <DialogFooter>
-                                                <Button variant="outline" onClick={() => setDeletePostDialog(null)} disabled={deletePostLoading === post.id}>Cancel</Button>
-                                                <Button
-                                                  variant="destructive"
-                                                  onClick={async () => {
-                                                    setDeletePostLoading(post.id);
-                                                    try {
-                                                      const API_URL = import.meta.env.VITE_API_URL;
-                                                      const token = localStorage.getItem('authToken');
-                                                      await axios.delete(`${API_URL}/api/community/posts/${post.id}`, { headers: { Authorization: `Bearer ${token}` } });
-                                                      toast({ title: "Post deleted", description: "Your post and all associated comments and likes have been deleted." });
-                                                      setDeletePostDialog(null);
-                                                      fetchPosts();
-                                                    } catch (err) {
-                                                      toast({ title: "Error", description: "Failed to delete post", variant: "destructive" });
-                                                    } finally {
-                                                      setDeletePostLoading(null);
-                                                    }
-                                                  }}
-                                                  disabled={deletePostLoading === post.id}
-                                                >
-                                                  Delete
-                                                </Button>
-                                              </DialogFooter>
-                                            </DialogContent>
-                                          </Dialog>
+                                        </>
                                         )}
                                       </>
                                     )}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => handleContextMenu(e, post.id)}
+                                    className="text-slate-400 hover:text-white hover:bg-slate-700"
+                                  >
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
                                   </div>
-                                )}
                               </div>
                               
                               {editingPost === post.id ? (
                                 <Textarea
                                   value={post.content}
                                   onChange={(e) => setPosts(posts.map(p => p.id === post.id ? {...p, content: e.target.value} : p))}
-                                  className="mb-3"
+                                  className="mb-3 bg-slate-800 border-slate-600 text-white"
                                   rows={3}
                                 />
                               ) : (
@@ -775,20 +838,24 @@ export default function Community() {
                               </div>
 
                               {showCommentsFor === post.id && (
-                                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                                  <h4 className="font-semibold text-sm text-gray-900 dark:text-white mb-3">Comments ({post.replies})</h4>
+                                <div className="mt-4 pt-4 border-t border-slate-600">
+                                  <h4 className="font-semibold text-sm text-white mb-3">Comments ({post.replies})</h4>
                                   <div className="space-y-3 mb-4">
                                     {(post.comments ?? []).map((comment) => (
-                                      <div key={comment.id} className="flex items-start gap-3">
+                                      <div 
+                                        key={comment.id} 
+                                        className="flex items-start gap-3"
+                                        onContextMenu={(e) => handleContextMenu(e, post.id, comment.id)}
+                                      >
                                         <Avatar className="w-8 h-8">
                                           <AvatarImage src={comment.author?.avatar} />
                                           <AvatarFallback>{getDisplayName(comment.author, user).split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
                                         </Avatar>
-                                        <div className="flex-1 bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                                        <div className="flex-1 bg-slate-800 rounded-lg p-3 border border-slate-600">
                                           <div className="flex items-center justify-between mb-1">
                                             <div className="flex items-center gap-2">
-                                              <span className="font-semibold text-sm text-gray-900 dark:text-white">{getDisplayName(comment.author, user)}</span>
-                                              <span className="text-xs text-gray-500 dark:text-gray-400">{formatTimestamp(comment.timestamp ?? '')}</span>
+                                              <span className="font-semibold text-sm text-white">{getDisplayName(comment.author, user)}</span>
+                                              <span className="text-xs text-slate-400">{formatTimestamp(comment.timestamp ?? '')}</span>
                                             </div>
                                             {String(comment.author?.id) === String(user?.id) && (
                                               <>
@@ -808,7 +875,7 @@ export default function Community() {
                                                       toast({ title: "Comment updated", description: "Your comment has been updated successfully" });
                                                     }
                                                   }}
-                                                  className="h-6 w-6 p-0 text-gray-500 hover:text-gray-700"
+                                                  className="h-6 w-6 p-0 text-slate-400 hover:text-white"
                                                   disabled={loadingPosts || commentActionLoading === post.id}
                                                 >
                                                   <Edit3 className="h-3 w-3" />
@@ -818,7 +885,7 @@ export default function Community() {
                                                   size="sm"
                                                   aria-label="Delete comment"
                                                   onClick={() => setDeleteCommentDialog(comment.id)}
-                                                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                                  className="h-6 w-6 p-0 text-red-400 hover:text-red-300"
                                                   disabled={loadingPosts || deleteCommentLoading === comment.id}
                                                 >
                                                   <Trash2 className="h-3 w-3" />
@@ -826,13 +893,13 @@ export default function Community() {
                                                 {/* Confirmation Dialog */}
                                                 {deleteCommentDialog === comment.id && (
                                                   <Dialog open onOpenChange={() => setDeleteCommentDialog(null)}>
-                                                    <DialogContent>
+                                                    <DialogContent className="bg-slate-900 border-slate-700">
                                                       <DialogHeader>
-                                                        <DialogTitle>Delete Comment</DialogTitle>
-                                                        <DialogDescription>Are you sure you want to delete this comment? This action cannot be undone.</DialogDescription>
+                                                        <DialogTitle className="text-white">Delete Comment</DialogTitle>
+                                                        <DialogDescription className="text-slate-300">Are you sure you want to delete this comment? This action cannot be undone.</DialogDescription>
                                                       </DialogHeader>
                                                       <DialogFooter>
-                                                        <Button variant="outline" onClick={() => setDeleteCommentDialog(null)} disabled={deleteCommentLoading === comment.id}>Cancel</Button>
+                                                        <Button variant="outline" onClick={() => setDeleteCommentDialog(null)} disabled={deleteCommentLoading === comment.id} className="border-slate-600 text-white hover:bg-slate-800">Cancel</Button>
                                                         <Button
                                                           variant="destructive"
                                                           onClick={async () => {
@@ -851,6 +918,7 @@ export default function Community() {
                                                             }
                                                           }}
                                                           disabled={deleteCommentLoading === comment.id}
+                                                          className="bg-red-600 hover:bg-red-700 text-white"
                                                         >
                                                           Delete
                                                         </Button>
@@ -861,7 +929,7 @@ export default function Community() {
                                               </>
                                             )}
                                           </div>
-                                          <p className="text-sm text-gray-600 dark:text-gray-300">{comment.content}</p>
+                                          <p className="text-sm text-slate-300">{comment.content}</p>
                                         </div>
                                       </div>
                                     ))}
@@ -875,7 +943,7 @@ export default function Community() {
                                         placeholder="Add a comment..."
                                         value={newComment}
                                         onChange={(e) => setNewComment(e.target.value)}
-                                        className="flex-1"
+                                        className="flex-1 bg-slate-800 border-slate-600 text-white placeholder:text-slate-400"
                                         onKeyPress={(e) => {
                                           if (e.key === 'Enter' && !e.shiftKey) {
                                             e.preventDefault();
@@ -884,7 +952,7 @@ export default function Community() {
                                         }}
                                         disabled={loadingPosts || commentActionLoading === post.id}
                                       />
-                                      <Button size="sm" onClick={() => handleAddComment(post.id)} disabled={loadingPosts || commentActionLoading === post.id || !newComment.trim()}>
+                                      <Button size="sm" onClick={() => handleAddComment(post.id)} disabled={loadingPosts || commentActionLoading === post.id || !newComment.trim()} className="bg-blue-600 hover:bg-blue-700 text-white">
                                         <Send className="h-4 w-4" />
                                       </Button>
                                     </div>
@@ -898,14 +966,446 @@ export default function Community() {
                     ))
                   )}
                 </div>
+
+                {/* Context Menu */}
+                {contextMenu.visible && (
+                  <div
+                    ref={contextMenuRef}
+                    className="fixed z-50 bg-slate-800 border border-slate-600 rounded-lg shadow-xl backdrop-blur-sm"
+                    style={{
+                      left: contextMenu.x,
+                      top: contextMenu.y,
+                      minWidth: '200px'
+                    }}
+                  >
+                    <div className="py-1">
+                      {contextMenu.postId && !contextMenu.commentId && (
+                        <>
+                          <button
+                            onClick={() => {
+                              const post = posts.find(p => p.id === contextMenu.postId);
+                              if (post) handleCopyPost(post);
+                            }}
+                            className="w-full px-4 py-2 text-left text-white hover:bg-slate-700 flex items-center gap-2"
+                          >
+                            <Copy className="h-4 w-4" />
+                            Copy Post
+                          </button>
+                          <button
+                            onClick={() => handleLikePost(contextMenu.postId!)}
+                            className="w-full px-4 py-2 text-left text-white hover:bg-slate-700 flex items-center gap-2"
+                          >
+                            <Heart className="h-4 w-4" />
+                            {posts.find(p => p.id === contextMenu.postId)?.isLiked ? 'Unlike' : 'Like'}
+                          </button>
+                          {isUserPost(posts.find(p => p.id === contextMenu.postId)!) && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  const post = posts.find(p => p.id === contextMenu.postId);
+                                  if (post) setEditingPost(post.id);
+                                  handleContextMenuClose();
+                                }}
+                                className="w-full px-4 py-2 text-left text-white hover:bg-slate-700 flex items-center gap-2"
+                              >
+                                <Edit3 className="h-4 w-4" />
+                                Edit Post
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setDeletePostDialog(contextMenu.postId);
+                                  handleContextMenuClose();
+                                }}
+                                className="w-full px-4 py-2 text-left text-red-400 hover:bg-slate-700 flex items-center gap-2"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Delete Post
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => handlePinPost(contextMenu.postId!)}
+                            className="w-full px-4 py-2 text-left text-white hover:bg-slate-700 flex items-center gap-2"
+                          >
+                            <Pin className="h-4 w-4" />
+                            {posts.find(p => p.id === contextMenu.postId)?.isPinned ? 'Unpin' : 'Pin'} Post
+                          </button>
+                          <button
+                            onClick={() => handleReportPost(contextMenu.postId!)}
+                            className="w-full px-4 py-2 text-left text-white hover:bg-slate-700 flex items-center gap-2"
+                          >
+                            <Flag className="h-4 w-4" />
+                            Report Post
+                          </button>
+                        </>
+                      )}
+                      {contextMenu.commentId && (
+                        <>
+                          <button
+                            onClick={() => {
+                              const post = posts.find(p => p.id === contextMenu.postId);
+                              const comment = post?.comments?.find(c => c.id === contextMenu.commentId);
+                              if (comment) {
+                                const textToCopy = comment.content;
+                                navigator.clipboard.writeText(textToCopy);
+                                toast({ title: "Copied", description: "Comment copied to clipboard" });
+                              }
+                              handleContextMenuClose();
+                            }}
+                            className="w-full px-4 py-2 text-left text-white hover:bg-slate-700 flex items-center gap-2"
+                          >
+                            <Copy className="h-4 w-4" />
+                            Copy Comment
+                          </button>
+                          {contextMenu.postId && contextMenu.commentId && (
+                            (() => {
+                              const post = posts.find(p => p.id === contextMenu.postId);
+                              const comment = post?.comments?.find(c => c.id === contextMenu.commentId);
+                              return isUserComment(comment!) ? (
+                                <button
+                                  onClick={() => {
+                                    setDeleteCommentDialog(contextMenu.commentId);
+                                    handleContextMenuClose();
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-red-400 hover:bg-slate-700 flex items-center gap-2"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  Delete Comment
+                                </button>
+                              ) : null;
+                            })()
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Delete Post Confirmation Dialog */}
+                {deletePostDialog && (
+                  <Dialog open onOpenChange={() => setDeletePostDialog(null)}>
+                    <DialogContent className="bg-slate-900 border-slate-700">
+                      <DialogHeader>
+                        <DialogTitle className="text-white">Delete Post</DialogTitle>
+                        <DialogDescription className="text-slate-300">Are you sure you want to delete this post? All comments and likes will also be deleted. This action cannot be undone.</DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setDeletePostDialog(null)} disabled={deletePostLoading === deletePostDialog} className="border-slate-600 text-white hover:bg-slate-800">Cancel</Button>
+                        <Button
+                          variant="destructive"
+                          onClick={async () => {
+                            setDeletePostLoading(deletePostDialog);
+                            try {
+                              const API_URL = import.meta.env.VITE_API_URL;
+                              const token = localStorage.getItem('authToken');
+                              await axios.delete(`${API_URL}/api/community/posts/${deletePostDialog}`, { headers: { Authorization: `Bearer ${token}` } });
+                              toast({ title: "Post deleted", description: "Your post and all associated comments and likes have been deleted." });
+                              setDeletePostDialog(null);
+                              fetchPosts();
+                            } catch (err) {
+                              toast({ title: "Error", description: "Failed to delete post", variant: "destructive" });
+                            } finally {
+                              setDeletePostLoading(null);
+                            }
+                          }}
+                          disabled={deletePostLoading === deletePostDialog}
+                          className="bg-red-600 hover:bg-red-700 text-white"
+                        >
+                          Delete
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                )}
+
+                {/* Delete Comment Confirmation Dialog */}
+                {deleteCommentDialog && (
+                  <Dialog open onOpenChange={() => setDeleteCommentDialog(null)}>
+                    <DialogContent className="bg-slate-900 border-slate-700">
+                      <DialogHeader>
+                        <DialogTitle className="text-white">Delete Comment</DialogTitle>
+                        <DialogDescription className="text-slate-300">Are you sure you want to delete this comment? This action cannot be undone.</DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setDeleteCommentDialog(null)} disabled={deleteCommentLoading === deleteCommentDialog} className="border-slate-600 text-white hover:bg-slate-800">Cancel</Button>
+                        <Button
+                          variant="destructive"
+                          onClick={async () => {
+                            setDeleteCommentLoading(deleteCommentDialog);
+                            try {
+                              const API_URL = import.meta.env.VITE_API_URL;
+                              const token = localStorage.getItem('authToken');
+                              await axios.delete(`${API_URL}/api/community/replies/${deleteCommentDialog}`, { headers: { Authorization: `Bearer ${token}` } });
+                              toast({ title: "Comment deleted", description: "Your comment has been deleted successfully" });
+                              setDeleteCommentDialog(null);
+                              fetchPosts();
+                            } catch (err) {
+                              toast({ title: "Error", description: "Failed to delete comment", variant: "destructive" });
+                            } finally {
+                              setDeleteCommentLoading(null);
+                            }
+                          }}
+                          disabled={deleteCommentLoading === deleteCommentDialog}
+                          className="bg-red-600 hover:bg-red-700 text-white"
+                        >
+                          Delete
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                )}
               </TabsContent>
 
-              {/* Other tabs with styling updates */}
+              {/* Study Groups Tab */}
               <TabsContent value="groups" className="space-y-6">
-                 {/* ... content remains the same, but Card classNames are updated ... */}
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Search study groups..."
+                      className="w-full glassmorphism border-slate-500/20 text-white placeholder:text-slate-400"
+                    />
+                  </div>
+                  
+                  <Dialog open={showNewGroupDialog} onOpenChange={setShowNewGroupDialog}>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold shadow-lg border-2 border-green-500 z-10 relative">
+                        <Plus className="h-4 w-4" />
+                        Create Group
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-slate-900 border-slate-700">
+                      <DialogHeader>
+                        <DialogTitle className="text-white">Create New Study Group</DialogTitle>
+                        <DialogDescription className="text-slate-300">
+                          Start a study group to collaborate with other students
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="groupName" className="text-white">Group Name</Label>
+                          <Input
+                            id="groupName"
+                            value={newGroup.name}
+                            onChange={(e) => setNewGroup({...newGroup, name: e.target.value})}
+                            placeholder="Enter group name..."
+                            className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-400"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="groupSubject" className="text-white">Subject</Label>
+                          <Input
+                            id="groupSubject"
+                            value={newGroup.subject}
+                            onChange={(e) => setNewGroup({...newGroup, subject: e.target.value})}
+                            placeholder="e.g. Mathematics, Physics"
+                            className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-400"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="groupLevel" className="text-white">Level</Label>
+                          <Select value={newGroup.level} onValueChange={(value) => setNewGroup({...newGroup, level: value})}>
+                            <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
+                              <SelectValue placeholder="Select level" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-slate-800 border-slate-600">
+                              <SelectItem value="Beginner" className="text-white hover:bg-slate-700">Beginner</SelectItem>
+                              <SelectItem value="Intermediate" className="text-white hover:bg-slate-700">Intermediate</SelectItem>
+                              <SelectItem value="Advanced" className="text-white hover:bg-slate-700">Advanced</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="groupSchedule" className="text-white">Schedule</Label>
+                          <Input
+                            id="groupSchedule"
+                            value={newGroup.schedule}
+                            onChange={(e) => setNewGroup({...newGroup, schedule: e.target.value})}
+                            placeholder="e.g. Tuesdays 7-9 PM EST"
+                            className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-400"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="groupDescription" className="text-white">Description</Label>
+                          <Textarea
+                            id="groupDescription"
+                            value={newGroup.description}
+                            onChange={(e) => setNewGroup({...newGroup, description: e.target.value})}
+                            placeholder="Describe your study group..."
+                            rows={3}
+                            className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-400"
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowNewGroupDialog(false)} className="border-slate-600 text-white hover:bg-slate-800">
+                          Cancel
+                        </Button>
+                        <Button onClick={handleCreateGroup} className="bg-green-600 hover:bg-green-700 text-white">
+                          Create Group
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
+                {/* Study Groups List */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {studyGroups.map((group) => (
+                    <Card key={group.id} className="glassmorphism-strong shadow-xl border-slate-500/20 hover:border-slate-400/40 transition-colors bg-slate-900/50">
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <CardTitle className="text-white text-lg">{group.name}</CardTitle>
+                            <CardDescription className="text-slate-300 mt-2">{group.description}</CardDescription>
+                          </div>
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs ${
+                              group.level === 'Beginner' ? 'border-green-500 text-green-400' :
+                              group.level === 'Intermediate' ? 'border-yellow-500 text-yellow-400' :
+                              'border-red-500 text-red-400'
+                            }`}
+                          >
+                            {group.level}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-400">Subject:</span>
+                          <span className="text-white font-medium">{group.subject}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-400">Members:</span>
+                          <span className="text-white font-medium">{group.members}/{group.maxMembers}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-400">Schedule:</span>
+                          <span className="text-white font-medium">{group.schedule}</span>
+                        </div>
+                        {group.nextSession && (
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-slate-400">Next Session:</span>
+                            <span className="text-green-400 font-medium">{group.nextSession}</span>
+                          </div>
+                        )}
+                        <Button 
+                          onClick={() => handleJoinGroup(group.id)}
+                          className={`w-full ${
+                            group.isJoined 
+                              ? 'bg-red-600 hover:bg-red-700 text-white' 
+                              : 'bg-blue-600 hover:bg-blue-700 text-white'
+                          }`}
+                        >
+                          {group.isJoined ? 'Leave Group' : 'Join Group'}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </TabsContent>
+
+              {/* Leaderboard Tab */}
               <TabsContent value="leaderboard" className="space-y-6">
-                 {/* ... content remains the same, but Card classNames are updated ... */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Top Contributors */}
+                  <Card className="glassmorphism-strong shadow-xl border-slate-500/20 bg-slate-900/50">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <Trophy className="h-5 w-5 text-yellow-400" />
+                        Top Contributors
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {topUsers.map((user, index) => (
+                        <div key={user.id} className="flex items-center gap-3">
+                          <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
+                            index === 0 ? 'bg-yellow-500 text-yellow-900' :
+                            index === 1 ? 'bg-slate-400 text-slate-900' :
+                            index === 2 ? 'bg-orange-500 text-orange-900' :
+                            'bg-blue-500 text-white'
+                          }`}>
+                            {index + 1}
+                          </div>
+                          <Avatar className="w-8 h-8">
+                            <AvatarImage src={user.avatar} />
+                            <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm text-white truncate">
+                              {user.name}
+                            </div>
+                            <div className="text-xs text-slate-400">
+                              {user.reputation} points
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+
+                  {/* Most Helpful */}
+                  <Card className="glassmorphism-strong shadow-xl border-slate-500/20 bg-slate-900/50">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <Heart className="h-5 w-5 text-red-400" />
+                        Most Helpful
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {topUsers.map((user, index) => (
+                        <div key={user.id} className="flex items-center gap-3">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-500 text-white text-sm font-bold">
+                            {index + 1}
+                          </div>
+                          <Avatar className="w-8 h-8">
+                            <AvatarImage src={user.avatar} />
+                            <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm text-white truncate">
+                              {user.name}
+                            </div>
+                            <div className="text-xs text-slate-400">
+                              {user.helpfulAnswers} helpful answers
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+
+                  {/* Most Active */}
+                  <Card className="glassmorphism-strong shadow-xl border-slate-500/20 bg-slate-900/50">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <Activity className="h-5 w-5 text-green-400" />
+                        Most Active
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {topUsers.map((user, index) => (
+                        <div key={user.id} className="flex items-center gap-3">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-500 text-white text-sm font-bold">
+                            {index + 1}
+                          </div>
+                          <Avatar className="w-8 h-8">
+                            <AvatarImage src={user.avatar} />
+                            <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm text-white truncate">
+                              {user.name}
+                            </div>
+                            <div className="text-xs text-slate-400">
+                              {user.postsCount} posts
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </div>
               </TabsContent>
 
             </Tabs>

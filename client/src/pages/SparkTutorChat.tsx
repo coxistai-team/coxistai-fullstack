@@ -804,26 +804,6 @@ const SparkTutorChat = () => {
                 </div>
                 <div className="flex space-x-2">
                   <GlassmorphismButton 
-                    size="sm" 
-                    variant={isRecording ? "default" : "outline"}
-                    className={`p-3 hover-lift ${isRecording ? 'bg-red-500 hover:bg-red-600' : ''}`}
-                    title={isRecording ? "Recording... Click to stop" : "Record Voice Message"}
-                    onClick={isRecording ? stopRecording : startRecording}
-                    disabled={isLoading}
-                  >
-                    {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-                  </GlassmorphismButton>
-                  <GlassmorphismButton 
-                    size="sm" 
-                    variant="outline"
-                    className="p-3 hover-lift"
-                    title="Attach File"
-                    onClick={() => setShowFileDialog(true)}
-                    disabled={isLoading || isRecording}
-                  >
-                    <Paperclip className="w-5 h-5" />
-                  </GlassmorphismButton>
-                  <GlassmorphismButton 
                     size="sm"
                     className="p-3 hover-lift"
                     onClick={handleSendMessage}
@@ -835,11 +815,9 @@ const SparkTutorChat = () => {
                 </div>
               </div>
               <p className="text-xs text-slate-400 mt-2">
-                {isRecording 
-                  ? "Recording in progress... Click the stop button or mic button to finish recording"
-                  : attachedFile 
-                    ? "You can add a question about your file or send it as is for general analysis"
-                    : "Click mic to record voice • Max file size: 16MB • Supports images (PNG, JPG), documents (PDF, DOCX), and audio recordings"
+                {attachedFile 
+                  ? "You can add a question about your file or send it as is for general analysis"
+                  : "Type your message and press Enter or click Send to chat with SparkTutor"
                 }
               </p>
             </div>

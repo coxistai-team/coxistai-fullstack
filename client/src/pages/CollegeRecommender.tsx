@@ -554,7 +554,7 @@ export default function CollegeRecommender() {
             <GraduationCap className="w-8 h-8 mr-3 text-blue-400" />
             College Finder
           </h1>
-          <p className="text-gray-400 text-lg font-medium drop-shadow-lg flex items-center justify-center">
+          <p className="text-slate-400 text-lg font-medium drop-shadow-lg flex items-center justify-center">
             <Sparkles className="w-4 h-4 mr-2 text-green-400" />
             Find colleges that match your academic profile and preferences
           </p>
@@ -567,7 +567,7 @@ export default function CollegeRecommender() {
           transition={{ delay: 0.1 }}
           className="mb-8"
         >
-          <Card className="glassmorphism-enhanced shadow-xl border-gray-500/20">
+          <Card className="glassmorphism-strong shadow-xl border-slate-500/20 bg-slate-900/50">
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row gap-4 mb-4">
                 <div className="flex-1">
@@ -575,13 +575,13 @@ export default function CollegeRecommender() {
                     placeholder="Search colleges by name or location..."
                     value={filters.searchTerm}
                     onChange={(e) => setFilters({ ...filters, searchTerm: e.target.value })}
-                    className="w-full glassmorphism border-gray-500/20 text-white placeholder:text-gray-400"
+                    className="w-full glassmorphism border-slate-500/20 text-white placeholder:text-slate-400"
                   />
                 </div>
                 <Button
                   onClick={() => setShowFilters(!showFilters)}
                   variant="outline"
-                  className="flex items-center gap-2 glassmorphism-button border-gray-500/20 text-white hover:bg-gray-600/20"
+                  className="flex items-center gap-2 glassmorphism-button border-slate-500/20 text-white hover:bg-slate-600/20"
                 >
                   <Filter className="h-4 w-4" />
                   Filters
@@ -594,7 +594,7 @@ export default function CollegeRecommender() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pt-4 border-t border-gray-500/20"
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pt-4 border-t border-slate-500/20"
                 >
                   <div>
                     <Label className="text-sm font-medium mb-2 block text-white">SAT Score</Label>
@@ -603,7 +603,7 @@ export default function CollegeRecommender() {
                       placeholder="1600"
                       value={filters.satScore || ""}
                       onChange={(e) => setFilters({ ...filters, satScore: parseInt(e.target.value) || 0 })}
-                      className="glassmorphism border-gray-500/20 text-white placeholder:text-gray-400"
+                      className="glassmorphism border-slate-500/20 text-white placeholder:text-slate-400"
                     />
                   </div>
                   
@@ -614,7 +614,7 @@ export default function CollegeRecommender() {
                       placeholder="36"
                       value={filters.actScore || ""}
                       onChange={(e) => setFilters({ ...filters, actScore: parseInt(e.target.value) || 0 })}
-                      className="glassmorphism border-gray-500/20 text-white placeholder:text-gray-400"
+                      className="glassmorphism border-slate-500/20 text-white placeholder:text-slate-400"
                     />
                   </div>
                   
@@ -626,28 +626,28 @@ export default function CollegeRecommender() {
                       placeholder="4.0"
                       value={filters.gpa || ""}
                       onChange={(e) => setFilters({ ...filters, gpa: parseFloat(e.target.value) || 0 })}
-                      className="glassmorphism border-gray-500/20 text-white placeholder:text-gray-400"
+                      className="glassmorphism border-slate-500/20 text-white placeholder:text-slate-400"
                     />
                   </div>
 
                   <div>
                     <Label className="text-sm font-medium mb-2 block text-white">Major</Label>
                     <Select value={filters.major} onValueChange={(value) => setFilters({ ...filters, major: value })}>
-                      <SelectTrigger className="glassmorphism border-gray-500/20 text-white">
+                      <SelectTrigger className="glassmorphism border-slate-500/20 text-white">
                         <SelectValue placeholder="Select major" />
                       </SelectTrigger>
-                      <SelectContent className="glassmorphism border-gray-500/20">
-                        <SelectItem value="any">Any Major</SelectItem>
-                        <SelectItem value="Computer Science">Computer Science</SelectItem>
-                        <SelectItem value="Engineering">Engineering</SelectItem>
-                        <SelectItem value="Business">Business</SelectItem>
-                        <SelectItem value="Economics">Economics</SelectItem>
-                        <SelectItem value="Biology">Biology</SelectItem>
-                        <SelectItem value="Psychology">Psychology</SelectItem>
-                        <SelectItem value="Political Science">Political Science</SelectItem>
-                        <SelectItem value="Mathematics">Mathematics</SelectItem>
-                        <SelectItem value="Physics">Physics</SelectItem>
-                        <SelectItem value="Chemistry">Chemistry</SelectItem>
+                      <SelectContent className="glassmorphism border-slate-500/20 bg-slate-800">
+                        <SelectItem value="any" className="text-white hover:bg-slate-700">Any Major</SelectItem>
+                        <SelectItem value="Computer Science" className="text-white hover:bg-slate-700">Computer Science</SelectItem>
+                        <SelectItem value="Engineering" className="text-white hover:bg-slate-700">Engineering</SelectItem>
+                        <SelectItem value="Business" className="text-white hover:bg-slate-700">Business</SelectItem>
+                        <SelectItem value="Economics" className="text-white hover:bg-slate-700">Economics</SelectItem>
+                        <SelectItem value="Biology" className="text-white hover:bg-slate-700">Biology</SelectItem>
+                        <SelectItem value="Psychology" className="text-white hover:bg-slate-700">Psychology</SelectItem>
+                        <SelectItem value="Political Science" className="text-white hover:bg-slate-700">Political Science</SelectItem>
+                        <SelectItem value="Mathematics" className="text-white hover:bg-slate-700">Mathematics</SelectItem>
+                        <SelectItem value="Physics" className="text-white hover:bg-slate-700">Physics</SelectItem>
+                        <SelectItem value="Chemistry" className="text-white hover:bg-slate-700">Chemistry</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -655,21 +655,21 @@ export default function CollegeRecommender() {
                   <div>
                     <Label className="text-sm font-medium mb-2 block text-white">State</Label>
                     <Select value={filters.state} onValueChange={(value) => setFilters({ ...filters, state: value })}>
-                      <SelectTrigger className="glassmorphism border-gray-500/20 text-white">
+                      <SelectTrigger className="glassmorphism border-slate-500/20 text-white">
                         <SelectValue placeholder="Select state" />
                       </SelectTrigger>
-                      <SelectContent className="glassmorphism border-gray-500/20">
-                        <SelectItem value="any">Any State</SelectItem>
-                        <SelectItem value="California">California</SelectItem>
-                        <SelectItem value="Massachusetts">Massachusetts</SelectItem>
-                        <SelectItem value="New York">New York</SelectItem>
-                        <SelectItem value="Pennsylvania">Pennsylvania</SelectItem>
-                        <SelectItem value="Illinois">Illinois</SelectItem>
-                        <SelectItem value="Michigan">Michigan</SelectItem>
-                        <SelectItem value="Virginia">Virginia</SelectItem>
-                        <SelectItem value="North Carolina">North Carolina</SelectItem>
-                        <SelectItem value="Georgia">Georgia</SelectItem>
-                        <SelectItem value="Connecticut">Connecticut</SelectItem>
+                      <SelectContent className="glassmorphism border-slate-500/20 bg-slate-800">
+                        <SelectItem value="any" className="text-white hover:bg-slate-700">Any State</SelectItem>
+                        <SelectItem value="California" className="text-white hover:bg-slate-700">California</SelectItem>
+                        <SelectItem value="Massachusetts" className="text-white hover:bg-slate-700">Massachusetts</SelectItem>
+                        <SelectItem value="New York" className="text-white hover:bg-slate-700">New York</SelectItem>
+                        <SelectItem value="Pennsylvania" className="text-white hover:bg-slate-700">Pennsylvania</SelectItem>
+                        <SelectItem value="Illinois" className="text-white hover:bg-slate-700">Illinois</SelectItem>
+                        <SelectItem value="Michigan" className="text-white hover:bg-slate-700">Michigan</SelectItem>
+                        <SelectItem value="Virginia" className="text-white hover:bg-slate-700">Virginia</SelectItem>
+                        <SelectItem value="North Carolina" className="text-white hover:bg-slate-700">North Carolina</SelectItem>
+                        <SelectItem value="Georgia" className="text-white hover:bg-slate-700">Georgia</SelectItem>
+                        <SelectItem value="Connecticut" className="text-white hover:bg-slate-700">Connecticut</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -677,13 +677,13 @@ export default function CollegeRecommender() {
                   <div>
                     <Label className="text-sm font-medium mb-2 block text-white">School Type</Label>
                     <Select value={filters.type} onValueChange={(value) => setFilters({ ...filters, type: value })}>
-                      <SelectTrigger className="glassmorphism border-gray-500/20 text-white">
+                      <SelectTrigger className="glassmorphism border-slate-500/20 text-white">
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
-                      <SelectContent className="glassmorphism border-gray-500/20">
-                        <SelectItem value="any">Any Type</SelectItem>
-                        <SelectItem value="Public">Public</SelectItem>
-                        <SelectItem value="Private">Private</SelectItem>
+                      <SelectContent className="glassmorphism border-slate-500/20 bg-slate-800">
+                        <SelectItem value="any" className="text-white hover:bg-slate-700">Any Type</SelectItem>
+                        <SelectItem value="Public" className="text-white hover:bg-slate-700">Public</SelectItem>
+                        <SelectItem value="Private" className="text-white hover:bg-slate-700">Private</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -726,7 +726,7 @@ export default function CollegeRecommender() {
                         searchTerm: ""
                       })}
                       variant="outline"
-                      className="w-full glassmorphism-button border-gray-500/20 text-white hover:bg-gray-600/20"
+                      className="w-full glassmorphism-button border-slate-500/20 text-white hover:bg-slate-600/20"
                     >
                       Clear Filters
                     </Button>
@@ -757,7 +757,7 @@ export default function CollegeRecommender() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <Card className="glassmorphism-strong shadow-xl border-gray-500/20 hover:border-gray-400/40 transition-all duration-300">
+                <Card className="glassmorphism-strong shadow-xl border-slate-500/20 hover:border-slate-400/40 transition-all duration-300 bg-slate-900/50">
                   <CardContent className="p-6">
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4">
                       <div className="flex-1">
@@ -768,11 +768,11 @@ export default function CollegeRecommender() {
                           <Badge className={`${matchInfo.color} text-white`}>
                             {matchInfo.level}
                           </Badge>
-                          <Badge variant="outline" className="text-gray-300 border-gray-400">
+                          <Badge variant="outline" className="text-slate-300 border-slate-400">
                             #{college.ranking}
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-400 mb-2">
+                        <div className="flex items-center gap-4 text-sm text-slate-400 mb-2">
                           <span className="flex items-center gap-1">
                             <MapPin className="h-4 w-4" />
                             {college.location}
@@ -786,47 +786,47 @@ export default function CollegeRecommender() {
                             {college.enrollment.toLocaleString()} students
                           </span>
                         </div>
-                        <p className="text-gray-300 text-sm">
+                        <p className="text-slate-300 text-sm">
                           {college.description}
                         </p>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                      <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                        <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                      <div className="text-center p-3 bg-blue-900/20 rounded-lg border border-blue-500/20">
+                        <div className="text-lg font-bold text-blue-400">
                           {college.satRange[0]}-{college.satRange[1]}
                         </div>
-                        <div className="text-xs text-gray-300">SAT Range</div>
+                        <div className="text-xs text-slate-300">SAT Range</div>
                       </div>
                       
-                      <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                        <div className="text-lg font-bold text-green-600 dark:text-green-400">
+                      <div className="text-center p-3 bg-green-900/20 rounded-lg border border-green-500/20">
+                        <div className="text-lg font-bold text-green-400">
                           {college.gpaRange[0]}-{college.gpaRange[1]}
                         </div>
-                        <div className="text-xs text-gray-300">GPA Range</div>
+                        <div className="text-xs text-slate-300">GPA Range</div>
                       </div>
                       
-                      <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                        <div className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                      <div className="text-center p-3 bg-purple-900/20 rounded-lg border border-purple-500/20">
+                        <div className="text-lg font-bold text-purple-400">
                           {college.acceptanceRate}%
                         </div>
-                        <div className="text-xs text-gray-300">Accept Rate</div>
+                        <div className="text-xs text-slate-300">Accept Rate</div>
                       </div>
                       
-                      <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                        <div className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                      <div className="text-center p-3 bg-orange-900/20 rounded-lg border border-orange-500/20">
+                        <div className="text-lg font-bold text-orange-400">
                           ${college.tuition.toLocaleString()}
                         </div>
-                        <div className="text-xs text-gray-300">Annual Tuition</div>
+                        <div className="text-xs text-slate-300">Annual Tuition</div>
                       </div>
                     </div>
 
                     <div className="mb-4">
-                      <Label className="text-sm font-medium mb-2 block">Popular Majors:</Label>
+                      <Label className="text-sm font-medium mb-2 block text-white">Popular Majors:</Label>
                       <div className="flex flex-wrap gap-2">
                         {college.majors.slice(0, 5).map((major) => (
-                          <Badge key={major} variant="secondary" className="text-xs">
+                          <Badge key={major} variant="secondary" className="text-xs bg-slate-700 text-slate-300 border-slate-600">
                             {major}
                           </Badge>
                         ))}
@@ -835,19 +835,19 @@ export default function CollegeRecommender() {
 
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-300">Match Score:</span>
+                        <span className="text-sm text-slate-300">Match Score:</span>
                         <div className="flex items-center gap-2">
-                          <div className="w-20 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <div className="w-20 h-2 bg-slate-700 rounded-full overflow-hidden">
                             <div 
                               className={`h-full ${matchInfo.color} transition-all duration-500`}
                               style={{ width: `${matchScore}%` }}
                             />
                           </div>
-                          <span className="text-sm font-medium">{matchScore}%</span>
+                          <span className="text-sm font-medium text-white">{matchScore}%</span>
                         </div>
                       </div>
                       
-                      <Button variant="outline" size="sm">
+                      <Button size="sm" className="bg-slate-800 text-white hover:bg-slate-700 border border-slate-600">
                         Learn More
                       </Button>
                     </div>
@@ -864,9 +864,9 @@ export default function CollegeRecommender() {
             animate={{ opacity: 1 }}
             className="text-center py-12"
           >
-            <div className="text-gray-400 mb-4">
+            <div className="text-slate-400 mb-4">
               <Search className="h-16 w-16 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No colleges found</h3>
+              <h3 className="text-xl font-semibold mb-2 text-white">No colleges found</h3>
               <p>Try adjusting your filters to see more results.</p>
             </div>
           </motion.div>

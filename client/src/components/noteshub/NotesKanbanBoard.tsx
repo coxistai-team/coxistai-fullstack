@@ -418,8 +418,8 @@ const NotesKanbanBoard: React.FC<NotesKanbanBoardProps> = ({
       {/* Note Editor Dialog */}
       {selectedNote && (
         <Dialog open={isEditing} onOpenChange={onEditToggle}>
-          <DialogContent className="bg-slate-900 border-slate-700 max-w-5xl max-h-[90vh]">
-            <DialogHeader>
+          <DialogContent className="bg-slate-900 border-slate-700 max-w-5xl max-h-[90vh] flex flex-col">
+            <DialogHeader className="flex-shrink-0">
               <DialogTitle className="text-white flex items-center justify-between">
                 <span>Edit Note</span>
                 <div className="flex items-center gap-2">
@@ -456,7 +456,9 @@ const NotesKanbanBoard: React.FC<NotesKanbanBoardProps> = ({
                 </div>
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
+            
+            {/* Scrollable Content Area */}
+            <div className="flex-1 overflow-y-auto pr-2 space-y-4">
               {/* Note Title */}
               <div>
                 <Label htmlFor="note-title" className="text-white text-sm font-medium">
@@ -508,7 +510,7 @@ const NotesKanbanBoard: React.FC<NotesKanbanBoardProps> = ({
                       onUpdate={onUpdateNote}
                       title={selectedNote.title}
                       mode="simple"
-                      className="min-h-[400px]"
+                      className="min-h-[400px] max-h-[60vh] overflow-y-auto"
                     />
                   ) : (
                     <RichTextEditor
@@ -517,7 +519,7 @@ const NotesKanbanBoard: React.FC<NotesKanbanBoardProps> = ({
                       onUpdate={onUpdateNote}
                       title={selectedNote.title}
                       mode="rich"
-                      className="min-h-[400px]"
+                      className="min-h-[400px] max-h-[60vh] overflow-y-auto"
                     />
                   )}
                 </div>
@@ -575,35 +577,35 @@ const NotesKanbanBoard: React.FC<NotesKanbanBoardProps> = ({
                   </div>
                 </div>
               </div>
-              
-              {/* Action Bar */}
-              <div className="flex justify-between items-center pt-4 border-t border-slate-700">
-                <div className="text-xs text-slate-400">
-                  Last updated: {formatDate(selectedNote.updated_at)}
+            </div>
+            
+            {/* Fixed Action Bar */}
+            <div className="flex-shrink-0 flex justify-between items-center pt-4 border-t border-slate-700">
+              <div className="text-xs text-slate-400">
+                Last updated: {formatDate(selectedNote.updated_at)}
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-xs text-slate-500">
+                  <span className="hidden sm:inline">Keyboard shortcuts: </span>
+                  <kbd className="px-1 py-0.5 bg-slate-700 rounded text-xs">Ctrl+S</kbd> Save
+                  <span className="mx-1">•</span>
+                  <kbd className="px-1 py-0.5 bg-slate-700 rounded text-xs">Esc</kbd> Close
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-xs text-slate-500">
-                    <span className="hidden sm:inline">Keyboard shortcuts: </span>
-                    <kbd className="px-1 py-0.5 bg-slate-700 rounded text-xs">Ctrl+S</kbd> Save
-                    <span className="mx-1">•</span>
-                    <kbd className="px-1 py-0.5 bg-slate-700 rounded text-xs">Esc</kbd> Close
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => onEditToggle(false)}
-                      className="border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={onSaveNote}
-                      disabled={isSaving}
-                      className="bg-blue-500 hover:bg-blue-600 text-white"
-                    >
-                      {isSaving ? 'Saving...' : 'Save'}
-                    </Button>
-                  </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => onEditToggle(false)}
+                    className="border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={onSaveNote}
+                    disabled={isSaving}
+                    className="bg-blue-500 hover:bg-blue-600 text-white"
+                  >
+                    {isSaving ? 'Saving...' : 'Save'}
+                  </Button>
                 </div>
               </div>
             </div>

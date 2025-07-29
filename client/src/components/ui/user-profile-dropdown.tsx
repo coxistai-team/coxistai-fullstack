@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { 
@@ -6,7 +6,6 @@ import {
   Settings, 
   LogOut, 
   Crown, 
-  Camera, 
   ChevronDown,
   Bell,
   CreditCard,
@@ -30,6 +29,7 @@ export default function UserProfileDropdown({ className = "" }: UserProfileDropd
   const [isMobile, setIsMobile] = useState(false);
   const { user, updateProfile } = useUser();
   const { logout } = useAuth();
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -41,23 +41,34 @@ export default function UserProfileDropdown({ className = "" }: UserProfileDropd
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && user) {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const result = e.target?.result;
-        if (typeof result === 'string') {
-          try {
-            await updateProfile({ avatar: result });
-          } catch (error) {
-            console.error('Failed to update avatar:', error);
-          }
-        }
-      };
-      reader.readAsDataURL(file);
+  // Close dropdown on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (isOpen) {
+        setIsOpen(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isOpen]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
     }
-  };
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
 
   const handleLogout = () => {
     setShowLogoutDialog(true);
@@ -75,8 +86,23 @@ export default function UserProfileDropdown({ className = "" }: UserProfileDropd
     setIsOpen(false);
   };
 
-  const getInitials = (firstName: string = '', lastName: string = '') => {
-    return `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase() || 'U';
+  // Generate mock avatar based on user data
+  const getMockAvatar = (username: string) => {
+    // Create a consistent avatar based on username
+    const colors = [
+      'from-blue-500 to-purple-500',
+      'from-green-500 to-blue-500',
+      'from-purple-500 to-pink-500',
+      'from-orange-500 to-red-500',
+      'from-teal-500 to-green-500',
+      'from-indigo-500 to-purple-500',
+      'from-pink-500 to-red-500',
+      'from-yellow-500 to-orange-500'
+    ];
+    
+    // Use username to consistently select a color
+    const colorIndex = username.charCodeAt(0) % colors.length;
+    return colors[colorIndex];
   };
 
   const getUserName = () => {
@@ -89,8 +115,10 @@ export default function UserProfileDropdown({ className = "" }: UserProfileDropd
     return null;
   }
 
+  const mockAvatarClass = getMockAvatar(user.username);
+
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative ${className}`} ref={dropdownRef}>
       <motion.button
         onClick={() => {
           if (isMobile) {
@@ -104,9 +132,8 @@ export default function UserProfileDropdown({ className = "" }: UserProfileDropd
         whileTap={{ scale: 0.98 }}
       >
         <Avatar className="w-10 h-10 ring-2 ring-blue-500/30 hover:ring-blue-400/50 transition-all">
-          <AvatarImage src={user.avatar || undefined} alt={getUserName()} />
-          <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm font-bold">
-            {getInitials(user.firstName || '', user.lastName || '')}
+          <AvatarFallback className={`bg-gradient-to-r ${mockAvatarClass} text-white text-sm font-bold`}>
+            {user.username.charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
         <div className="text-left flex-1">
@@ -142,23 +169,11 @@ export default function UserProfileDropdown({ className = "" }: UserProfileDropd
               {/* User Info Section */}
               <div className="p-6 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-b border-white/10">
                 <div className="flex items-center space-x-4">
-                  <div className="relative">
-                    <Avatar className="w-16 h-16 ring-2 ring-blue-500/30">
-                      <AvatarImage src={user.avatar || undefined} alt={getUserName()} />
-                      <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold text-lg">
-                        {getInitials(user.firstName || '', user.lastName || '')}
-                      </AvatarFallback>
-                    </Avatar>
-                    <label className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-colors shadow-lg">
-                      <Camera className="w-3 h-3 text-white" />
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleAvatarChange}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
+                  <Avatar className="w-16 h-16 ring-2 ring-blue-500/30">
+                    <AvatarFallback className={`bg-gradient-to-r ${mockAvatarClass} text-white font-bold text-lg`}>
+                      {user.username.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                   <div className="flex-1">
                     <div className="font-bold text-white text-lg">{getUserName()}</div>
                     <div className="text-sm text-gray-400">{user.email || 'No email set'}</div>
