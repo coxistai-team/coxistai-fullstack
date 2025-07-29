@@ -262,7 +262,7 @@ const SparkTutorChat = () => {
 
   // Optimistic UI: Add message immediately
   const handleSendMessage = async () => {
-    if (!inputValue.trim() && !attachedFile) return;
+    if (!inputValue.trim()) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -270,21 +270,19 @@ const SparkTutorChat = () => {
       isAI: false,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       status: 'sending',
-      attachedFiles: attachedFile ? [attachedFile] : undefined
     };
 
     // Optimistic update
     setMessages(prev => [...prev, userMessage]);
     setInputValue("");
-    setAttachedFile(null);
 
     try {
-      const response = await sendToAPI(inputValue.trim(), attachedFile);
-      
+      const response = await sendToAPI(inputValue.trim());
+
       // Update message status to sent
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === userMessage.id 
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === userMessage.id
             ? { ...msg, status: 'sent' }
             : msg
         )
@@ -308,11 +306,11 @@ const SparkTutorChat = () => {
 
     } catch (error) {
       console.error('Error sending message:', error);
-      
+
       // Update message status to error
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === userMessage.id 
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === userMessage.id
             ? { ...msg, status: 'error' }
             : msg
         )
@@ -326,27 +324,30 @@ const SparkTutorChat = () => {
     }
   };
 
-  const sendToAPI = async (messageContent: string, file: AttachedFile | null) => {
+  // Update sendToAPI to use JSON and correct endpoint
+  const sendToAPI = async (messageContent: string) => {
     setIsLoading(true);
-    
-    try {
-      const formData = new FormData();
-      formData.append('message', messageContent);
-      
-      if (file) {
-        formData.append('file', file.file);
-      }
 
-      const response = await axios.post(`${CHATBOT_API_URL}/chat`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        timeout: 30000,
-      });
+    try {
+      const payload = { message: messageContent };
+
+      const response = await axios.post(
+        `${CHATBOT_API_URL}/api/chat/text`,
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          timeout: 30000,
+        }
+      );
 
       setIsLoading(false);
-      return response.data.response || response.data.message || "I'm sorry, I couldn't process your request. Please try again.";
-      
+      return (
+        response.data.ai_response ||
+        response.data.message ||
+        "I'm sorry, I couldn't process your request. Please try again."
+      );
     } catch (error) {
       setIsLoading(false);
       console.error('API Error:', error);
@@ -827,7 +828,7 @@ const SparkTutorChat = () => {
                     className="p-3 hover-lift"
                     onClick={handleSendMessage}
                     title="Send Message"
-                    disabled={isLoading || isRecording || (!inputValue.trim() && !attachedFile)}
+                    disabled={isLoading || isRecording || !inputValue.trim()}
                   >
                     <Send className="w-5 h-5" />
                   </GlassmorphismButton>
