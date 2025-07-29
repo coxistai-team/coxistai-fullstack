@@ -687,12 +687,12 @@ const AIPresentations = () => {
 
   // Create a simple presentation template when AI service is unavailable
   const createSimplePresentation = () => {
-    const simpleSlides = [
+    const simpleSlides: Slide[] = [
       {
         id: "slide-1",
         slide_number: 1,
         layout_type: "title",
-        background: { type: "gradient", gradient: "from-purple-600 via-blue-600 to-indigo-700" },
+        background: { type: "gradient" as const, gradient: "from-purple-600 via-blue-600 to-indigo-700" },
         elements: [
           {
             type: "title",
@@ -712,7 +712,7 @@ const AIPresentations = () => {
         id: "slide-2",
         slide_number: 2,
         layout_type: "content",
-        background: { type: "gradient", gradient: "from-green-600 via-blue-600 to-purple-700" },
+        background: { type: "gradient" as const, gradient: "from-green-600 via-blue-600 to-purple-700" },
         elements: [
           {
             type: "title",
@@ -1442,16 +1442,16 @@ const AIPresentations = () => {
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="text-center mb-6">
           <motion.h1
-            className="text-3xl font-bold mb-3 text-white flex items-center justify-center"
+            className="text-2xl sm:text-3xl font-bold mb-3 text-white flex items-center justify-center"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <Presentation className="w-7 h-7 mr-2 text-blue-400" />
+            <Presentation className="w-6 h-6 sm:w-7 sm:h-7 mr-2 text-blue-400" />
             AI Presentations Studio
           </motion.h1>
           <motion.p
-            className="text-gray-400 mb-4 flex items-center justify-center text-sm"
+            className="text-gray-400 mb-4 flex items-center justify-center text-xs sm:text-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.6 }}
@@ -1460,11 +1460,11 @@ const AIPresentations = () => {
             Create stunning presentations with AI assistance and professional templates
           </motion.p>
 
-          <div className="flex flex-wrap justify-center gap-4 mb-8">
+          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mb-8">
             <GlassmorphismButton
               onClick={() => setShowExportDialog(true)}
               variant="outline"
-              className="px-6 py-3 hover-lift"
+              className="px-4 sm:px-6 py-2 sm:py-3 hover-lift text-sm sm:text-base"
               disabled={!presentationId}
             >
               <Download className="w-4 h-4 mr-2" />
@@ -1473,9 +1473,9 @@ const AIPresentations = () => {
             <GlassmorphismButton
               onClick={() => setShowGenerateDialog(true)}
               variant="outline"
-              className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white border-emerald-400 hover:border-emerald-300 font-semibold shadow-lg hover-lift"
+              className="px-6 sm:px-8 py-2 sm:py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white border-emerald-400 hover:border-emerald-300 font-semibold shadow-lg hover-lift text-sm sm:text-base"
             >
-              <Wand2 className="w-5 h-5 mr-2" />
+              <Wand2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
               Generate
             </GlassmorphismButton>
           </div>
@@ -1494,7 +1494,7 @@ const AIPresentations = () => {
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="absolute top-8 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-6 py-2 rounded-xl shadow-lg text-lg font-medium z-50"
+                  className="absolute top-8 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-4 sm:px-6 py-2 rounded-xl shadow-lg text-sm sm:text-lg font-medium z-50"
                 >
                   Use ← and → arrow keys to navigate slides
                 </motion.div>
@@ -1507,19 +1507,19 @@ const AIPresentations = () => {
                 </div>
               </div>
 
-              <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center space-x-6 bg-black/70 backdrop-blur-sm rounded-2xl px-8 py-4">
+              <div className="absolute bottom-4 sm:bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-6 bg-black/70 backdrop-blur-sm rounded-2xl px-4 sm:px-8 py-3 sm:py-4">
                 <Button
                   variant="ghost"
                   size="lg"
                   onClick={prevSlide}
                   disabled={currentSlideIndex === 0}
-                  className="text-white hover:bg-white/20 px-6 py-3 text-lg disabled:opacity-30"
+                  className="text-white hover:bg-white/20 px-3 sm:px-6 py-2 sm:py-3 text-sm sm:text-lg disabled:opacity-30"
                 >
-                  <ChevronLeft className="w-6 h-6 mr-2" />
+                  <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6 mr-1 sm:mr-2" />
                   Previous
                 </Button>
-                <div className="flex items-center space-x-4">
-                  <span className="text-white bg-white/20 px-6 py-2 rounded-lg text-lg font-medium">
+                <div className="flex items-center space-x-2 sm:space-x-4">
+                  <span className="text-white bg-white/20 px-3 sm:px-6 py-1 sm:py-2 rounded-lg text-sm sm:text-lg font-medium">
                     {currentSlideIndex + 1} / {slides.length}
                   </span>
                 </div>
@@ -1528,17 +1528,17 @@ const AIPresentations = () => {
                   size="lg"
                   onClick={nextSlide}
                   disabled={currentSlideIndex === slides.length - 1}
-                  className="text-white hover:bg-white/20 px-6 py-3 text-lg disabled:opacity-30"
+                  className="text-white hover:bg-white/20 px-3 sm:px-6 py-2 sm:py-3 text-sm sm:text-lg disabled:opacity-30"
                 >
                   Next
-                  <ChevronRight className="w-6 h-6 ml-2" />
+                  <ChevronRight className="w-4 h-4 sm:w-6 sm:h-6 ml-1 sm:ml-2" />
                 </Button>
-                <div className="border-l border-white/30 pl-6 ml-2">
+                <div className="border-t sm:border-l border-white/30 pt-2 sm:pt-0 sm:pl-6 sm:ml-2">
                   <button
                     onClick={() => setIsPreviewMode(false)}
-                    className="text-white hover:bg-white/20 px-6 py-3 text-lg rounded-lg transition-all duration-200 flex items-center"
+                    className="text-white hover:bg-white/20 px-3 sm:px-6 py-2 sm:py-3 text-sm sm:text-lg rounded-lg transition-all duration-200 flex items-center"
                   >
-                    <Minimize2 className="w-6 h-6 mr-2" />
+                    <Minimize2 className="w-4 h-4 sm:w-6 sm:h-6 mr-1 sm:mr-2" />
                     Exit
                   </button>
                 </div>
@@ -1548,54 +1548,54 @@ const AIPresentations = () => {
         </AnimatePresence>
 
         <div className="mb-6">
-          <h2 className="text-lg font-bold mb-2 text-white">Your Saved Presentations</h2>
+          <h2 className="text-base sm:text-lg font-bold mb-2 text-white">Your Saved Presentations</h2>
           {isLoadingPresentations ? (
             <div className="space-y-3">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="flex items-center gap-4 p-4 glassmorphism rounded-lg border border-gray-700 shadow">
-                  <div className="h-10 w-10 rounded-full bg-gray-800 animate-pulse"></div>
+                <div key={i} className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 glassmorphism rounded-lg border border-gray-700 shadow">
+                  <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gray-800 animate-pulse"></div>
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 w-1/2 bg-gray-800 rounded animate-pulse"></div>
-                    <div className="h-3 w-1/3 bg-gray-800 rounded animate-pulse"></div>
+                    <div className="h-3 sm:h-4 w-1/2 bg-gray-800 rounded animate-pulse"></div>
+                    <div className="h-2 sm:h-3 w-1/3 bg-gray-800 rounded animate-pulse"></div>
                   </div>
-                  <div className="h-8 w-8 rounded bg-gray-800 animate-pulse"></div>
+                  <div className="h-6 w-6 sm:h-8 sm:w-8 rounded bg-gray-800 animate-pulse"></div>
                 </div>
               ))}
             </div>
           ) : savedPresentations.length === 0 ? (
-            <div className="text-gray-400">No saved presentations yet.</div>
+            <div className="text-gray-400 text-sm sm:text-base">No saved presentations yet.</div>
           ) : (
             <div className="space-y-3">
               {savedPresentations.map((pres) => (
-                <div key={pres.id} className={`flex items-center gap-4 p-4 glassmorphism rounded-lg border border-gray-700 shadow transition-all group ${pres.id === presentationId ? 'ring-2 ring-blue-400 border-blue-500' : ''}`}> 
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+                <div key={pres.id} className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 glassmorphism rounded-lg border border-gray-700 shadow transition-all group ${pres.id === presentationId ? 'ring-2 ring-blue-400 border-blue-500' : ''}`}> 
+                  <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm sm:text-lg">
                     {pres.topic?.[0]?.toUpperCase() || 'P'}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="truncate font-semibold text-white">{pres.topic}</div>
+                    <div className="truncate font-semibold text-white text-sm sm:text-base">{pres.topic}</div>
                     <div className="text-xs text-gray-400 truncate">{pres.created_at ? new Date(pres.created_at).toLocaleString() : ''}</div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1 sm:gap-2">
                     <Button
                       variant="outline"
                       size="icon"
-                      className="border-slate-600 text-slate-300 hover:text-white hover:bg-slate-700/50 backdrop-blur-sm"
+                      className="border-slate-600 text-slate-300 hover:text-white hover:bg-slate-700/50 backdrop-blur-sm h-8 w-8 sm:h-10 sm:w-10"
                       aria-label="Load presentation"
                       onClick={() => loadPresentation(pres.id)}
                       disabled={pres.id === presentationId || isLoadingSlides}
                     >
-                      <Eye className="w-5 h-5" />
+                      <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-red-400 hover:text-red-300"
+                          className="text-red-400 hover:text-red-300 h-8 w-8 sm:h-10 sm:w-10"
                           aria-label="Delete presentation"
                           disabled={isLoadingSlides}
                         >
-                          <Trash2 className="w-5 h-5" />
+                          <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent className="bg-slate-900/95 backdrop-blur-sm border-slate-700">
@@ -1618,20 +1618,20 @@ const AIPresentations = () => {
           )}
         </div>
 
-        <div className={`grid lg:grid-cols-3 gap-8 ${isPreviewMode ? "hidden" : ""}`}>
+        <div className={`grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 ${isPreviewMode ? "hidden" : ""}`}>
           <div className="lg:col-span-2">
             <motion.div
-              className="bg-slate-900/80 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50 shadow-2xl min-h-[500px]"
+              className="bg-slate-900/80 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-slate-700/50 shadow-2xl min-h-[400px] sm:min-h-[500px]"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
             >
               {isLoadingSlides ? (
-                <div className="space-y-6">
-                  <Skeleton className="h-8 w-1/3 mb-2 bg-slate-700" />
-                  <Skeleton className="h-96 w-full rounded-lg bg-slate-700" />
+                <div className="space-y-4 sm:space-y-6">
+                  <Skeleton className="h-6 sm:h-8 w-1/3 mb-2 bg-slate-700" />
+                  <Skeleton className="h-80 sm:h-96 w-full rounded-lg bg-slate-700" />
                   <div className="flex space-x-2 mt-4">
-                    {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 w-24 rounded bg-slate-700" />)}
+                    {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-12 w-16 sm:h-16 sm:w-24 rounded bg-slate-700" />)}
                   </div>
                 </div>
               ) : (
@@ -1641,7 +1641,7 @@ const AIPresentations = () => {
                       <Button variant="ghost" size="sm" onClick={prevSlide} disabled={currentSlideIndex === 0} className="text-slate-300 hover:text-white hover:bg-slate-700">
                         <ChevronLeft className="w-4 h-4" />
                       </Button>
-                      <span className="text-sm text-slate-300">
+                      <span className="text-xs sm:text-sm text-slate-300">
                         {currentSlideIndex + 1} / {slides.length}
                       </span>
                       <Button
@@ -1655,8 +1655,8 @@ const AIPresentations = () => {
                       </Button>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <GlassmorphismButton onClick={() => setIsPreviewMode(true)} variant="outline" size="sm" className="border-slate-600 text-slate-300 hover:text-white hover:bg-slate-700/50">
-                        <Eye className="w-4 h-4 mr-1" />
+                      <GlassmorphismButton onClick={() => setIsPreviewMode(true)} variant="outline" size="sm" className="border-slate-600 text-slate-300 hover:text-white hover:bg-slate-700/50 text-xs sm:text-sm">
+                        <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                         Fullscreen
                       </GlassmorphismButton>
                     </div>
@@ -1666,8 +1666,8 @@ const AIPresentations = () => {
                     className={`w-full rounded-lg border border-slate-600/50 overflow-hidden shadow-xl ${getSlideBackgroundClasses(currentSlide)}`}
                     style={{
                       aspectRatio: "16/9",
-                      minHeight: "400px",
-                      maxHeight: "500px",
+                      minHeight: "300px",
+                      maxHeight: "400px",
                     }}
                     whileHover={{ scale: 1.02 }}
                     transition={{ duration: 0.3 }}
@@ -1679,7 +1679,7 @@ const AIPresentations = () => {
                     {slides.map((slide, index) => (
                       <motion.div
                         key={slide.id}
-                        className={`relative flex-shrink-0 w-24 h-16 glassmorphism rounded cursor-pointer transition-all group overflow-hidden ${
+                        className={`relative flex-shrink-0 w-16 h-12 sm:w-24 sm:h-16 glassmorphism rounded cursor-pointer transition-all group overflow-hidden ${
                           currentSlideIndex === index ? "border-2 border-blue-500" : "opacity-70 hover:opacity-100"
                         }`}
                         onClick={() => setCurrentSlideIndex(index)}
@@ -1689,21 +1689,21 @@ const AIPresentations = () => {
                         <div
                           className={`w-full h-full rounded flex items-center justify-center p-1 relative ${getSlideBackgroundClasses(slide)}`}
                         >
-                          <span className="text-[8px] font-bold absolute top-0.5 left-0.5 z-10 text-white">
+                          <span className="text-[6px] sm:text-[8px] font-bold absolute top-0.5 left-0.5 z-10 text-white">
                             {index + 1}
                           </span>
                           <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-1">
                             {(slide.elements || []).map((el, elIdx) => {
                               if (el.type === "title" && el.content) {
                                 return (
-                                  <p key={`${slide.id}-title-${elIdx}`} className="text-[6px] font-bold leading-tight truncate w-full text-white">
+                                  <p key={`${slide.id}-title-${elIdx}`} className="text-[4px] sm:text-[6px] font-bold leading-tight truncate w-full text-white">
                                     {el.content}
                                   </p>
                                 )
                               }
                               if (el.type === "subtitle" && el.content) {
                                 return (
-                                  <p key={`${slide.id}-subtitle-${elIdx}`} className="text-[5px] leading-tight truncate w-full text-white">
+                                  <p key={`${slide.id}-subtitle-${elIdx}`} className="text-[3px] sm:text-[5px] leading-tight truncate w-full text-white">
                                     {el.content}
                                   </p>
                                 )
@@ -1711,7 +1711,7 @@ const AIPresentations = () => {
                               if ((el.type === "text" || el.type === "bullet_list") && (el.content || el.items)) {
                                 const contentText = el.content || (el.items ? el.items[0] : "")
                                 return (
-                                  <p key={`${slide.id}-text-${elIdx}`} className="text-[4px] truncate w-full text-white">
+                                  <p key={`${slide.id}-text-${elIdx}`} className="text-[3px] sm:text-[4px] truncate w-full text-white">
                                     {contentText}
                                   </p>
                                 )
@@ -1734,25 +1734,25 @@ const AIPresentations = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-4 w-4 p-0 bg-black/50 hover:bg-black/70 text-white"
+                              className="h-3 w-3 sm:h-4 sm:w-4 p-0 bg-black/50 hover:bg-black/70 text-white"
                               onClick={(e) => {
                                 e.stopPropagation()
                                 duplicateSlide(index)
                               }}
                             >
-                              <Copy className="w-2 h-2" />
+                              <Copy className="w-1.5 h-1.5 sm:w-2 sm:h-2" />
                             </Button>
                             {slides.length > 1 && (
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-4 w-4 p-0 bg-black/50 hover:bg-black/70 text-red-400 hover:text-red-300"
+                                className="h-3 w-3 sm:h-4 sm:w-4 p-0 bg-black/50 hover:bg-black/70 text-red-400 hover:text-red-300"
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   setPendingDeleteSlide(index)
                                 }}
                               >
-                                <Trash2 className="w-2 h-2" />
+                                <Trash2 className="w-1.5 h-1.5 sm:w-2 sm:h-2" />
                               </Button>
                             )}
                             <AlertDialog open={pendingDeleteSlide === index} onOpenChange={(open) => { if (!open) setPendingDeleteSlide(null) }}>
@@ -1775,12 +1775,12 @@ const AIPresentations = () => {
                     ))}
 
                     <motion.div
-                      className="flex-shrink-0 w-24 h-16 glassmorphism rounded cursor-pointer flex items-center justify-center hover:bg-white/10 transition-colors"
+                      className="flex-shrink-0 w-16 h-12 sm:w-24 sm:h-16 glassmorphism rounded cursor-pointer flex items-center justify-center hover:bg-white/10 transition-colors"
                       onClick={addSlide}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      <Plus className="w-6 h-6 text-slate-600 dark:text-white" />
+                      <Plus className="w-4 h-4 sm:w-6 sm:h-6 text-slate-600 dark:text-white" />
                     </motion.div>
                   </div>
                 </>
@@ -1790,49 +1790,49 @@ const AIPresentations = () => {
 
           <div className="lg:col-span-1">
             <motion.div
-              className="bg-slate-900/80 backdrop-blur-sm rounded-xl p-6 space-y-6 border border-slate-700/50 min-h-[300px]"
+              className="bg-slate-900/80 backdrop-blur-sm rounded-xl p-4 sm:p-6 space-y-4 sm:space-y-6 border border-slate-700/50 min-h-[250px] sm:min-h-[300px]"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
             >
               {isLoadingSlides ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-6 w-1/2 bg-slate-700" />
-                  <Skeleton className="h-6 w-1/2 bg-slate-700" />
-                  <Skeleton className="h-24 w-full bg-slate-700" />
+                <div className="space-y-3 sm:space-y-4">
+                  <Skeleton className="h-5 sm:h-6 w-1/2 bg-slate-700" />
+                  <Skeleton className="h-5 sm:h-6 w-1/2 bg-slate-700" />
+                  <Skeleton className="h-20 sm:h-24 w-full bg-slate-700" />
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-white">Edit Slide</h2>
+                  <div className="flex items-center justify-between mb-3 sm:mb-4">
+                    <h2 className="text-lg sm:text-xl font-bold text-white">Edit Slide</h2>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <div>
-                      <Label className="text-slate-300">Title</Label>
+                      <Label className="text-slate-300 text-sm sm:text-base">Title</Label>
                       <Input
                         value={editorTitle}
                         onChange={(e) => updateSlideContent("title", e.target.value)}
-                        className="bg-slate-800/50 border-slate-600 text-white placeholder-slate-400 focus:border-slate-500"
+                        className="bg-slate-800/50 border-slate-600 text-white placeholder-slate-400 focus:border-slate-500 text-sm sm:text-base"
                       />
                     </div>
 
                     <div>
-                      <Label className="text-slate-300">Subtitle</Label>
+                      <Label className="text-slate-300 text-sm sm:text-base">Subtitle</Label>
                       <Input
                         value={editorSubtitle}
                         onChange={(e) => updateSlideContent("subtitle", e.target.value)}
-                        className="bg-slate-800/50 border-slate-600 text-white placeholder-slate-400 focus:border-slate-500"
+                        className="bg-slate-800/50 border-slate-600 text-white placeholder-slate-400 focus:border-slate-500 text-sm sm:text-base"
                         placeholder="Add a subtitle (for title slide)"
                       />
                     </div>
 
                     <div>
-                      <Label className="text-slate-300">Content</Label>
+                      <Label className="text-slate-300 text-sm sm:text-base">Content</Label>
                       <Textarea
                         value={editorContent}
                         onChange={(e) => updateSlideContent("content", e.target.value)}
-                        className="bg-slate-800/50 border-slate-600 text-white placeholder-slate-400 focus:border-slate-500 min-h-[120px]"
+                        className="bg-slate-800/50 border-slate-600 text-white placeholder-slate-400 focus:border-slate-500 min-h-[100px] sm:min-h-[120px] text-sm sm:text-base"
                         placeholder="Enter slide content or bullet points..."
                       />
                     </div>
@@ -1849,29 +1849,29 @@ const AIPresentations = () => {
               <DialogTitle className="text-white">Export Presentation</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <p className="text-slate-300">Choose your export format:</p>
-              <div className="grid grid-cols-2 gap-4">
+              <p className="text-slate-300 text-sm sm:text-base">Choose your export format:</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <Button
                   onClick={() => exportPresentation("pdf")}
                   disabled={isDownloading}
-                  className="h-20 flex flex-col items-center justify-center space-y-2 bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                  className="h-16 sm:h-20 flex flex-col items-center justify-center space-y-2 bg-red-600 hover:bg-red-700 disabled:opacity-50"
                 >
-                  <FileText className="w-6 h-6" />
-                  <span>{isDownloading ? "Generating..." : "PDF"}</span>
+                  <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
+                  <span className="text-sm sm:text-base">{isDownloading ? "Generating..." : "PDF"}</span>
                 </Button>
                 <Button
                   onClick={() => exportPresentation("pptx")}
                   disabled={isDownloading}
-                  className="h-20 flex flex-col items-center justify-center space-y-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50"
+                  className="h-16 sm:h-20 flex flex-col items-center justify-center space-y-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50"
                 >
-                  <Presentation className="w-6 h-6" />
-                  <span>{isDownloading ? "Generating..." : "PPTX"}</span>
+                  <Presentation className="w-5 h-5 sm:w-6 sm:h-6" />
+                  <span className="text-sm sm:text-base">{isDownloading ? "Generating..." : "PPTX"}</span>
                 </Button>
               </div>
               {isDownloading && (
                 <div className="text-center">
-                  <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                  <p className="text-slate-400 text-sm">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                  <p className="text-slate-400 text-xs sm:text-sm">
                     Preparing your presentation for download...
                   </p>
                 </div>
@@ -1887,29 +1887,29 @@ const AIPresentations = () => {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label className="text-slate-300">Topic</Label>
+                <Label className="text-slate-300 text-sm sm:text-base">Topic</Label>
                 <Input
                   value={generateTopic}
                   onChange={(e) => setGenerateTopic(e.target.value)}
                   placeholder="e.g., Climate Change, Machine Learning, History of Art..."
-                  className="bg-slate-800/50 border-slate-600 text-white placeholder-slate-400 focus:border-slate-500"
+                  className="bg-slate-800/50 border-slate-600 text-white placeholder-slate-400 focus:border-slate-500 text-sm sm:text-base"
                 />
               </div>
               <div>
-                <Label className="text-slate-300">Number of Slides</Label>
+                <Label className="text-slate-300 text-sm sm:text-base">Number of Slides</Label>
                 <Input
                   type="number"
                   value={slideCount}
                   onChange={(e) => setSlideCount(Number.parseInt(e.target.value) || 5)}
                   min="3"
                   max="20"
-                  className="bg-slate-800/50 border-slate-600 text-white placeholder-slate-400 focus:border-slate-500"
+                  className="bg-slate-800/50 border-slate-600 text-white placeholder-slate-400 focus:border-slate-500 text-sm sm:text-base"
                 />
               </div>
               <Button
                 onClick={generatePresentation}
                 disabled={isGenerating}
-                className="w-full bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600"
+                className="w-full bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-sm sm:text-base"
               >
                 {isGenerating ? (
                   <>
@@ -1925,7 +1925,7 @@ const AIPresentations = () => {
               </Button>
               {isGenerating && (
                 <div className="text-center">
-                  <p className="text-slate-400 text-sm">
+                  <p className="text-slate-400 text-xs sm:text-sm">
                     Creating your AI-powered presentation...
                   </p>
                 </div>
