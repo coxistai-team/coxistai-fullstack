@@ -8,23 +8,39 @@ dotenv.config(); // Load .env variables
 
 const app = express();
 
-const allowedOrigins = [
-  "https://www.coxistai.com",
-  "https://coxist-chatbot.onrender.com",
-  "https://coxistai-ui-tm8n.vercel.app",
-  "https://coxistai-ui.vercel.app",
-  "https://coxistai-ui-2.vercel.app",
-  "https://coxistai-ui-3.vercel.app",
-  "https://coxistai-ui-44444444444.vercel.app"
-];
+// --- CORRECTED & DYNAMIC CORS CONFIGURATION ---
 
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
-}));
+// 1. Read origins from the environment variable.
+// Fallback to a default for local development if the variable is not set.
+const allowedOriginsString = process.env.ALLOWED_ORIGINS || "http://localhost:5173";
+const allowedOrigins = allowedOriginsString.split(',').map(origin => origin.trim());
 
-// Explicitly handle preflight OPTIONS for all /api/* routes
-app.options(/\/api\/.*/, cors());
+console.log("Allowed CORS Origins:", allowedOrigins);
+
+// 2. Define CORS options with a dynamic origin function.
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Allow requests with no origin (like server-to-server calls or REST clients)
+    if (!origin) {
+      return callback(null, true);
+    }
+    // Check if the incoming origin is in our list of allowed origins
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.error(`CORS Error: Origin ${origin} not allowed.`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true, // This is crucial for sending cookies or auth headers
+};
+
+// 3. Use the single, correctly configured CORS middleware for ALL requests.
+// This will automatically handle preflight OPTIONS requests correctly.
+app.use(cors(corsOptions));
+
+// 4. THE PRIMARY FIX: The redundant app.options() handler has been REMOVED.
+// The app.use(cors(corsOptions)) above is now the single source of truth for all CORS handling.
 
 // Add a route to check CORS configuration
 app.get('/api/cors-check', (req: Request, res: Response) => {
