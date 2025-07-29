@@ -10,14 +10,26 @@ let pool: Pool | null = null;
 let db: any = null;
 
 if (process.env.DATABASE_URL) {
-  pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  db = drizzle({ client: pool, schema });
+  try {
+    pool = new Pool({ 
+      connectionString: process.env.DATABASE_URL,
+      max: 10, // Maximum number of connections
+      idleTimeoutMillis: 90000, // Close idle connections after 30 seconds
+      connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
+    });
+    db = drizzle({ client: pool, schema });
+    console.log("Database connection established successfully");
+  } catch (error) {
+    console.error("Failed to establish database connection:", error);
+    pool = null;
+    db = null;
+  }
 } else {
   console.log("No DATABASE_URL found. Running without database connection.");
 }
 
 if (!db) {
-  throw new Error("Database connection failed: DATABASE_URL is missing or invalid, or Drizzle could not connect. Check your .env and NeonDB credentials.");
+  console.error("Database connection failed: DATABASE_URL is missing or invalid, or Drizzle could not connect. Check your .env and NeonDB credentials.");
 }
 
 export { pool, db };

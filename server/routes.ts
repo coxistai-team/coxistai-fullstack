@@ -1224,10 +1224,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/notes", requireAuth, async (req: Request, res: Response) => {
     try {
       const userId = req.user.id;
+      console.log(`Fetching notes for user: ${userId}`);
       const notes = await storage.getNotes(userId);
+      console.log(`Successfully fetched ${notes.length} notes`);
       res.json(notes);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch notes." });
+      console.error("Error fetching notes:", error);
+      res.status(500).json({ error: "Failed to fetch notes.", details: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Add database test endpoint
+  app.get("/api/test-db", async (req: Request, res: Response) => {
+    try {
+      console.log("Testing database connection...");
+      const result = await storage.getNotes(1); // Test with user ID 1
+      console.log("Database test successful");
+      res.json({ 
+        status: 'ok', 
+        message: 'Database connection successful',
+        notes_count: result.length 
+      });
+    } catch (error) {
+      console.error("Database test failed:", error);
+      res.status(500).json({ 
+        status: 'error', 
+        message: 'Database connection failed',
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
     }
   });
 

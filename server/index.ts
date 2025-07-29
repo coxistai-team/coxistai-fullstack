@@ -66,6 +66,16 @@ app.get('/api/cors-check', (req: Request, res: Response) => {
   });
 });
 
+// Add health check endpoint
+app.get('/api/health', (req: Request, res: Response) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    database: process.env.DATABASE_URL ? 'configured' : 'not configured'
+  });
+});
+
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 
