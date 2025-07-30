@@ -63,7 +63,7 @@ const Home = () => {
   const isMobile = useIsMobile();
   
   const heroInView = useInView(heroRef, { once: true });
-  const featuresInView = useInView(featuresRef, { once: true, margin: "-200px" });
+
   const statsInView = useInView(statsRef, { once: true });
 
   // Parallax effects
@@ -137,7 +137,7 @@ const Home = () => {
   };
 
   return (
-    <main className="relative min-h-screen bg-black text-white overflow-hidden mobile-safe">
+    <main className="relative min-h-screen bg-black text-white overflow-hidden mobile-safe -mt-20 sm:-mt-24">
       {/* Particle Field Background */}
       <ParticleField />
       
@@ -347,17 +347,13 @@ const Home = () => {
       <motion.section 
         ref={featuresRef}
         className="py-12 sm:py-20 px-4 relative z-10"
-        initial={{ opacity: 0 }}
-        animate={featuresInView ? { opacity: 1 } : {}}
-        transition={{ duration: 0.8 }}
+
       >
         <div className="max-w-7xl mx-auto">
           {/* Section Header */}
           <motion.div
             className="text-center mb-12 sm:mb-20"
-            initial={{ opacity: 0, y: 30 }}
-            animate={featuresInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6 }}
+
           >
             <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 sm:mb-6">
               <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
@@ -374,9 +370,6 @@ const Home = () => {
             {/* Top Row - Large Cards */}
             <motion.div
               className="sm:col-span-2 lg:col-span-2 feature-card group cursor-pointer relative overflow-hidden creative-border touch-target"
-              initial={{ opacity: 0, y: 50 }}
-              animate={featuresInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 0.05, duration: 0.3 }}
               onClick={() => handleNavigation('/chat')}
               whileHover={{ y: -10 }}
               aria-label="Navigate to SparkTutor AI Chat"
@@ -409,9 +402,6 @@ const Home = () => {
 
             <motion.div
               className="feature-card group cursor-pointer relative overflow-hidden creative-border touch-target"
-              initial={{ opacity: 0, y: 50 }}
-              animate={featuresInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 0.1, duration: 0.3 }}
               onClick={() => handleNavigation('/notes')}
               whileHover={{ y: -10 }}
               aria-label="Navigate to Notes Hub"
@@ -444,9 +434,6 @@ const Home = () => {
             {/* Middle Row - Mixed Cards */}
             <motion.div
               className="feature-card group cursor-pointer relative overflow-hidden creative-border touch-target"
-              initial={{ opacity: 0, y: 50 }}
-              animate={featuresInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 0.15, duration: 0.3 }}
               onClick={() => handleNavigation('/community')}
               whileHover={{ y: -10 }}
               aria-label="Navigate to Learning Community"
@@ -478,9 +465,6 @@ const Home = () => {
 
             <motion.div
               className="sm:col-span-2 feature-card group cursor-pointer relative overflow-hidden creative-border touch-target"
-              initial={{ opacity: 0, y: 50 }}
-              animate={featuresInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 0.2, duration: 0.3 }}
               onClick={() => handleNavigation('/presentations')}
               whileHover={{ y: -10 }}
               aria-label="Navigate to AI Presentations"
@@ -514,9 +498,6 @@ const Home = () => {
             {/* Bottom Row - Mixed Cards */}
             <motion.div
               className="feature-card group cursor-pointer relative overflow-hidden creative-border touch-target"
-              initial={{ opacity: 0, y: 50 }}
-              animate={featuresInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 0.25, duration: 0.3 }}
               onClick={() => handleNavigation('/calendar')}
               whileHover={{ y: -10 }}
               aria-label="Navigate to Smart Calendar"
@@ -548,9 +529,6 @@ const Home = () => {
 
             <motion.div
               className="feature-card group cursor-pointer relative overflow-hidden creative-border touch-target"
-              initial={{ opacity: 0, y: 50 }}
-              animate={featuresInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 0.3, duration: 0.3 }}
               onClick={() => handleNavigation('/code')}
               whileHover={{ y: -10 }}
               aria-label="Navigate to CodeSpark"
@@ -582,9 +560,6 @@ const Home = () => {
 
             <motion.div
               className="feature-card group cursor-pointer relative overflow-hidden creative-border touch-target"
-              initial={{ opacity: 0, y: 50 }}
-              animate={featuresInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 0.7, duration: 0.6 }}
               onClick={() => handleNavigation('/college')}
               whileHover={{ y: -10 }}
               aria-label="Navigate to College Recommender"
@@ -619,8 +594,9 @@ const Home = () => {
           <motion.div
             className="mt-12 sm:mt-16 text-center"
             initial={{ opacity: 0, y: 30 }}
-            animate={featuresInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 0.8, duration: 0.6 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
           >
             <h3 className="text-xl sm:text-2xl font-bold text-white mb-6 sm:mb-8">
               <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
@@ -631,11 +607,17 @@ const Home = () => {
               {skillTags.map((tag, index) => (
                 <motion.div
                   key={tag}
-                  className="skill-tag hover:from-purple-500/30 hover:to-blue-500/30 touch-target"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={featuresInView ? { opacity: 1, scale: 1 } : {}}
-                  transition={{ delay: 0.9 + index * 0.02, duration: 0.4 }}
-                  whileHover={{ scale: 1.05, y: -2 }}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 hover:from-purple-500/30 hover:to-blue-500/30 backdrop-blur-sm border border-white/10 rounded-full text-sm font-medium text-white/90 hover:text-white transition-all duration-300 touch-target cursor-pointer"
+                  initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                  whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={{ delay: index * 0.05, duration: 0.4 }}
+                  whileHover={{ 
+                    scale: 1.08, 
+                    y: -3,
+                    boxShadow: "0 10px 25px rgba(59, 130, 246, 0.3)",
+                    borderColor: "rgba(147, 51, 234, 0.5)"
+                  }}
+                  whileTap={{ scale: 0.95 }}
                 >
                   {tag}
                 </motion.div>

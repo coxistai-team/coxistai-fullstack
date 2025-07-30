@@ -109,7 +109,7 @@ function App() {
                   <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden flex flex-col">
                     <AnimatedBackground />
                     <Navigation />
-                    <div className="flex-1 pb-20 sm:pb-0">
+                    <div className="flex-1 pb-20 sm:pb-0 pt-20 sm:pt-24">
                       <Router />
                     </div>
                     <MobileNavigation 
