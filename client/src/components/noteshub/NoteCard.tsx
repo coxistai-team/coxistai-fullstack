@@ -313,14 +313,14 @@ const NoteCard: React.FC<NoteCardProps> = ({
                     handleEditTags();
                   }}
                   disabled={isEditingTags}
-                >
+          >
                   <Tag className="w-3 h-3" />
                 </button>
               </ContextMenuTrigger>
               <ContextMenuContent className="bg-slate-900 border-slate-700">
                 <ContextMenuItem onClick={handleEditTags}>
                   <Tag className="w-4 h-4 mr-2" /> Edit Tags
-                </ContextMenuItem>
+          </ContextMenuItem>
                                 <ContextMenuItem onClick={() => onPin(note.id, !note.is_pinned)}>
                   {note.is_pinned ? (
                     <>
@@ -331,7 +331,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
                       <Pin className="w-4 h-4 mr-2" /> Pin
                     </>
                   )}
-                </ContextMenuItem>
+          </ContextMenuItem>
                 <ContextMenuItem onClick={() => onArchive(note.id, !note.is_archived)}>
                   {note.is_archived ? (
                     <>
@@ -342,7 +342,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
                       <Archive className="w-4 h-4 mr-2" /> Archive
                     </>
                   )}
-                </ContextMenuItem>
+          </ContextMenuItem>
                 <ContextMenuItem onClick={() => onDuplicate(note.id)}>
                   <Copy className="w-4 h-4 mr-2" /> Duplicate
           </ContextMenuItem>

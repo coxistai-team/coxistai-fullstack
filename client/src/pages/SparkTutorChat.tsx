@@ -21,12 +21,15 @@ import {
   Lightbulb,
   Clock,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  ChevronDown,
+  Edit3
 } from "lucide-react";
 import GlassmorphismButton from "@/components/ui/glassmorphism-button";
 import FileUpload from "@/components/ui/file-upload";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLoading } from "@/contexts/LoadingContext";
 import { MiniLoader } from "@/components/ui/page-loader";
 import { useToast } from "@/hooks/use-toast";
@@ -95,12 +98,40 @@ const SparkTutorChat = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [newMessageIndicator, setNewMessageIndicator] = useState(false);
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [editingSessionTitle, setEditingSessionTitle] = useState("");
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (scrollAreaRef.current) {
+      const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollElement) {
+        scrollElement.scrollTo({
+          top: scrollElement.scrollHeight,
+          behavior: "smooth"
+        });
+        // Update state after scrolling
+        setTimeout(() => {
+          setIsAtBottom(true);
+          setShowScrollToBottom(false);
+          setNewMessageIndicator(false);
+        }, 500);
+      }
+    }
+  };
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLDivElement;
+    const { scrollTop, scrollHeight, clientHeight } = target;
+    const isBottom = scrollTop + clientHeight >= scrollHeight - 10;
+    setIsAtBottom(isBottom);
+    setShowScrollToBottom(!isBottom);
   };
 
   // Optimistic UI: Update sessions immediately
@@ -109,7 +140,12 @@ const SparkTutorChat = () => {
   }, [chatSessions]);
 
   useEffect(() => {
-    scrollToBottom();
+    // Auto-scroll to bottom when new messages are added
+    if (messages.length > 0) {
+      setTimeout(() => {
+        scrollToBottom();
+      }, 100);
+    }
   }, [messages]);
 
   useEffect(() => {
@@ -165,6 +201,9 @@ const SparkTutorChat = () => {
         createNewChat();
       }
     }
+    
+    // Keep sidebar open - don't close it when deleting chats
+    // The sidebar will only close when user explicitly closes it
   };
 
   const updateSessionTitle = (sessionId: string, newTitle: string) => {
@@ -175,6 +214,24 @@ const SparkTutorChat = () => {
           : session
       )
     );
+    setEditingSessionId(null);
+    setEditingSessionTitle("");
+  };
+
+  const startEditingSession = (sessionId: string, currentTitle: string) => {
+    setEditingSessionId(sessionId);
+    setEditingSessionTitle(currentTitle);
+  };
+
+  const cancelEditingSession = () => {
+    setEditingSessionId(null);
+    setEditingSessionTitle("");
+  };
+
+  const saveSessionTitle = () => {
+    if (editingSessionId && editingSessionTitle.trim()) {
+      updateSessionTitle(editingSessionId, editingSessionTitle.trim());
+    }
   };
 
   const generateTitle = (firstUserMessage: string) => {
@@ -298,6 +355,12 @@ const SparkTutorChat = () => {
 
       setMessages(prev => [...prev, aiMessage]);
 
+      // Show new message indicator if user is not at bottom
+      if (!isAtBottom) {
+        setNewMessageIndicator(true);
+        setTimeout(() => setNewMessageIndicator(false), 3000);
+      }
+
       // Update session title if it's the first user message
       if (currentSession && currentSession.messages.length === 1) {
         const newTitle = generateTitle(inputValue.trim());
@@ -387,6 +450,13 @@ const SparkTutorChat = () => {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Auto-resize textarea
+    const textarea = e.target as HTMLTextAreaElement;
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 128) + 'px';
+  };
+
   useEffect(() => {
     return () => {
       if (streamRef.current) {
@@ -397,6 +467,32 @@ const SparkTutorChat = () => {
       }
     };
   }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + Enter for new chat
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        createNewChat();
+        // Show sidebar briefly to indicate new chat creation
+        setSidebarOpen(true);
+        setTimeout(() => {
+          if (!sidebarOpen) {
+            setSidebarOpen(false);
+          }
+        }, 2000);
+      }
+      // Ctrl/Cmd + K to toggle sidebar
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setSidebarOpen(!sidebarOpen);
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [sidebarOpen]);
 
   const isAITyping = isLoading;
 
@@ -441,91 +537,133 @@ const SparkTutorChat = () => {
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: -320, opacity: 0 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="fixed top-16 bottom-0 left-0 w-80 glassmorphism-enhanced border-r border-white/20 z-50 flex flex-col shadow-2xl"
+                className="fixed top-16 bottom-0 left-0 w-80 bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50 z-50 flex flex-col shadow-2xl"
               >
                 {/* Sidebar Header */}
-                <div className="p-4 border-b border-white/10">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-white flex items-center">
-                      <Brain className="w-5 h-5 mr-2 text-blue-400" />
-                      Chat History
+                <div className="p-6 border-b border-slate-700/50">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-white">
+                      SparkTutor
                     </h2>
                     <button
                       onClick={() => setSidebarOpen(false)}
-                      className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                      className="p-2 hover:bg-slate-700/50 rounded-lg transition-colors"
+                      title="Close Sidebar"
                     >
-                      <X className="w-5 h-5 text-gray-400" />
+                      <Menu className="w-5 h-5 text-slate-400" />
                     </button>
                   </div>
                   
-                  <GlassmorphismButton
+                  <button
                     onClick={createNewChat}
-                    className="w-full mb-4 hover-lift"
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 hover:scale-[1.02] flex items-center justify-center"
                   >
-                    <Plus className="w-4 h-4 mr-2" />
+                    <Plus className="w-5 h-5 mr-2" />
                     New Chat
-                  </GlassmorphismButton>
+                  </button>
 
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <div className="relative mt-4">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <Input
-                      placeholder="Search chats..."
+                      placeholder="Search your threads..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 bg-gray-800/50 border-gray-700 text-white placeholder-gray-400"
+                      className="pl-10 bg-slate-800/50 border-slate-600 text-white placeholder-slate-400 focus:border-slate-500"
                     />
                   </div>
                 </div>
 
                 {/* Chat Sessions List */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                <div className="flex-1 overflow-y-auto">
                   {filteredSessions.length === 0 ? (
                     <motion.div 
-                      className="text-center text-gray-400 py-8"
+                      className="text-center text-slate-400 py-12 px-6"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                     >
-                      <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      <p>No chats yet</p>
-                      <p className="text-sm">Start a new conversation!</p>
+                      <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg font-medium mb-2">No chats yet</p>
+                      <p className="text-sm text-slate-500">Start a new conversation to begin!</p>
                     </motion.div>
                   ) : (
-                    filteredSessions.map((session, index) => (
-                      <motion.div
-                        key={session.id}
-                        className={`group relative p-3 rounded-lg cursor-pointer transition-all duration-200 hover-lift ${
-                          currentSessionId === session.id
-                            ? 'bg-blue-500/20 border border-blue-500/30'
-                            : 'hover:bg-white/5'
-                        }`}
-                        onClick={() => switchToSession(session.id)}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-white truncate text-sm">
-                              {session.title}
-                            </h3>
-                            <p className="text-xs text-slate-400 mt-1">
-                              {new Date(session.lastUpdated).toLocaleDateString()}
-                            </p>
+                    <div className="p-4 space-y-1">
+                      {filteredSessions.map((session, index) => (
+                        <motion.div
+                          key={session.id}
+                          className={`group relative p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                            currentSessionId === session.id
+                              ? 'bg-slate-700/50 border border-slate-600'
+                              : 'hover:bg-slate-800/50'
+                          }`}
+                          onClick={() => switchToSession(session.id)}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          whileHover={{ scale: 1.01 }}
+                          whileTap={{ scale: 0.99 }}
+                        >
+                        {editingSessionId === session.id ? (
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              value={editingSessionTitle}
+                              onChange={(e) => setEditingSessionTitle(e.target.value)}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') saveSessionTitle();
+                                if (e.key === 'Escape') cancelEditingSession();
+                              }}
+                              className="flex-1 text-sm bg-slate-800/50 border-slate-600 text-white focus:border-slate-500"
+                              autoFocus
+                            />
+                            <button
+                              onClick={saveSessionTitle}
+                              className="p-1.5 hover:bg-green-500/20 rounded text-green-400 transition-colors"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={cancelEditingSession}
+                              className="p-1.5 hover:bg-red-500/20 rounded text-red-400 transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
                           </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteSession(session.id);
-                            }}
-                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 rounded transition-all"
-                          >
-                            <Trash2 className="w-4 h-4 text-red-400" />
-                          </button>
-                        </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-slate-200 truncate">
+                                {session.title}
+                              </p>
+                              <p className="text-xs text-slate-500 truncate mt-1">
+                                {session.messages.length} messages • {new Date(session.lastUpdated).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startEditingSession(session.id, session.title);
+                                }}
+                                className="p-1.5 hover:bg-slate-700/50 rounded text-slate-400 hover:text-blue-400 transition-colors"
+                                title="Rename chat"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteSession(session.id);
+                                }}
+                                className="p-1.5 hover:bg-slate-700/50 rounded text-slate-400 hover:text-red-400 transition-colors"
+                                title="Delete chat"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </motion.div>
-                    ))
+                    ))}
+                    </div>
                   )}
                 </div>
               </motion.div>
@@ -535,75 +673,65 @@ const SparkTutorChat = () => {
 
         {/* Main Chat Container */}
         <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarOpen ? 'lg:ml-80 lg:pl-4' : ''}`}>
-          {/* Mobile Header */}
-          <div className="lg:hidden flex items-center justify-between p-4 border-b border-white/10 glassmorphism-enhanced">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              <Menu className="w-6 h-6 text-white" />
-            </button>
-            <h1 className="text-xl font-bold text-white flex items-center">
-              <Sparkles className="w-5 h-5 mr-2 text-blue-400" />
-              SparkTutor Chat
-            </h1>
-            <div className="w-10" />
-          </div>
 
-          {/* Desktop Header */}
-          <div className="hidden lg:flex items-center justify-between p-6 border-b border-white/10 glassmorphism-enhanced">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-              >
-                <Menu className="w-6 h-6 text-white" />
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold text-white flex items-center">
-                  <Sparkles className="w-6 h-6 mr-3 text-blue-400" />
-                  SparkTutor Chat
-                </h1>
-                <p className="text-slate-400 flex items-center">
-                  <Zap className="w-4 h-4 mr-2 text-green-400" />
-                  Your AI learning companion is here to help
-                </p>
-              </div>
-            </div>
-            <GlassmorphismButton onClick={createNewChat} variant="outline" className="hover-lift">
-              <Plus className="w-4 h-4 mr-2" />
-              New Chat
-            </GlassmorphismButton>
-          </div>
+
+          
 
           {/* Chat Messages Area */}
-          <div className="flex-1 flex flex-col bg-slate-900/50">
-            {/* Chat Header */}
-            <div className="border-b border-white/10 p-4 flex items-center justify-between glassmorphism-enhanced">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center floating-icon">
-                  <Sparkles className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-white">SparkTutor AI</h3>
-                  <p className="text-sm text-slate-400 flex items-center">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2"></div>
-                    Online • Ready to help
-                  </p>
-                </div>
-              </div>
-              <div className="flex space-x-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-xs text-slate-400">AI Ready</span>
-              </div>
-            </div>
+          <div className="flex-1 flex flex-col min-h-0">
+
             
+            {/* Menu Button - Only visible when sidebar is closed */}
+            {!sidebarOpen && (
+              <motion.div 
+                className="absolute top-24 left-6 z-50"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.2 }}
+              >
+                <button
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="p-3 bg-slate-800/80 backdrop-blur-sm border border-slate-600/50 rounded-xl hover:bg-slate-700/80 hover:border-slate-500/60 transition-all duration-200 hover:scale-105 shadow-lg"
+                  title="Toggle Sidebar (⌘+K)"
+                >
+                  <Menu className="w-6 h-6 text-slate-200" />
+                </button>
+              </motion.div>
+            )}
+
             {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.map((message, index) => (
+            <div className="flex-1 min-h-0 relative">
+              <ScrollArea 
+                ref={scrollAreaRef}
+                className="h-full w-full"
+                onScroll={handleScroll}
+              >
+                <div className="p-4 pt-20 space-y-6 min-h-full">
+                  {messages.length === 0 && (
+                    <motion.div 
+                      className="flex flex-col items-center justify-center py-20 text-center"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mb-6">
+                        <Sparkles className="w-8 h-8 text-white" />
+                      </div>
+                      <h2 className="text-2xl font-bold text-white mb-4">Welcome to SparkTutor AI</h2>
+                      <p className="text-slate-400 max-w-md mb-6">
+                        I'm your AI learning assistant. I can help you with homework, explain concepts, solve problems, and much more. You can also upload files for me to analyze!
+                      </p>
+                      <div className="flex items-center space-x-4 text-sm text-slate-500">
+                        <span>Click menu button (top-left) or press ⌘+K to open sidebar</span>
+                        <span>•</span>
+                        <span>⌘+Enter for new chat</span>
+                      </div>
+                    </motion.div>
+                  )}
+                  {messages.map((message, index) => (
                 <motion.div
                   key={message.id}
-                  className={`flex items-start space-x-3 ${message.isAI ? '' : 'justify-end'}`}
+                  className={`flex items-start gap-3 ${message.isAI ? '' : 'justify-end'}`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
@@ -614,11 +742,11 @@ const SparkTutorChat = () => {
                     </div>
                   )}
                   
-                  <div className={`max-w-lg p-3 rounded-lg relative ${
+                  <div className={`max-w-[85%] sm:max-w-[75%] md:max-w-[70%] p-4 rounded-2xl relative ${
                     message.isAI 
-                      ? 'glassmorphism-enhanced rounded-tl-none' 
-                      : 'bg-gradient-to-r from-blue-500 to-purple-500 rounded-tr-none'
-                  }`}>
+                      ? 'bg-slate-800/80 backdrop-blur-sm border border-slate-700/50 rounded-tl-md' 
+                      : 'bg-gradient-to-r from-blue-600 to-purple-600 rounded-tr-md'
+                  } shadow-lg`}>
                     {/* Message Status Indicators */}
                     {!message.isAI && (
                       <div className="absolute -top-2 -right-2">
@@ -661,12 +789,16 @@ const SparkTutorChat = () => {
                       </div>
                     )}
                     <div 
-                      className={`text-white leading-relaxed ${message.isAI ? 'formatted-content' : ''}`}
+                      className={`text-white leading-relaxed break-words message-content ${message.isAI ? 'formatted-content' : ''}`}
                       dangerouslySetInnerHTML={{ 
                         __html: message.isAI ? formatMessage(message.content) : formatMessage(message.content)
                       }}
+                      style={{ 
+                        wordBreak: 'break-word',
+                        overflowWrap: 'break-word'
+                      }}
                     />
-                    <p className="text-xs text-slate-400 mt-3 border-t border-white/10 pt-2 flex items-center">
+                    <p className="text-xs text-slate-400 mt-3 flex items-center">
                       <Clock className="w-3 h-3 mr-1" />
                       {message.timestamp}
                     </p>
@@ -706,10 +838,42 @@ const SparkTutorChat = () => {
               )}
               
               <div ref={messagesEndRef} />
+                </div>
+              </ScrollArea>
+              
+              {/* Scroll to Bottom Button */}
+              <AnimatePresence>
+                {showScrollToBottom && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    onClick={scrollToBottom}
+                    className="absolute bottom-4 right-4 z-10 p-3 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg transition-all duration-200 hover:scale-110"
+                    title="Scroll to bottom"
+                  >
+                    <ChevronDown className="w-5 h-5" />
+                  </motion.button>
+                )}
+              </AnimatePresence>
+              
+              {/* New Message Indicator */}
+              <AnimatePresence>
+                {newMessageIndicator && !isAtBottom && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 px-4 py-2 bg-green-500 text-white rounded-full shadow-lg text-sm font-medium"
+                  >
+                    New message
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
             
             {/* Chat Input */}
-            <div className="border-t border-white/10 p-4 glassmorphism-enhanced">
+            <div className="border-t border-slate-700/50 p-4 bg-slate-900/30 backdrop-blur-sm">
               {/* Recording Indicator */}
               {isRecording && (
                 <motion.div 
@@ -787,39 +951,56 @@ const SparkTutorChat = () => {
               )}
 
               <div className="flex items-end space-x-3">
-                <div className="flex-1 glassmorphism-enhanced rounded-xl p-3">
+                <div className="flex-1 bg-slate-800/50 border border-slate-600 rounded-xl p-3 focus-within:border-slate-500 transition-colors">
                   <textarea 
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyPress={handleKeyPress}
+                    onKeyDown={handleKeyDown}
                     placeholder={
                       attachedFile 
                         ? "Add a question about your file (optional)..." 
-                        : "Ask me anything about your studies..."
+                        : "Type your message here..."
                     }
-                    className="w-full bg-transparent resize-none outline-none placeholder-slate-400 text-white"
+                    className="w-full bg-transparent resize-none outline-none placeholder-slate-400 text-white min-h-[20px] max-h-32"
                     rows={1}
                     disabled={isLoading || isRecording}
+                    style={{ 
+                      minHeight: '20px',
+                      maxHeight: '128px'
+                    }}
                   />
                 </div>
                 <div className="flex space-x-2">
-                  <GlassmorphismButton 
-                    size="sm"
-                    className="p-3 hover-lift"
+                  <button
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    title="Toggle Sidebar (⌘+K)"
+                    className="bg-slate-700/60 hover:bg-slate-600/60 text-slate-300 hover:text-slate-200 p-3 rounded-lg transition-all duration-200 flex items-center justify-center border border-slate-600/50 hover:border-slate-500/60"
+                  >
+                    <Menu className="w-5 h-5" />
+                  </button>
+                  <button
                     onClick={handleSendMessage}
-                    title="Send Message"
+                    title="Send Message (Enter)"
                     disabled={isLoading || isRecording || !inputValue.trim()}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white p-3 rounded-lg transition-all duration-200 hover:scale-[1.02] flex items-center justify-center"
                   >
                     <Send className="w-5 h-5" />
-                  </GlassmorphismButton>
+                  </button>
                 </div>
               </div>
-              <p className="text-xs text-slate-400 mt-2">
-                {attachedFile 
-                  ? "You can add a question about your file or send it as is for general analysis"
-                  : "Type your message and press Enter or click Send to chat with SparkTutor"
-                }
-              </p>
+              <div className="flex items-center justify-between text-xs text-slate-400 mt-2">
+                <span>
+                  {attachedFile 
+                    ? "You can add a question about your file or send it as is for general analysis"
+                    : "Type your message and press Enter or click Send to chat with SparkTutor"
+                  }
+                </span>
+                <div className="flex items-center space-x-4 text-xs">
+                  <span className="hidden sm:inline">⌘+Enter: New Chat</span>
+                  <span className="hidden sm:inline">⌘+K: Toggle Sidebar</span>
+                </div>
+              </div>
             </div>
           </div>
 

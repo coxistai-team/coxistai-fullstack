@@ -41,6 +41,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
+import PageLoader from "@/components/ui/page-loader"
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -1412,14 +1413,7 @@ const AIPresentations = () => {
 
   // Render loading state while fetching presentations
   if (isLoadingPresentations) {
-    return (
-      <main className="relative z-10 pt-20 min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex flex-col items-center justify-center">
-        <div className="flex flex-col items-center justify-center py-16">
-          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-          <div className="text-lg text-slate-600 dark:text-slate-300">Loading your presentations…</div>
-        </div>
-      </main>
-    );
+    return <PageLoader fullScreen={true} />;
   }
 
   return (

@@ -907,4 +907,45 @@
     0% { left: -100%; }
     100% { left: 100%; }
   }
+
+  /* Chat scrolling improvements */
+  .chat-scroll-area {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
+
+  .chat-scroll-area::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .chat-scroll-area::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .chat-scroll-area::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+  }
+
+  .chat-scroll-area::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  /* Message content improvements */
+  .message-content {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+
+  /* Mobile chat improvements */
+  @media (max-width: 768px) {
+    .chat-scroll-area {
+      scrollbar-width: none;
+    }
+    
+    .chat-scroll-area::-webkit-scrollbar {
+      display: none;
+    }
+  }
 }

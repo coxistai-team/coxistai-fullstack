@@ -68,10 +68,9 @@ const Home = () => {
   const heroOpacity = useTransform(scrollY, [0, 300], [1, 0]);
 
   const stats = [
-    { number: "50K+", label: "Active Students", icon: Users, color: "from-purple-500 to-pink-500" },
-    { number: "98%", label: "Success Rate", icon: Star, color: "from-yellow-500 to-orange-500" },
+    { number: "100+", label: "Active Students", icon: Users, color: "from-purple-500 to-pink-500" },
     { number: "24/7", label: "AI Support", icon: Zap, color: "from-blue-500 to-cyan-500" },
-    { number: "150+", label: "Countries", icon: Globe, color: "from-green-500 to-emerald-500" }
+    { number: "10+", label: "Countries", icon: Globe, color: "from-green-500 to-emerald-500" }
   ];
 
   const testimonials = [
@@ -187,7 +186,14 @@ const Home = () => {
                 </motion.span>
               </span>
               <span className="flex items-center justify-center space-x-4">
-                <span className="text-white">Learning</span>
+                <motion.span 
+                  className="inline-flex items-center px-5 py-2 bg-cyan-500 rounded-full"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <Brain className="w-6 h-5 text-white mr-2" />
+                  <span className="text-white">Learning</span>
+                </motion.span>
                 <motion.span 
                   className="inline-flex items-center px-5 py-2 bg-yellow-400 rounded-full"
                   whileHover={{ scale: 1.05 }}
@@ -284,7 +290,24 @@ const Home = () => {
         transition={{ duration: 0.8 }}
       >
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          {/* Section Header */}
+          <motion.div
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 30 }}
+            animate={statsInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.8 }}
+          >
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                Platform Statistics
+              </span>
+            </h2>
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+              Join our growing community of learners and educators
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {stats.map((stat, index) => (
               <motion.div
                 key={index}
