@@ -90,13 +90,52 @@ const sendPasswordResetEmail = async (email: string, token: string) => {
     const resetUrl = `${FRONTEND_URL}/reset-password?token=${token}`;
     console.log(`[Resend] Reset URL: ${resetUrl}`);
     
-    const html = `<p>Hello,</p><p>You requested a password reset for your account. Click the link below to reset your password:</p><p><a href='${resetUrl}'>Reset Password</a></p><p>If you did not request this, you can safely ignore this email.</p>`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+          <h1 style="color: white; margin: 0; font-size: 28px; font-weight: bold;">CoXistAI</h1>
+          <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Your AI-Powered Learning Companion</p>
+        </div>
+        
+        <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <h2 style="color: #333; margin: 0 0 20px 0; font-size: 24px;">Password Reset Request</h2>
+          
+          <p style="color: #555; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+            Hello! We received a request to reset the password for your CoXistAI account. 
+            If you made this request, please click the button below to create a new password.
+          </p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetUrl}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px; display: inline-block;">
+              Reset My Password
+            </a>
+          </div>
+          
+          <p style="color: #666; font-size: 14px; line-height: 1.5; margin-top: 30px;">
+            <strong>Important:</strong> This link will expire in 1 hour for security reasons. 
+            If you didn't request this password reset, you can safely ignore this email.
+          </p>
+          
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+          
+          <p style="color: #888; font-size: 12px; text-align: center; margin: 0;">
+            If the button doesn't work, copy and paste this link into your browser:<br>
+            <a href="${resetUrl}" style="color: #667eea; word-break: break-all;">${resetUrl}</a>
+          </p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px; color: #888; font-size: 12px;">
+          <p>© 2024 CoXistAI. All rights reserved.</p>
+          <p>This email was sent to ${email}</p>
+        </div>
+      </div>
+    `;
     
     console.log(`[Resend] Sending email...`);
     const result = await resend.emails.send({
-      from: `Support <${RESEND_FROM_EMAIL}>`,
+      from: `CoXistAI <${RESEND_FROM_EMAIL}>`,
       to: [email],
-      subject: 'Reset your password',
+      subject: 'Reset Your CoXistAI Password - Action Required',
       html,
     });
     console.log(`[Resend] Email sent successfully:`, result);
