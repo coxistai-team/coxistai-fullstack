@@ -77,14 +77,29 @@ if (!resend) {
 
 const sendPasswordResetEmail = async (email: string, token: string) => {
   try {
+    console.log(`[Resend] Starting password reset email for: ${email}`);
+    console.log(`[Resend] Resend client initialized: ${!!resend}`);
+    console.log(`[Resend] From email: ${RESEND_FROM_EMAIL}`);
+    console.log(`[Resend] Frontend URL: ${FRONTEND_URL}`);
+    
+    if (!resend) {
+      console.error('[Resend Error] Resend client not initialized - missing API key');
+      return;
+    }
+    
     const resetUrl = `${FRONTEND_URL}/reset-password?token=${token}`;
+    console.log(`[Resend] Reset URL: ${resetUrl}`);
+    
     const html = `<p>Hello,</p><p>You requested a password reset for your account. Click the link below to reset your password:</p><p><a href='${resetUrl}'>Reset Password</a></p><p>If you did not request this, you can safely ignore this email.</p>`;
-    await resend?.emails.send({
+    
+    console.log(`[Resend] Sending email...`);
+    const result = await resend.emails.send({
       from: `Support <${RESEND_FROM_EMAIL}>`,
       to: [email],
       subject: 'Reset your password',
       html,
     });
+    console.log(`[Resend] Email sent successfully:`, result);
   } catch (err) {
     // Log error but do not leak to user
     console.error('[Resend Error]', err);
@@ -187,18 +202,29 @@ export async function registerAuthRoutes(app: Express) {
   // Forgot Password
   app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
     try {
+      console.log(`[Forgot Password] Request received for email: ${req.body.email}`);
+      
       const parse = forgotPasswordSchema.safeParse(req.body);
       if (!parse.success) {
+        console.log(`[Forgot Password] Validation failed:`, parse.error);
         return res.status(400).json({ error: "Please provide a valid email address." });
       }
       const { email } = parse.data;
+      console.log(`[Forgot Password] Looking up user with email: ${email}`);
+      
       const user = await storage.getUserByEmail(email);
       if (user) {
+        console.log(`[Forgot Password] User found: ${user.username} (ID: ${user.id})`);
         const token = signJwt({ id: user.id, email }, { expiresIn: '1h' });
+        console.log(`[Forgot Password] Token generated, sending email...`);
         await sendPasswordResetEmail(email, token);
+        console.log(`[Forgot Password] Email sending completed`);
+      } else {
+        console.log(`[Forgot Password] No user found with email: ${email}`);
       }
       res.json({ message: "If an account with that email exists, a reset link has been sent." });
-    } catch {
+    } catch (error) {
+      console.error(`[Forgot Password] Error:`, error);
       res.status(500).json({ error: "Failed to process reset request. Please try again later." });
     }
   });
