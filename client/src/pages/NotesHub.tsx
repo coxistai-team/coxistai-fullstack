@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
-import { useLoading } from '@/contexts/LoadingContext';
+import { usePageLoading } from '@/contexts/PageLoadingContext';
 import { useToast } from '@/hooks/use-toast';
+import PageLoader from '@/components/ui/page-loader';
 import { useIsMobile } from '@/hooks/use-mobile';
 import ParticleField from '@/components/effects/ParticleField';
 import NotesSidebar from '@/components/noteshub/NotesSidebar';
@@ -74,7 +75,7 @@ const useDebounce = <T,>(value: T, delay: number): T => {
 const NotesHub = () => {
   const isMobile = useIsMobile();
   const { user, isAuthenticated, isAuthLoading } = useAuth();
-  const { showLoader, hideLoader } = useLoading();
+  const { showPageLoader, hidePageLoader } = usePageLoading();
   const { toast } = useToast();
   
   // State
@@ -137,7 +138,7 @@ const NotesHub = () => {
       }
       
       setIsLoading(true);
-      showLoader('Loading notes...');
+      showPageLoader();
       try {
         const [notesResponse, groupsResponse] = await Promise.all([
           fetch(`${API_URL}/api/notes`, {
@@ -168,7 +169,7 @@ const NotesHub = () => {
         });
       } finally {
         setIsLoading(false);
-        hideLoader();
+        hidePageLoader();
       }
     };
 
@@ -1078,17 +1079,7 @@ const NotesHub = () => {
 
   // Show loading state while auth is loading
   if (isAuthLoading || isLoading) {
-    return (
-      <main className="relative z-10 pt-16 bg-black text-white overflow-hidden">
-        <ParticleField />
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto"></div>
-            <p className="mt-4 text-gray-400">Loading...</p>
-          </div>
-        </div>
-      </main>
-    );
+    return <PageLoader fullScreen={true} />;
   }
 
   // Show login prompt if not authenticated

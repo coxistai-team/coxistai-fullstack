@@ -533,7 +533,7 @@ export default function Community() {
           </p>
         </motion.div>
 
-        {/* Stats Cards with new glassmorphism-strong style */}
+        {/* Stats Cards with new glassmorphism-strong style 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -572,8 +572,9 @@ export default function Community() {
             </CardContent>
           </Card>
         </motion.div>
+        */}
 
-        {/* Main Content */}
+        {/* Main Content */}  
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Left Sidebar */}
           <motion.div

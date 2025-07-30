@@ -93,8 +93,10 @@ const NotesTopToolbar: React.FC<NotesTopToolbarProps> = ({
             className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-xs sm:text-sm"
             size="sm"
           >
+            <span className='flex items-center'>
             <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-            New Note
+            <span>New Note</span>
+            </span>
           </GlassmorphismButton>
 
           {/* Settings Button */}

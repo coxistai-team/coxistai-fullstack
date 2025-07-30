@@ -30,7 +30,7 @@ import FileUpload from "@/components/ui/file-upload";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useLoading } from "@/contexts/LoadingContext";
+import { usePageLoading } from "@/contexts/PageLoadingContext";
 import { MiniLoader } from "@/components/ui/page-loader";
 import { useToast } from "@/hooks/use-toast";
 import axios from 'axios';
@@ -71,7 +71,7 @@ interface ChatSession {
 }
 
 const SparkTutorChat = () => {
-  const { showLoader, hideLoader } = useLoading();
+  const { showPageLoader, hidePageLoader } = usePageLoading();
   const { toast } = useToast();
   
   const [chatSessions, setChatSessions] = useState<ChatSession[]>(() => {

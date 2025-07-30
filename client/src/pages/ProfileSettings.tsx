@@ -20,13 +20,13 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useLoading } from "@/contexts/LoadingContext";
+import { usePageLoading } from "@/contexts/PageLoadingContext";
 import { useUser } from "@/contexts/UserContext";
 import ParticleField from "@/components/effects/ParticleField";
 
 export default function ProfileSettings() {
   const { toast } = useToast();
-  const { showLoader, hideLoader } = useLoading();
+  const { showPageLoader, hidePageLoader } = usePageLoading();
   const { user, updateProfile, isLoading } = useUser();
 
   const [profileData, setProfileData] = useState({
@@ -97,7 +97,7 @@ export default function ProfileSettings() {
 
   const handleSaveProfile = async () => {
     try {
-      showLoader("Saving your profile...");
+      showPageLoader();
       
       const updatedProfileData = {
         ...profileData,
@@ -106,13 +106,13 @@ export default function ProfileSettings() {
 
       await updateProfile(updatedProfileData);
       
-      hideLoader();
+      hidePageLoader();
       toast({
         title: "Profile Updated",
         description: "Your profile has been successfully updated.",
       });
     } catch (error) {
-      hideLoader();
+      hidePageLoader();
       toast({
         title: "Error",
         description: "Failed to update profile. Please try again.",

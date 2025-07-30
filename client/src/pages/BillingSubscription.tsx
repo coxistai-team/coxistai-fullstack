@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useLoading } from "@/contexts/LoadingContext";
+import { usePageLoading } from "@/contexts/PageLoadingContext";
 import ParticleField from "@/components/effects/ParticleField";
 
 interface SubscriptionPlan {
@@ -43,7 +43,7 @@ interface BillingHistory {
 
 export default function BillingSubscription() {
   const { toast } = useToast();
-  const { showLoader, hideLoader } = useLoading();
+  const { showPageLoader, hidePageLoader } = usePageLoading();
 
   const [currentPlan, setCurrentPlan] = useState({
     name: "Pro",
@@ -141,10 +141,10 @@ export default function BillingSubscription() {
     if (!plan) return;
 
     try {
-      showLoader("Updating your subscription...");
+      showPageLoader();
       
       setTimeout(() => {
-        hideLoader();
+        hidePageLoader();
         toast({
           title: "Subscription Updated",
           description: `Successfully upgraded to ${plan.name} plan.`,
@@ -163,24 +163,24 @@ export default function BillingSubscription() {
 
   const handleUpdatePayment = () => {
     setIsBillingLoading(true);
-    showLoader("Updating payment method...");
+          showPageLoader();
     
-    setTimeout(() => {
-      hideLoader();
-      toast({
-        title: "Payment Method Updated",
-        description: "Your payment method has been successfully updated.",
-      });
-    }, 2000);
+          setTimeout(() => {
+        hidePageLoader();
+        toast({
+          title: "Payment Method Updated",
+          description: "Your payment method has been successfully updated.",
+        });
+      }, 2000);
     setIsBillingLoading(false);
   };
 
   const handleCancelSubscription = () => {
     setIsBillingLoading(true);
-    showLoader("Processing cancellation...");
+          showPageLoader();
     
     setTimeout(() => {
-      hideLoader();
+      hidePageLoader();
       toast({
         title: "Subscription Cancelled",
         description: "Your subscription will remain active until the end of the current billing period.",
