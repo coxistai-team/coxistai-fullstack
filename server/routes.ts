@@ -28,19 +28,23 @@ declare global {
   }
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable is required");
+}
+const JWT_SECRET_FINAL = JWT_SECRET as string;
 const JWT_EXPIRES_IN = "7d";
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL;
 
 function signJwt(payload: object, options?: jwt.SignOptions) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN, ...options });
+  return jwt.sign(payload, JWT_SECRET_FINAL, { expiresIn: JWT_EXPIRES_IN, ...options });
 }
 
 function verifyJwt(token: string) {
   try {
-  return jwt.verify(token, JWT_SECRET);
+  return jwt.verify(token, JWT_SECRET_FINAL);
   } catch (error) {
     return null;
   }
@@ -1032,9 +1036,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!user) {
         // Create default user if doesn't exist
+        const hashedPassword = await hashPassword(Math.random().toString(36).slice(-10));
         const defaultUser = {
           username: `user${id}`,
-          password: 'default123',
+          password: hashedPassword,
           firstName: 'Sharath',
           lastName: 'Bandaari',
           email: 'sharath.bandaari@email.com',
@@ -1109,7 +1114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         error: "Failed to execute code", 
         output: "", 
-        stderr: error instanceof Error ? error.message : "Unknown error" 
+        stderr: "Execution failed"
       });
     }
   });
@@ -1255,28 +1260,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(notes);
     } catch (error) {
       console.error("Error fetching notes:", error);
-      res.status(500).json({ error: "Failed to fetch notes.", details: error instanceof Error ? error.message : "Unknown error" });
+      res.status(500).json({ error: "Failed to fetch notes." });
     }
   });
 
-  // Add database test endpoint
-  app.get("/api/test-db", async (req: Request, res: Response) => {
-    try {
-      const result = await storage.getNotes(1); // Test with user ID 1
-      res.json({ 
-        status: 'ok', 
-        message: 'Database connection successful',
-        notes_count: result.length 
-      });
-    } catch (error) {
-      console.error("Database test failed:", error);
-      res.status(500).json({ 
-        status: 'error', 
-        message: 'Database connection failed',
-        error: error instanceof Error ? error.message : "Unknown error" 
-      });
-    }
-  });
 
   app.post("/api/notes", requireAuth, async (req: Request, res: Response) => {
     try {

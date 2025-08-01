@@ -63,37 +63,16 @@ app.options(/\/api\/.*/, (req: Request, res: Response) => {
 });
 
 app.get('/api/cors-check', (req: Request, res: Response) => {
-  const responseData = {
+  res.json({
     status: 'ok',
-    timestamp: new Date().toISOString(),
-    request_info: {
-      origin: req.headers.origin,
-      user_agent: req.headers['user-agent']?.substring(0, 100),
-      method: req.method,
-      path: req.path
-    },
-    cors_config: {
-      allowed_origins: allowedOrigins,
-      credentials_enabled: true
-    },
-    response_headers: {
-      'access-control-allow-origin': res.getHeader('Access-Control-Allow-Origin'),
-      'access-control-allow-credentials': res.getHeader('Access-Control-Allow-Credentials'),
-      'access-control-allow-methods': res.getHeader('Access-Control-Allow-Methods'),
-      'access-control-allow-headers': res.getHeader('Access-Control-Allow-Headers')
-    }
-  };
-  
-  res.json(responseData);
+    timestamp: new Date().toISOString()
+  });
 });
 
 app.get('/api/health', (req: Request, res: Response) => {
   res.json({
     status: 'ok',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-    database: process.env.DATABASE_URL ? 'configured' : 'not configured',
-    cors_origins_count: allowedOrigins.length
+    timestamp: new Date().toISOString()
   });
 });
 
