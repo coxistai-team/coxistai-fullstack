@@ -18,7 +18,6 @@ if (process.env.DATABASE_URL) {
       connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
     });
     db = drizzle({ client: pool, schema });
-    console.log("Database connection established successfully");
   } catch (error) {
     console.error("Failed to establish database connection:", error);
     pool = null;

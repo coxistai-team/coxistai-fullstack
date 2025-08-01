@@ -389,9 +389,9 @@ export class DatabaseStorage implements IStorage {
       if (!db) {
         throw new Error("Database connection not available");
       }
-      console.log(`Database: Attempting to fetch notes for user ${userId}`);
+      // Removed sensitive logging
       const result = await db.select().from(notes).where(eq(notes.user_id, userId));
-      console.log(`Database: Successfully fetched ${result.length} notes`);
+              // Removed sensitive logging
       return result;
     } catch (error) {
       console.error("Database error in getNotes:", error);

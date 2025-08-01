@@ -77,18 +77,12 @@ if (!resend) {
 
 const sendPasswordResetEmail = async (email: string, token: string) => {
   try {
-    console.log(`[Resend] Starting password reset email for: ${email}`);
-    console.log(`[Resend] Resend client initialized: ${!!resend}`);
-    console.log(`[Resend] From email: ${RESEND_FROM_EMAIL}`);
-    console.log(`[Resend] Frontend URL: ${FRONTEND_URL}`);
-    
     if (!resend) {
       console.error('[Resend Error] Resend client not initialized - missing API key');
       return;
     }
     
     const resetUrl = `${FRONTEND_URL}/reset-password?token=${token}`;
-    console.log(`[Resend] Reset URL: ${resetUrl}`);
     
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
@@ -131,16 +125,13 @@ const sendPasswordResetEmail = async (email: string, token: string) => {
       </div>
     `;
     
-    console.log(`[Resend] Sending email...`);
     const result = await resend.emails.send({
       from: `CoXistAI <${RESEND_FROM_EMAIL}>`,
       to: [email],
       subject: 'Reset Your CoXistAI Password - Action Required',
       html,
     });
-    console.log(`[Resend] Email sent successfully:`, result);
   } catch (err) {
-    // Log error but do not leak to user
     console.error('[Resend Error]', err);
   }
 };
@@ -241,11 +232,9 @@ export async function registerAuthRoutes(app: Express) {
   // Forgot Password
   app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
     try {
-      console.log(`[Forgot Password] Request received for email: ${req.body.email}`);
       
       const parse = forgotPasswordSchema.safeParse(req.body);
       if (!parse.success) {
-        console.log(`[Forgot Password] Validation failed:`, parse.error);
         return res.status(400).json({ error: "Please provide a valid email address." });
       }
       const { email } = parse.data;
@@ -253,13 +242,8 @@ export async function registerAuthRoutes(app: Express) {
       
       const user = await storage.getUserByEmail(email);
       if (user) {
-        console.log(`[Forgot Password] User found: ${user.username} (ID: ${user.id})`);
         const token = signJwt({ id: user.id, email }, { expiresIn: '1h' });
-        console.log(`[Forgot Password] Token generated, sending email...`);
         await sendPasswordResetEmail(email, token);
-        console.log(`[Forgot Password] Email sending completed`);
-      } else {
-        console.log(`[Forgot Password] No user found with email: ${email}`);
       }
       res.json({ message: "If an account with that email exists, a reset link has been sent." });
     } catch (error) {
@@ -1267,9 +1251,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/notes", requireAuth, async (req: Request, res: Response) => {
     try {
       const userId = req.user.id;
-      console.log(`Fetching notes for user: ${userId}`);
       const notes = await storage.getNotes(userId);
-      console.log(`Successfully fetched ${notes.length} notes`);
       res.json(notes);
     } catch (error) {
       console.error("Error fetching notes:", error);
@@ -1280,9 +1262,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add database test endpoint
   app.get("/api/test-db", async (req: Request, res: Response) => {
     try {
-      console.log("Testing database connection...");
       const result = await storage.getNotes(1); // Test with user ID 1
-      console.log("Database test successful");
       res.json({ 
         status: 'ok', 
         message: 'Database connection successful',

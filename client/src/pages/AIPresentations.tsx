@@ -481,8 +481,6 @@ const AIPresentations = () => {
         throw new Error("PPT API URL not configured. Please check your environment variables.")
       }
       
-      console.log("Attempting to connect to PPT API at:", PPT_API_URL)
-      
       // Check if the PPT API is available
       try {
         const healthResponse = await fetch(`${PPT_API_URL}/health`, {
@@ -497,7 +495,6 @@ const AIPresentations = () => {
         }
         
         const healthData = await healthResponse.json();
-        console.log("PPT API health check:", healthData);
       } catch (healthError) {
         console.error("PPT API health check failed:", healthError);
         toast({
@@ -526,7 +523,6 @@ const AIPresentations = () => {
       }
 
       const createData = await createResponse.json()
-      console.log("Backend create_presentation response:", createData)
 
       if (!createData.success || !createData.presentation_id) {
         console.error("Invalid create_presentation response:", createData)
@@ -550,7 +546,6 @@ const AIPresentations = () => {
       }
 
       const getJsonData = await getJsonResponse.json()
-      console.log("Backend get_presentation_json response:", getJsonData)
 
       if (
         !getJsonData.success ||
