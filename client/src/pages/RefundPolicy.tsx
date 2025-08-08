@@ -52,7 +52,7 @@ const RefundPolicy = () => {
           <div className="prose prose-invert max-w-none">
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-8">
               <p className="text-blue-300 text-center font-medium">
-                <strong>Last Updated:</strong> December 2024
+                <strong>Last Updated:</strong> August 2025
               </p>
             </div>
 

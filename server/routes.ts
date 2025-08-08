@@ -123,7 +123,7 @@ const sendPasswordResetEmail = async (email: string, token: string) => {
         </div>
         
         <div style="text-align: center; margin-top: 20px; color: #888; font-size: 12px;">
-          <p>© 2024 CoXistAI. All rights reserved.</p>
+          <p>© 2025 CoXistAI. All rights reserved.</p>
           <p>This email was sent to ${email}</p>
         </div>
       </div>

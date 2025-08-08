@@ -52,7 +52,7 @@ const PrivacyPolicy = () => {
           <div className="prose prose-invert max-w-none">
             <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-8">
               <p className="text-yellow-300 text-center font-medium">
-                <strong>Last Updated:</strong> December 2024
+                <strong>Last Updated:</strong> August 2025
               </p>
             </div>
 
