@@ -50,6 +50,7 @@ import {
 } from "lucide-react";
 import GlassmorphismButton from "@/components/ui/glassmorphism-button";
 import ParticleField from "@/components/effects/ParticleField";
+import Footer from "@/components/layout/Footer";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Home = () => {
@@ -766,6 +767,9 @@ const Home = () => {
           </motion.div>
         </div>
       </section>
+
+      {/* Footer */}
+      <Footer />
     </main>
   );
 };

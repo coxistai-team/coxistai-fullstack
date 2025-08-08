@@ -44,6 +44,9 @@ import SmartCalendarPreview from "@/pages/SmartCalendarPreview";
 import CodeSparkPreview from "@/pages/CodeSparkPreview";
 import PasswordGate from "@/components/PasswordGate";
 import MobileNavigation from "@/components/ui/mobile-navigation";
+import TermsAndConditions from "@/pages/TermsAndConditions";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import RefundPolicy from "@/pages/RefundPolicy";
 import { Home as HomeIcon, MessageCircle, NotebookPen, Users, GraduationCap, Presentation, Calendar, Code } from "lucide-react";
 
 // Adding GA4 initialization
@@ -75,6 +78,9 @@ function Router() {
       <Route path="/settings" component={GeneralSettings} />
       <Route path="/support" component={Support} />
       <Route path="/demo" component={LoadingDemo} />
+      <Route path="/terms" component={TermsAndConditions} />
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/refund" component={RefundPolicy} />
       <Route component={NotFound} />
     </Switch>
   );
