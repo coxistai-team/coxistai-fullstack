@@ -58,9 +58,9 @@ const PrivacyPolicy = () => {
 
             <h2 className="text-2xl font-bold text-white mb-4">Introduction</h2>
             <p className="text-gray-300 leading-relaxed">
-              This Privacy Policy describes how <strong className="text-blue-400">Coxist AI</strong> and its affiliates 
+              This Privacy Policy describes how <strong className="text-blue-400">Coxist AI CFO</strong> and its affiliates 
               (collectively "we, our, us") collect, use, share, protect or otherwise process your information/ personal 
-              data through our website <strong className="text-blue-400">coxistai.com</strong> (hereinafter referred to as <strong className="text-blue-400">Platform</strong>).
+              data through our AI finance platform <strong className="text-blue-400">coxistai.com</strong> (hereinafter referred to as <strong className="text-blue-400">Platform</strong>).
             </p>
 
             <p className="text-gray-300 leading-relaxed">
@@ -79,7 +79,7 @@ const PrivacyPolicy = () => {
             <h3 className="text-xl font-semibold text-gray-200 mb-3">Personal Information</h3>
             <ul className="list-disc list-inside space-y-2 text-gray-300">
               <li>Name, email address, phone number, and other contact information</li>
-              <li>Educational background, academic interests, and learning preferences</li>
+              <li>Financial data including bank account connections, transaction data, and cashflow information</li>
               <li>Payment information and billing details</li>
               <li>Profile information and user-generated content</li>
             </ul>
@@ -87,7 +87,7 @@ const PrivacyPolicy = () => {
             <h3 className="text-xl font-semibold text-gray-200 mb-3 mt-6">Usage Information</h3>
             <ul className="list-disc list-inside space-y-2 text-gray-300">
               <li>Log data, device information, and IP addresses</li>
-              <li>Usage patterns, preferences, and interactions with our services</li>
+              <li>Usage patterns, preferences, and interactions with our finance services</li>
               <li>Cookies and similar tracking technologies</li>
             </ul>
 
@@ -95,8 +95,8 @@ const PrivacyPolicy = () => {
 
             <h2 className="text-2xl font-bold text-white mb-4">How We Use Your Information</h2>
             <ul className="list-disc list-inside space-y-2 text-gray-300">
-              <li>To provide and maintain our educational services</li>
-              <li>To personalize your learning experience</li>
+              <li>To provide and maintain our financial services</li>
+              <li>To personalize your finance experience</li>
               <li>To process payments and manage subscriptions</li>
               <li>To communicate with you about our services</li>
               <li>To improve our platform and develop new features</li>
@@ -174,9 +174,9 @@ const PrivacyPolicy = () => {
             </p>
             <div className="bg-gray-800/50 rounded-lg p-4 mt-4">
               <p className="text-gray-300">
-                <strong>Email:</strong> privacy@coxistai.com<br />
+                <strong>Email:</strong> teamcoxistai@gmail.com<br />
                 <strong>Address:</strong> A2103, Aditya Empress Towers, Shaikpet, Tolichowki, Hyderabad, India<br />
-                <strong>Phone:</strong> +91-XXXXXXXXXX
+                <strong>Phone:</strong> +91 7997157510
               </p>
             </div>
           </div>

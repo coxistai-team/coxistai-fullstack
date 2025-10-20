@@ -110,17 +110,17 @@ const Navigation = () => {
               <div className="relative">
                 <img 
                   src={logoBlack} 
-                  alt="CoXist AI Logo" 
+                  alt="Coxist AI CFO Logo" 
                   className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-xl shadow-lg object-cover transition-shadow duration-300" 
                   loading="eager"
                 />
               </div>
               <div className="hidden sm:block">
                 <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                  CoXist AI
+                  Coxist AI CFO
                 </span>
                 <div className="text-xs text-gray-400 whitespace-nowrap">
-                  Learning Platform
+                  Finance Copilot
                 </div>
               </div>
             </motion.div>

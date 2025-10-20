@@ -40,11 +40,11 @@ const Team = () => {
               <span className="text-xs font-semibold text-blue-400">Meet Our Team</span>
             </div>
             <h1 className="text-3xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
-              The Minds Behind CoXist AI
+              The Minds Behind Coxist AI CFO
             </h1>
             <p className="text-lg text-slate-400 mb-6 max-w-3xl mx-auto leading-relaxed">
-              Our diverse team of educators, engineers, and researchers is dedicated to revolutionizing 
-              education through artificial intelligence and innovative learning technologies.
+              Our diverse team of finance experts, engineers, and startup veterans is dedicated to revolutionizing 
+              startup finance through artificial intelligence and automated cashflow management.
             </p>
           </motion.div>
         </div>
@@ -142,9 +142,9 @@ const Team = () => {
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
             <p className="text-lg text-slate-300 mb-8 leading-relaxed">
-              We believe that education should be accessible, engaging, and personalized for every learner. 
-              Our team combines cutting-edge AI research with deep educational expertise to create tools 
-              that adapt to each student's unique learning style and pace.
+              We believe that startup finance should be accessible, automated, and intelligent for every founder. 
+              Our team combines cutting-edge AI research with deep financial expertise to create tools 
+              that adapt to each startup's unique cashflow patterns and growth stage.
             </p>
             <div className="grid md:grid-cols-3 gap-8">
               <div className="text-center">
@@ -152,21 +152,21 @@ const Team = () => {
                   <Users className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="font-semibold mb-2">Collaboration</h3>
-                <p className="text-sm text-slate-400">Working together to solve complex educational challenges</p>
+                <p className="text-sm text-slate-400">Working together to solve complex financial challenges</p>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <MapPin className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="font-semibold mb-2">Global Impact</h3>
-                <p className="text-sm text-slate-400">Reaching learners across continents and cultures</p>
+                <p className="text-sm text-slate-400">Reaching startups across continents and industries</p>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Mail className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="font-semibold mb-2">Innovation</h3>
-                <p className="text-sm text-slate-400">Pushing the boundaries of AI-powered education</p>
+                <p className="text-sm text-slate-400">Pushing the boundaries of AI-powered finance</p>
               </div>
             </div>
           </div>

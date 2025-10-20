@@ -10,27 +10,27 @@ export const COLORS = {
 export const NAVIGATION_ITEMS = [
   { id: 'notes', label: 'Notes Hub', path: '/notes' },
   { id: 'calendar', label: 'Smart Calendar', path: '/calendar' },
-  { id: 'chat', label: 'SparkTutor AI Chat', path: '/chat' },
+  { id: 'chat', label: 'AI CFO Chat', path: '/chat' },
   { id: 'presentations', label: 'AI PPTs', path: '/presentations' },
   { id: 'community', label: 'Community', path: '/community' },
   { id: 'code', label: 'CodeSpark', path: '/code' },
-  { id: 'college', label: 'College Recommender', path: '/college' },
+  { id: 'college', label: 'Startup Recommender', path: '/college' },
 ] as const;
 
-export const MOCK_COLLEGE_DATA = [
+export const MOCK_STARTUP_DATA = [
   {
     id: 1,
-    name: "Stanford University",
-    location: "Stanford, CA",
+    name: "TechCorp Inc.",
+    location: "San Francisco, CA",
     rank: 2,
     acceptanceRate: 4,
     avgSAT: 1520,
-    students: "17K",
+    employees: "50-200",
     matchScore: 96,
     logo: "SU",
     color: "from-red-500 to-red-600",
-    description: "World-renowned for engineering and computer science programs. Strong alumni network in Silicon Valley.",
-    tags: ["Computer Science", "Engineering"]
+    description: "Leading fintech startup with strong AI and machine learning focus. Excellent growth opportunities.",
+    tags: ["Fintech", "AI/ML"]
   },
   {
     id: 2,
@@ -109,11 +109,11 @@ export const TEAM_DATA = [
     id: 1,
     name: "Dr. Sarah Chen",
     role: "CEO & Co-Founder",
-    designation: "Former Google AI Research Lead",
+    designation: "Former Stripe Finance VP",
     image: "SC",
     linkedin: "https://linkedin.com/in/sarahchen",
-    email: "sarah@coexistai.com",
-    bio: "Leading AI education innovation with 10+ years in machine learning research.",
+    email: "teamcoxistai@gmail.com",
+    bio: "Leading AI finance innovation with 10+ years in fintech and startup finance research.",
     gradient: "from-blue-500 to-purple-600"
   },
   {
@@ -123,30 +123,30 @@ export const TEAM_DATA = [
     designation: "Ex-Microsoft Principal Engineer",
     image: "MR",
     linkedin: "https://linkedin.com/in/marcusrodriguez",
-    email: "marcus@coexistai.com",
-    bio: "Building scalable educational platforms with expertise in distributed systems.",
+    email: "teamcoxistai@gmail.com",
+    bio: "Building scalable finance platforms with expertise in fintech and startup operations.",
     gradient: "from-green-500 to-blue-600"
   },
   {
     id: 3,
     name: "Dr. Priya Patel",
     role: "Head of AI Research",
-    designation: "PhD in Computer Science, Stanford",
+    designation: "Former Goldman Sachs Quant",
     image: "PP",
     linkedin: "https://linkedin.com/in/priyapatel",
-    email: "priya@coexistai.com",
-    bio: "Developing next-generation AI tutoring systems and personalized learning algorithms.",
+    email: "teamcoxistai@gmail.com",
+    bio: "Developing next-generation AI algorithms for cashflow forecasting and financial risk management.",
     gradient: "from-purple-500 to-pink-600"
   },
   {
     id: 4,
     name: "James Wilson",
     role: "Head of Product",
-    designation: "Former Coursera Product Lead",
+    designation: "Former Stripe Finance Lead",
     image: "JW",
     linkedin: "https://linkedin.com/in/jameswilson",
-    email: "james@coexistai.com",
-    bio: "Designing intuitive learning experiences that scale globally.",
+    email: "teamcoxistai@gmail.com",
+    bio: "Designing intuitive finance dashboards that help founders make data-driven decisions.",
     gradient: "from-orange-500 to-red-600"
   },
   {
@@ -156,8 +156,8 @@ export const TEAM_DATA = [
     designation: "Design Systems Specialist",
     image: "EZ",
     linkedin: "https://linkedin.com/in/emilyzhang",
-    email: "emily@coexistai.com",
-    bio: "Creating beautiful, accessible interfaces that make learning enjoyable.",
+    email: "teamcoxistai@gmail.com",
+    bio: "Creating beautiful, accessible interfaces that make financial data understandable for founders.",
     gradient: "from-teal-500 to-green-600"
   },
   {
@@ -167,8 +167,8 @@ export const TEAM_DATA = [
     designation: "Full-Stack Architecture Expert",
     image: "AK",
     linkedin: "https://linkedin.com/in/alexkumar",
-    email: "alex@coexistai.com",
-    bio: "Building robust, secure infrastructure for millions of learners worldwide.",
+    email: "teamcoxistai@gmail.com",
+    bio: "Building robust, secure infrastructure for financial data processing and real-time analytics.",
     gradient: "from-indigo-500 to-blue-600"
   }
 ];
@@ -176,11 +176,11 @@ export const TEAM_DATA = [
 export const MOCK_COMMUNITY_DATA = [
   {
     id: 1,
-    title: "Weekly Study Group: Advanced Calculus",
-    content: "Join us every Wednesday at 7 PM EST for collaborative problem-solving sessions. This week we're covering integration techniques...",
-    author: "Math Tutor Mike",
+    title: "Weekly Finance Review: Cashflow Analysis",
+    content: "Join us every Wednesday at 7 PM EST for collaborative finance sessions. This week we're covering cashflow forecasting...",
+    author: "Finance Expert Mike",
     avatar: "MT",
-    category: "Study Groups",
+    category: "Finance Groups",
     isPinned: true,
     replies: 23,
     views: 156,
@@ -201,7 +201,7 @@ export const MOCK_COMMUNITY_DATA = [
   {
     id: 3,
     title: "Complete Physics Formulas Sheet - Mechanics",
-    content: "Comprehensive formula sheet covering kinematics, dynamics, energy, and momentum. Perfect for exam prep!",
+    content: "Comprehensive cashflow analysis covering burn rate, runway calculations, and fundraising metrics. Perfect for startup founders!",
     author: "David Park",
     avatar: "D",
     category: "Shared Notes",

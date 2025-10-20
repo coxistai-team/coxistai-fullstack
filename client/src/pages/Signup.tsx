@@ -135,7 +135,7 @@ const Signup = () => {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              Join CoXist AI
+              Join Coxist AI CFO
             </motion.h1>
             <motion.p 
               className="text-gray-400"
@@ -143,7 +143,7 @@ const Signup = () => {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
             >
-              Create your account and start learning
+              Create your account and start managing your startup finance
             </motion.p>
           </div>
 

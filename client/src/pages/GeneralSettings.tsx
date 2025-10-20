@@ -148,7 +148,7 @@ export default function GeneralSettings() {
     {
       title: "Experience",
       icon: Monitor,
-      description: "Customize your learning experience",
+      description: "Customize your finance experience",
       settings: [
         {
           key: 'autoSave',
@@ -165,7 +165,7 @@ export default function GeneralSettings() {
         {
           key: 'showTips',
           label: 'Show tips',
-          description: 'Display helpful tips and tutorials',
+          description: 'Display helpful tips and tutorials for finance management',
           type: 'toggle'
         }
       ]
@@ -184,7 +184,7 @@ export default function GeneralSettings() {
             General Settings
           </h1>
           <p className="text-gray-600 dark:text-gray-300">
-            Customize your CoXist AI experience
+            Customize your Coxist AI CFO experience and manage your startup finance preferences
           </p>
         </motion.div>
 
@@ -290,7 +290,7 @@ export default function GeneralSettings() {
                   Data & Backup
                 </CardTitle>
                 <CardDescription>
-                  Export your settings and learning data
+                  Export your settings and finance data
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">

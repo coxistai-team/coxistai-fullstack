@@ -59,7 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">CX</span>
               </div>
-              <span className="font-semibold text-white">CoXist AI</span>
+              <span className="font-semibold text-white">Coxist AI CFO</span>
             </div>
           </div>
 
@@ -144,10 +144,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               </div>
               <div className="ml-3 flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate">
-                  Sienna Hewitt
+                  Finance Team
                 </p>
                 <p className="text-xs text-slate-400 truncate">
-                  sienna@coxist.ai
+                  teamcoxistai@gmail.com
                 </p>
               </div>
             </div>

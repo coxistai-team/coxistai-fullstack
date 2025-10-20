@@ -71,18 +71,18 @@ const Support = () => {
     },
     {
       category: "features",
-      question: "How does the AI tutor work?",
-      answer: "Our AI tutor uses advanced language models to provide personalized learning assistance. You can ask questions, upload documents, and get step-by-step explanations.",
+      question: "How does the AI CFO work?",
+      answer: "Our AI CFO uses advanced financial models to provide personalized cashflow analysis and forecasting. You can connect your bank accounts, upload financial data, and get real-time insights and recommendations.",
     },
     {
       category: "features",
-      question: "Can I share my notes with other students?",
-      answer: "Yes, you can make your notes public or share them with specific users using the sharing options in Notes Hub.",
+      question: "Can I share my financial reports with investors?",
+      answer: "Yes, you can easily share financial reports and dashboards with investors, advisors, and team members through secure sharing links.",
     },
     {
       category: "features",
-      question: "How do I join study groups?",
-      answer: "Visit the Community section to browse available study groups. You can join existing groups or create your own based on your subjects and schedule.",
+      question: "How do I join startup communities?",
+      answer: "Visit the Community section to browse available startup groups and networking opportunities. You can join existing groups or create your own based on your industry and stage.",
     },
     {
       category: "account",
@@ -91,18 +91,18 @@ const Support = () => {
     },
     {
       category: "features",
-      question: "Can I use CoXist AI offline?",
-      answer: "Some features like viewing downloaded notes work offline, but most AI-powered features require an internet connection for optimal performance.",
+      question: "Can I use Coxist AI CFO offline?",
+      answer: "Some features like viewing downloaded reports work offline, but most AI-powered finance features require an internet connection for real-time data sync.",
     },
     {
       category: "billing",
-      question: "Do you offer student discounts?",
-      answer: "Yes, we offer special pricing for verified students. Contact our support team with your student ID to learn about available discounts.",
+      question: "Do you offer startup discounts?",
+      answer: "Yes, we offer special pricing for early-stage startups. Contact our support team to learn about our startup program and available discounts.",
     },
     {
       category: "features",
-      question: "How do I export my data?",
-      answer: "You can export your notes, documents, and other data from the Settings page. We support various formats including PDF, DOCX, and JSON.",
+      question: "How do I export my financial data?",
+      answer: "You can export your financial reports, cashflow data, and analytics from the Settings page. We support various formats including PDF, Excel, and CSV.",
     },
     {
       category: "account",
@@ -157,8 +157,8 @@ const Support = () => {
             How Can We Help?
           </h1>
           <p className="text-lg text-slate-400 mb-6 max-w-3xl mx-auto leading-relaxed">
-            Get the support you need to make the most of your CoXist AI experience. 
-            We're here to help you succeed in your learning journey.
+            Get the support you need to make the most of your Coxist AI CFO experience. 
+            We're here to help you manage your startup finances and never run out of cash.
           </p>
         </motion.div>
 

@@ -39,7 +39,7 @@ export default function UserInfoDisplay() {
               <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               <div>
                 <p className="text-sm font-medium">Email</p>
-                <p className="text-sm text-gray-600 dark:text-gray-300">{user.email || 'alex.johnson@email.com'}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">{user.email || 'teamcoxistai@gmail.com'}</p>
               </div>
             </div>
             

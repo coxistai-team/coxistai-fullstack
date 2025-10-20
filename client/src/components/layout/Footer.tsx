@@ -23,10 +23,10 @@ const Footer = () => {
           {/* Brand Section */}
           <div className="md:col-span-2">
             <h3 className="text-xl font-bold bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent mb-2">
-              CoXist AI
+              Coxist AI CFO
             </h3>
             <p className="text-slate-400 text-sm mb-4 max-w-md">
-              Transforming education through AI-powered learning experiences. Your complete student toolkit for modern education.
+              Never run out of cash again. AI-powered finance copilot that connects to your bank accounts, generates cashflow dashboards, and sends proactive alerts for startups.
             </p>
             <div className="flex space-x-4">
               <a 
@@ -46,7 +46,7 @@ const Footer = () => {
                 <Linkedin className="w-4 h-4 text-slate-400 hover:text-blue-400" />
               </a>
               <a 
-                href="mailto:contact@coxistai.com" 
+                href="mailto:teamcoxistai@gmail.com" 
                 className="w-8 h-8 rounded-lg bg-slate-800/50 hover:bg-green-500/20 flex items-center justify-center transition-all duration-300 hover:scale-110"
               >
                 <Mail className="w-4 h-4 text-slate-400 hover:text-green-400" />
@@ -62,7 +62,7 @@ const Footer = () => {
                 onClick={() => handleNavigation("/chat")}
                 className="block text-slate-400 hover:text-blue-400 transition-colors text-sm"
               >
-                AI Tutor
+                AI CFO
               </button>
               <button 
                 onClick={() => handleNavigation("/notes")}
@@ -125,9 +125,9 @@ const Footer = () => {
           <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
             {/* Copyright */}
             <p className="text-slate-500 text-sm flex items-center justify-center sm:justify-start space-x-1">
-              <span>© {currentYear} CoXist AI. Made with</span>
+              <span>© {currentYear} Coxist AI CFO. Made with</span>
               <Heart className="w-4 h-4 text-red-500 fill-current" />
-              <span>for learners everywhere</span>
+              <span>for founders everywhere</span>
             </p>
             
             {/* Additional Info */}

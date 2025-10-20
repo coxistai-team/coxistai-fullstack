@@ -698,7 +698,7 @@ const AIPresentations = () => {
           },
           {
             type: "text",
-            content: "Created with CoXist AI",
+            content: "Created with Coxist AI CFO Finance Platform",
             position: { left: 50, top: 200, width: 800, height: 50 },
             style: { font_size: 18, font_weight: "normal", color: "#FFFFFF", alignment: "center" }
           }

@@ -91,15 +91,15 @@ const sendPasswordResetEmail = async (email: string, token: string) => {
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
-          <h1 style="color: white; margin: 0; font-size: 28px; font-weight: bold;">CoXistAI</h1>
-          <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Your AI-Powered Learning Companion</p>
+          <h1 style="color: white; margin: 0; font-size: 28px; font-weight: bold;">Coxist AI CFO</h1>
+          <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Your AI CFO for Startup Finance</p>
         </div>
         
         <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
           <h2 style="color: #333; margin: 0 0 20px 0; font-size: 24px;">Password Reset Request</h2>
           
           <p style="color: #555; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
-            Hello! We received a request to reset the password for your CoXistAI account. 
+            Hello! We received a request to reset the password for your Coxist AI CFO account. 
             If you made this request, please click the button below to create a new password.
           </p>
           
@@ -123,16 +123,16 @@ const sendPasswordResetEmail = async (email: string, token: string) => {
         </div>
         
         <div style="text-align: center; margin-top: 20px; color: #888; font-size: 12px;">
-          <p>© 2025 CoXistAI. All rights reserved.</p>
+          <p>© 2025 Coxist AI CFO. All rights reserved.</p>
           <p>This email was sent to ${email}</p>
         </div>
       </div>
     `;
     
     const result = await resend.emails.send({
-      from: `CoXistAI <${RESEND_FROM_EMAIL}>`,
+      from: `Coxist AI CFO <${RESEND_FROM_EMAIL}>`,
       to: [email],
-      subject: 'Reset Your CoXistAI Password - Action Required',
+      subject: 'Reset Your Coxist AI CFO Password - Action Required',
       html,
     });
   } catch (err) {
@@ -1042,14 +1042,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           password: hashedPassword,
           firstName: 'Sharath',
           lastName: 'Bandaari',
-          email: 'sharath.bandaari@email.com',
-          phone: '+1 (555) 123-4567',
-          bio: 'AI enthusiast and lifelong learner passionate about technology and education.',
+          email: 'teamcoxistai@gmail.com',
+          phone: '+91 7997157510',
+          bio: 'Startup founder passionate about AI-powered finance and never running out of cash.',
           location: 'San Francisco, CA',
           timezone: 'America/Los_Angeles',
           avatar: null,
           dateOfBirth: '1995-06-15',
-          occupation: 'Software Engineer',
+          occupation: 'Startup Founder',
           company: 'Tech Innovations Inc.',
           theme: 'dark',
           emailNotifications: true,

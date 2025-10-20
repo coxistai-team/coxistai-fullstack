@@ -53,12 +53,12 @@ const TermsAndConditions = () => {
             <p className="text-gray-300 leading-relaxed">
               This document is an electronic record in terms of the Information Technology Act, 2000 and applicable rules. 
               It is published in accordance with Rule 3(1) of the Information Technology (Intermediaries Guidelines) Rules, 2011 
-              and constitutes the terms of use for access or usage of the domain name coxist.ai ("Website"), including its related 
+              and constitutes the terms of use for access or usage of the AI finance platform coxist.ai ("Website"), including its related 
               sub-domains, mobile site, and applications (together, the "Platform").
             </p>
 
             <p className="text-gray-300 leading-relaxed">
-              Coxist AI is a company registered under the Companies Act, 1956, with its registered office at A2103, Aditya Empress Towers, 
+              Coxist AI CFO is a company registered under the Companies Act, 1956, with its registered office at A2103, Aditya Empress Towers, 
               Shaikpet, Tolichowki, Hyderabad, India.
             </p>
 
@@ -73,7 +73,7 @@ const TermsAndConditions = () => {
             <ul className="list-disc list-inside space-y-2 text-gray-300">
               <li>You agree to provide accurate and complete information when registering or transacting.</li>
               <li>You are solely responsible for all activities done through your registered account.</li>
-              <li>The services provided by Coxist AI are available globally unless otherwise specified. Some services may be restricted in certain locations.</li>
+              <li>The AI finance services provided by Coxist AI CFO are available globally unless otherwise specified. Some services may be restricted in certain locations.</li>
             </ul>
 
             <hr className="border-gray-700 my-8" />
@@ -134,7 +134,7 @@ const TermsAndConditions = () => {
             </p>
             <div className="bg-gray-800/50 rounded-lg p-4 mt-4">
               <p className="text-gray-300">
-                <strong>Email:</strong> support@coxistai.com<br />
+                <strong>Email:</strong> teamcoxistai@gmail.com<br />
                 <strong>Address:</strong> A2103, Aditya Empress Towers, Shaikpet, Tolichowki, Hyderabad, India
               </p>
             </div>

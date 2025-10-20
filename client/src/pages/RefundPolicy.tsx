@@ -107,7 +107,7 @@ const RefundPolicy = () => {
             <div className="bg-gray-800/50 rounded-lg p-4 space-y-3">
               <h3 className="text-xl font-semibold text-gray-200">How to Request a Refund</h3>
               <ol className="list-decimal list-inside space-y-2 text-gray-300">
-                <li>Contact our support team at support@coxistai.com</li>
+                <li>Contact our support team at teamcoxistai@gmail.com</li>
                 <li>Include your account email and order details</li>
                 <li>Provide a reason for the refund request</li>
                 <li>Allow 3-5 business days for review and processing</li>
@@ -185,7 +185,7 @@ const RefundPolicy = () => {
             </p>
             <div className="bg-gray-800/50 rounded-lg p-4 mt-4">
               <p className="text-gray-300">
-                <strong>Email:</strong> support@coxistai.com<br />
+                <strong>Email:</strong> teamcoxistai@gmail.com<br />
                 <strong>Subject Line:</strong> Refund Request - [Your Account Email]<br />
                 <strong>Response Time:</strong> Within 24 hours during business days<br />
                 <strong>Business Hours:</strong> Monday - Friday, 9:00 AM - 6:00 PM IST

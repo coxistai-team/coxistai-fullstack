@@ -72,7 +72,7 @@ const Home = () => {
   const heroOpacity = useTransform(scrollY, [0, 300], [1, 0]);
 
   const stats = [
-    { number: "100+", label: "Active Students", icon: Users, color: "from-purple-500 to-pink-500" },
+    { number: "100+", label: "Active Startups", icon: Users, color: "from-purple-500 to-pink-500" },
     { number: "24/7", label: "AI Support", icon: Zap, color: "from-blue-500 to-cyan-500" },
     { number: "10+", label: "Countries", icon: Globe, color: "from-green-500 to-emerald-500" }
   ];
@@ -80,37 +80,37 @@ const Home = () => {
   const testimonials = [
     {
       name: "Sarah Chen",
-      role: "Computer Science Student",
-      content: "CoXist AI transformed my learning experience. The AI tutor helped me understand complex algorithms in minutes!",
+      role: "Startup Founder",
+      content: "Coxist AI CFO saved our startup from running out of cash. The AI alerts caught our burn rate spike before it was too late!",
       avatar: "SC",
       rating: 5
     },
     {
       name: "Marcus Rodriguez",
-      role: "High School Senior",
-      content: "The college recommender feature was a game-changer. I found my dream university and got accepted!",
+      role: "Series A Founder",
+      content: "The financial forecasting feature was a game-changer. I found the perfect funding strategy and secured Series A!",
       avatar: "MR",
       rating: 5
     },
     {
       name: "Emily Zhang",
-      role: "Medical Student",
-      content: "The note-taking system and study groups helped me ace my medical exams. Highly recommended!",
+      role: "Tech Startup CEO",
+      content: "The cashflow tracking and expense management helped me optimize our burn rate. Highly recommended!",
       avatar: "EZ",
       rating: 5
     }
   ];
 
   const skillTags = [
-    "AI Learning", "Machine Learning", "Python", "JavaScript", "React", "Node.js",
+    "AI Finance", "Cashflow Analysis", "Python", "JavaScript", "React", "Node.js",
     "Data Science", "Web Development", "Mobile Apps", "Cloud Computing", "DevOps",
     "UI/UX Design", "Product Management", "Marketing", "Finance", "Healthcare",
-    "Education", "Research", "Writing", "Public Speaking", "Leadership"
+    "Finance", "Startups", "Writing", "Public Speaking", "Leadership"
   ];
 
   const funElements = [
     { icon: Coffee, text: "Fuel your creativity", color: "text-orange-400" },
-    { icon: Music, text: "Learn with rhythm", color: "text-purple-400" },
+    { icon: Music, text: "Finance with rhythm", color: "text-purple-400" },
     { icon: Camera, text: "Capture knowledge", color: "text-blue-400" },
     { icon: Gift, text: "Unlock your potential", color: "text-green-400" },
     { icon: Flame, text: "Ignite your passion", color: "text-red-400" },
@@ -175,7 +175,7 @@ const Home = () => {
             >
               <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
               <span className="text-xs sm:text-sm font-semibold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                Next-Generation AI Learning Platform
+                Next-Generation AI Finance Platform
               </span>
               <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-400 rounded-full animate-pulse"></div>
             </motion.div>
@@ -205,7 +205,7 @@ const Home = () => {
                   transition={{ type: "spring", stiffness: 400, damping: 20 }}
                 >
                   <Brain className="w-5 h-5 sm:w-6 sm:h-6 text-white mr-2" />
-                  <span className="text-white">Learning</span>
+                  <span className="text-white">Finance</span>
                 </motion.span>
                 <motion.span 
                   className="inline-flex items-center px-4 py-2 sm:px-6 sm:py-3 bg-yellow-400 rounded-full text-base sm:text-6xl sm:font-bold font-semibold"
@@ -225,8 +225,8 @@ const Home = () => {
               animate={heroInView ? { opacity: 1, y: 0 } : {}}
               transition={{ delay: 0.1, duration: 0.4 }}
             >
-              Everything you need for academic success in one place: AI-powered tutoring, smart note-taking, presentation creation, 
-              intelligent scheduling, and interactive coding exercises. Your complete student toolkit for modern education.
+              Everything you need for startup success in one place: AI-powered cashflow analysis, financial forecasting, expense tracking, 
+              intelligent budgeting, and automated investor updates. Your complete finance toolkit for modern startups.
             </motion.p>
 
             {/* Fun Elements Row */}
@@ -266,10 +266,10 @@ const Home = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 disabled={isLoading}
-                aria-label="Start Learning Today"
+                aria-label="Start Managing Finance Today"
               >
                 <span className="relative z-10 flex items-center">
-                  Start Learning Today
+                  Start Managing Finance Today
                   <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
                 </span>
               </motion.button>
@@ -322,7 +322,7 @@ const Home = () => {
               </span>
             </h2>
             <p className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto px-4">
-              Join our growing community of learners and educators
+              Join our growing community of founders and finance experts
             </p>
           </motion.div>
 
@@ -362,7 +362,7 @@ const Home = () => {
               </span>
             </h2>
             <p className="text-lg sm:text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed px-4">
-              Discover how our AI-powered tools transform your educational journey
+              Discover how our AI-powered tools transform your startup finance journey
             </p>
           </motion.div>
 
@@ -640,10 +640,10 @@ const Home = () => {
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
               <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                What Students Say
+                What Founders Say
               </span>
             </h2>
-            <p className="text-xl text-gray-400">Real stories from our learning community</p>
+            <p className="text-xl text-gray-400">Real stories from our startup community</p>
           </motion.div>
 
           <motion.div
@@ -715,11 +715,11 @@ const Home = () => {
           >
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6">
               <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                Ready to Transform Your Learning?
+                Ready to Transform Your Startup Finance?
               </span>
             </h2>
             <p className="text-lg sm:text-xl text-gray-400 mb-6 sm:mb-8 leading-relaxed">
-              Join thousands of students who are already experiencing the future of education
+              Join thousands of founders who are already experiencing the future of startup finance
             </p>
             
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center mb-6 sm:mb-8">
